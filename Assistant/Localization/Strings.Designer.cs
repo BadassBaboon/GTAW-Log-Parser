@@ -649,7 +649,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to https://github.com/AdvGTAW/GTAW-Log-Parser.
+        ///   Looks up a localized string similar to https://github.com/blancodagoat/GTAW-Log-Parser.
         /// </summary>
         internal static string ProjectLink {
             get {
@@ -667,7 +667,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to https://github.com/AdvGTAW/GTAW-Log-Parser/releases.
+        ///   Looks up a localized string similar to https://github.com/blancodagoat/GTAW-Log-Parser/releases.
         /// </summary>
         internal static string ReleasesLink {
             get {

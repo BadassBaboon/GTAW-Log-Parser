@@ -5,6 +5,7 @@ using System.Windows;
 using System.Threading;
 using Assistant.Properties;
 using Assistant.Controllers;
+using GTAWParser.Shared;
 
 namespace Assistant
 {
@@ -38,16 +39,8 @@ namespace Assistant
 
             // Set the current app theme depending
             // on the "follow system eligibility"
-            if (Settings.Default.FollowSystemColor)
-            {
-                if (AppController.CanFollowSystemColor)
-                {
-                    StyleController.ValidStyles.Add("Windows");
-                    StyleController.Style = "Windows";
-                }
-                else
-                    Settings.Default.FollowSystemColor = false;
-            }
+            if (Settings.Default.FollowSystemColor && !AppController.CanFollowSystemColor)
+                Settings.Default.FollowSystemColor = false;
             Settings.Default.Save();
 
             // Apply the changes
@@ -74,7 +67,7 @@ namespace Assistant
 
             // Make sure only one instance is running
             // if the application is not currently restarting
-            Mutex mutex = new Mutex(true, "GTAWChatLogAssistant", out bool isUnique);
+            Mutex mutex = new Mutex(true, AppController.MutexName, out bool isUnique);
             if (!isUnique && !isRestarted)
             {
                 MessageBox.Show(Localization.Strings.OtherInstanceRunning, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -91,14 +84,11 @@ namespace Assistant
             // display the server picker on the
             // first start, or the main window
             // on subsequent starts
-            LocalizationController.InitializeLocale();
+            LocalizationController.InitializeLocale(Settings.Default.LanguageCode);
             AppController.InitializeServerIp();
 
             if (!Settings.Default.HasPickedLanguage)
             {
-                //LanguagePickerWindow languagePicker = new LanguagePickerWindow();
-                //languagePicker.Show();
-
                 Settings.Default.LanguageCode = LocalizationController.GetCodeFromLanguage(LocalizationController.Language.English);
                 Settings.Default.HasPickedLanguage = true;
                 Settings.Default.Save();

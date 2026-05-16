@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Windows;
-using IWshRuntimeLibrary;
+using Assistant.Utilities;
 using System.Collections.Generic;
 
 namespace Assistant.Controllers
@@ -74,18 +74,30 @@ namespace Assistant.Controllers
                 {
                     if (legit)
                     {
-                        WshShell wshShell = new WshShell();
+                        using (ShellLink shortcut = new ShellLink())
+                        {
+                            shortcut.Load(file.FullName);
 
-                        if (!(wshShell.CreateShortcut(file.FullName) is IWshShortcut shortcut)) continue;
-                        if (shortcut.TargetPath != AppController.ExecutablePath)
-                            shortcut.TargetPath = AppController.ExecutablePath;
-                        if (!shortcut.Arguments.ToLower()
-                            .Contains($"{AppController.ParameterPrefix}minimized"))
-                            shortcut.Arguments = $"{AppController.ParameterPrefix}minimized";
-                        if (shortcut.WorkingDirectory != AppController.StartupPath)
-                            shortcut.WorkingDirectory = AppController.StartupPath;
+                            bool changed = false;
+                            if (shortcut.TargetPath != AppController.ExecutablePath)
+                            {
+                                shortcut.TargetPath = AppController.ExecutablePath;
+                                changed = true;
+                            }
+                            if (!shortcut.Arguments.ToLower().Contains($"{AppController.ParameterPrefix}minimized"))
+                            {
+                                shortcut.Arguments = $"{AppController.ParameterPrefix}minimized";
+                                changed = true;
+                            }
+                            if (shortcut.WorkingDirectory != AppController.StartupPath)
+                            {
+                                shortcut.WorkingDirectory = AppController.StartupPath;
+                                changed = true;
+                            }
 
-                        shortcut.Save();
+                            if (changed)
+                                shortcut.Save(file.FullName);
+                        }
                         legit = false;
                     }
                     else
@@ -94,9 +106,9 @@ namespace Assistant.Controllers
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Silent exception
+                System.Diagnostics.Debug.WriteLine($"CheckIfLegitimate failed: {ex}");
             }
         }
 
@@ -112,15 +124,17 @@ namespace Assistant.Controllers
                 if (IsAddedToStartup())
                     return;
 
-                WshShell wshShell = new WshShell();
-                if (!(wshShell.CreateShortcut(StartUpDirectory + ShortcutName) is IWshShortcut shortcut)) return;
-                shortcut.TargetPath = AppController.ExecutablePath;
-                shortcut.Arguments = $"{AppController.ParameterPrefix}minimized";
-                shortcut.WorkingDirectory = AppController.StartupPath;
-                shortcut.Save();
+                using (ShellLink shortcut = new ShellLink())
+                {
+                    shortcut.TargetPath = AppController.ExecutablePath;
+                    shortcut.Arguments = $"{AppController.ParameterPrefix}minimized";
+                    shortcut.WorkingDirectory = AppController.StartupPath;
+                    shortcut.Save(StartUpDirectory + ShortcutName);
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"TryAddingToStartup failed: {ex}");
                 if (showError)
                     MessageBox.Show(Localization.Strings.AutoStartEnableError, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -149,8 +163,9 @@ namespace Assistant.Controllers
                     file.Delete();
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"TryRemovingFromStartup failed: {ex}");
                 if (showError)
                     MessageBox.Show(Localization.Strings.AutoStartDisableError, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -187,8 +202,9 @@ namespace Assistant.Controllers
 
                 return allShortcuts.Where(file => file.Name.ToLower().Contains(ShortcutName.ToLower())).ToList();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"GetParserShortcuts failed: {ex}");
                 return new List<FileInfo>();
             }
         }

@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Globalization;
 using Assistant.Controllers;
 using Assistant.Localization;
+using GTAWParser.Shared;
 using System.Windows.Controls;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -81,14 +82,20 @@ namespace Assistant.UI
                     if (MessageBox.Show(Strings.ResourceManager.GetString("SwitchServer", cultureInfo),
                         Strings.ResourceManager.GetString("Restart", cultureInfo), MessageBoxButton.YesNo,
                         MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-                    LocalizationController.SetLanguage(language);
+                    LocalizationController.SetLanguage(language, code =>
+                    {
+                        Properties.Settings.Default.LanguageCode = code;
+                        Properties.Settings.Default.Save();
+                    });
 
                     isRestarting = true;
 
-                    ProcessStartInfo startInfo = Process.GetCurrentProcess().StartInfo;
-                    startInfo.FileName = AppController.ExecutablePath;
-                    startInfo.Arguments = $"{AppController.ParameterPrefix}restart";
-                    Process.Start(startInfo);
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = AppController.ExecutablePath,
+                        Arguments = $"{AppController.ParameterPrefix}restart",
+                        UseShellExecute = true
+                    });
 
                     System.Windows.Application.Current.Shutdown();
                 };
@@ -123,11 +130,7 @@ namespace Assistant.UI
             OpenGithubProject.Visibility = Properties.Settings.Default.DisableProjectButton ? Visibility.Collapsed : Visibility.Visible;
             UpdateCheckProgress.Foreground = StyleController.DarkMode ? System.Windows.Media.Brushes.White : System.Windows.Media.Brushes.Black;
 
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            // ReSharper disable once UnreachableCode
-#pragma warning disable 162
             Version.Text = string.Format(Strings.VersionInfo, AppController.Version, AppController.IsBetaVersion ? Strings.BetaShort : string.Empty);
-#pragma warning restore 162
             StatusLabel.Content = string.Format(Strings.BackupStatus, Properties.Settings.Default.BackupChatLogAutomatically ? Strings.Enabled : Strings.Disabled);
             Counter.Text = string.Format(Strings.CharacterCounter, 0, 0);
 
@@ -482,7 +485,7 @@ namespace Assistant.UI
             Dispatcher?.Invoke(() =>
             {
                 if (MessageBox.Show(text, title, buttons, image) == MessageBoxResult.Yes)
-                    Process.Start(Strings.ReleasesLink);
+                    OpenUrl(Strings.ReleasesLink);
             });
         }
 
@@ -490,15 +493,12 @@ namespace Assistant.UI
         /// Checks for updates
         /// </summary>
         /// <param name="manual"></param>
-#pragma warning disable 162
-        [SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalse")]
-        [SuppressMessage("ReSharper", "UnreachableCode")]
         private void CheckForUpdates(ref bool manual)
         {
             try
             {
                 string installedVersion = AppController.Version;
-                IReadOnlyList<Release> releases = _client.Repository.Release.GetAll("AdvGTAW", AppController.ProductHeader).Result;
+                IReadOnlyList<Release> releases = _client.Repository.Release.GetAll(AppController.GitHubOwner, AppController.GitHubRepo).Result;
 
                 string newVersion = string.Empty;
                 bool isNewVersionBeta = false;
@@ -535,15 +535,15 @@ namespace Assistant.UI
                 else if (manual) // Latest version
                     DisplayUpdateMessage(string.Format(Strings.RunningLatest, installedVersion + (AppController.IsBetaVersion ? " Beta" : string.Empty)), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch // No internet
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"CheckForUpdates failed: {ex}");
                 if (manual)
                     DisplayUpdateMessage(string.Format(Strings.NoInternet, AppController.Version + (AppController.IsBetaVersion ? " Beta" : string.Empty)), Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             _resetEvent.Set();
         }
-#pragma warning restore 162
 
         /// <summary>
         /// Opens the backup settings window
@@ -623,11 +623,7 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void AboutToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            // ReSharper disable once UnreachableCode
-#pragma warning disable 162
             MessageBox.Show(string.Format(Strings.About, AppController.Version, AppController.IsBetaVersion ? Strings.Beta : string.Empty, AppController.ResourceDirectory), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
-#pragma warning restore 162
         }
 
         /// <summary>
@@ -638,17 +634,6 @@ namespace Assistant.UI
         private void ExitToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Application.Current.Shutdown();
-        }
-
-        /// <summary>
-        /// Handles clicks on the logo
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Logo_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            //if (MessageBox.Show(Strings.OpenDocumentation, Strings.Information, MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
-            //    Process.Start(Strings.FeatureShowcaseLink);
         }
 
         /// <summary>
@@ -785,7 +770,12 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void OpenGithubProject_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(Strings.ProjectLink);
+            OpenUrl(Strings.ProjectLink);
+        }
+
+        private static void OpenUrl(string url)
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 
         /// <summary>
@@ -795,7 +785,7 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void OpenGithubReleases_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(Strings.ReleasesLink);
+            OpenUrl(Strings.ReleasesLink);
         }
 
         /// <summary>
@@ -805,7 +795,7 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void OpenUCP_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(Strings.UCPLink);
+            OpenUrl(Strings.UCPLink);
         }
 
         /// <summary>
@@ -815,7 +805,7 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void OpenFacebrowser_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(Strings.FacebrowserLink);
+            OpenUrl(Strings.FacebrowserLink);
         }
 
         /// <summary>
@@ -825,7 +815,7 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void OpenForums_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(Strings.ForumsLink);
+            OpenUrl(Strings.ForumsLink);
         }
     }
 }

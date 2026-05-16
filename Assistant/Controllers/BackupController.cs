@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Windows;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Linq;
-using System.Diagnostics.CodeAnalysis;
 using Assistant.Utilities;
 using Assistant.Localization;
 using System.Text.RegularExpressions;
@@ -13,252 +13,200 @@ namespace Assistant.Controllers
 {
     public static class BackupController
     {
-        private static Thread backupThread;
-        private static Thread intervalThread;
+        private const int GameClosedCheckTime = 10;
+
+        private static CancellationTokenSource _cts;
+        private static Task _backupTask;
+        private static Task _intervalTask;
 
         private static string directoryPath;
         private static string backupPath;
-
-        private static bool enableAutomaticBackup;
-        private static bool enableIntervalBackup;
-
-        private static bool runBackgroundBackup;
-        private static bool runBackgroundInterval;
-        public static bool Quitting = false;
-
-        private const int GameClosedCheckTime = 10;
         private static bool isGameRunning;
 
-        /// <summary>
-        /// Displays a message box
-        /// on the main UI thread
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        /// <param name="buttons"></param>
-        /// <param name="image"></param>
-        private static void DisplayBackupResultMessage(string text, string title, MessageBoxButton buttons, MessageBoxImage image)
+        private static bool _quitting;
+        public static bool Quitting
         {
-            Application.Current.Dispatcher?.Invoke(() =>
+            get => _quitting;
+            set
             {
-                MessageBox.Show(text, title, buttons, image);
-            });
+                _quitting = value;
+                if (value)
+                    AbortAll();
+            }
         }
 
         /// <summary>
-        /// Starts the backup threads if they are enabled
-        /// or resumes them if they are queued to stop
+        /// Displays a message box on the main UI thread.
         /// </summary>
-        [SuppressMessage("ReSharper", "InvertIf")]
+        private static void DisplayBackupResultMessage(string text, string title, MessageBoxButton buttons, MessageBoxImage image)
+        {
+            Application.Current?.Dispatcher?.Invoke(() => MessageBox.Show(text, title, buttons, image));
+        }
+
+        /// <summary>
+        /// Starts the backup workers if they are enabled. Safe to call repeatedly:
+        /// any previous workers are cancelled first.
+        /// </summary>
         public static void Initialize()
         {
             directoryPath = Properties.Settings.Default.DirectoryPath;
             backupPath = Properties.Settings.Default.BackupPath;
 
-            enableAutomaticBackup = Properties.Settings.Default.BackupChatLogAutomatically;
-            enableIntervalBackup = Properties.Settings.Default.EnableIntervalBackup;
+            bool enableAutomaticBackup = Properties.Settings.Default.BackupChatLogAutomatically;
+            bool enableIntervalBackup = Properties.Settings.Default.EnableIntervalBackup;
 
             if (string.IsNullOrWhiteSpace(backupPath) || !Directory.Exists(backupPath))
                 return;
-            if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath + "\\client_resources"))
+            if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(Path.Combine(directoryPath, "client_resources")))
+                return;
+            if (Quitting)
                 return;
 
-            ResumeIfQueuedToStop();
+            // Cancel any previous run; old workers see the cancellation at their next await.
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
+            CancellationToken ct = _cts.Token;
 
-            if (enableAutomaticBackup && (backupThread == null || !backupThread.IsAlive))
-            {
-                runBackgroundBackup = true;
+            if (enableAutomaticBackup)
+                _backupTask = Task.Run(() => BackupWorkerAsync(ct), ct);
 
-                backupThread = new Thread(BackupWorker);
-                backupThread.Start();
-            }
-
-            if (enableIntervalBackup && (intervalThread == null || !intervalThread.IsAlive))
-            {
-                runBackgroundInterval = true;
-
-                intervalThread = new Thread(IntervalWorker);
-                intervalThread.Start();
-            }
+            if (enableIntervalBackup)
+                _intervalTask = Task.Run(() => IntervalWorkerAsync(ct), ct);
         }
 
         /// <summary>
-        /// Gracefully stops the automatic backup thread
-        /// </summary>
-        private static void AbortAutomaticBackup()
-        {
-            if (backupThread != null && backupThread.IsAlive)
-                runBackgroundBackup = false;
-        }
-
-        /// <summary>
-        /// Gracefully stops the interval backup thread
-        /// </summary>
-        private static void AbortIntervalBackup()
-        {
-            if (intervalThread != null && intervalThread.IsAlive)
-                runBackgroundInterval = false;
-        }
-
-        /// <summary>
-        /// Resumes the threads if they are queued to stop
-        /// </summary>
-        private static void ResumeIfQueuedToStop()
-        {
-            if (backupThread != null && backupThread.IsAlive && !runBackgroundBackup && !Quitting)
-                runBackgroundBackup = true;
-
-            if (intervalThread != null && intervalThread.IsAlive && !runBackgroundInterval && !Quitting)
-                runBackgroundInterval = true;
-        }
-
-        /// <summary>
-        /// Gracefully stops all threads
+        /// Signals both workers to stop at their next await point.
         /// </summary>
         public static void AbortAll()
         {
-            AbortIntervalBackup();
-            AbortAutomaticBackup();
+            try { _cts?.Cancel(); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"AbortAll failed: {ex}"); }
         }
 
-        /// <summary>
-        /// Runs the main backup thread
-        /// </summary>
-        private static void BackupWorker()
+        private static async Task BackupWorkerAsync(CancellationToken ct)
         {
-            while (!Quitting && runBackgroundBackup)
+            try
             {
-                Process[] processes = Process.GetProcesses()
-                    .Where(p => AppController.ProcessNames.Contains(p.ProcessName))
-                    .ToArray();
-
-                if (!isGameRunning && processes.Length != 0)
-                    isGameRunning = true;
-                else if (isGameRunning && processes.Length == 0)
+                while (!ct.IsCancellationRequested)
                 {
-                    isGameRunning = false;
-                    ParseThenSaveToFile(true);
-                }
+                    Process[] processes = Process.GetProcesses()
+                        .Where(p => AppController.ProcessNames.Contains(p.ProcessName))
+                        .ToArray();
 
-                Thread.Sleep(GameClosedCheckTime * 1000);
+                    if (!isGameRunning && processes.Length != 0)
+                        isGameRunning = true;
+                    else if (isGameRunning && processes.Length == 0)
+                    {
+                        isGameRunning = false;
+                        ParseThenSaveToFile(true);
+                    }
+
+                    await Task.Delay(GameClosedCheckTime * 1000, ct).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation path.
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"BackupWorker failed: {ex}");
+            }
+        }
+
+        private static async Task IntervalWorkerAsync(CancellationToken ct)
+        {
+            try
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    int intervalMinutes = Properties.Settings.Default.IntervalTime;
+
+                    if (isGameRunning && File.Exists(Path.Combine(directoryPath, AppController.LogLocation)))
+                        ParseThenSaveToFile();
+
+                    await Task.Delay(intervalMinutes * 60_000, ct).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation path.
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"IntervalWorker failed: {ex}");
             }
         }
 
         /// <summary>
-        /// Runs the interval backup thread
+        /// Parses the current chat log and saves it. Called by both workers.
         /// </summary>
-        private static void IntervalWorker()
-        {
-            while (!Quitting && runBackgroundInterval)
-            {
-                int intervalTime = Properties.Settings.Default.IntervalTime;
-
-                if (isGameRunning && File.Exists(directoryPath + AppController.LogLocation))
-                    ParseThenSaveToFile();
-
-                for (int i = 0; i < intervalTime * 6; i++)
-                {
-                    if (Quitting || !runBackgroundInterval)
-                        break;
-
-                    Thread.Sleep(10 * 1000);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Parses the current chat log and saves it. This
-        /// function is called from the backup threads
-        /// </summary>
-        /// <param name="gameClosed"></param>
         private static void ParseThenSaveToFile(bool gameClosed = false)
         {
             try
             {
                 AppController.InitializeServerIp();
 
-                // Parse the chat log
                 string parsed = AppController.ParseChatLog(directoryPath, Properties.Settings.Default.RemoveTimestampsFromBackup, gameClosed);
                 if (string.IsNullOrWhiteSpace(parsed))
                     return;
 
-                // Store the first line of the chat log: [DATE: 14/NOV/2018 | TIME: 15:44:39]
+                // First line of the chat log: [DATE: 14/NOV/2018 | TIME: 15:44:39]
                 string fileName = parsed.Substring(0, parsed.IndexOf("\n", StringComparison.Ordinal));
 
-                // Get the date from the fileName and replace slashes: 14.NOV.2018
-                string fileNameDate = Regex.Match(fileName, @"\d{1,2}\/[A-Za-z]{3}\/\d{4}").ToString();
-                fileNameDate = fileNameDate.Replace("/", ".");
-
-                // Get the year and the month from the fileName
+                string fileNameDate = Regex.Match(fileName, @"\d{1,2}\/[A-Za-z]{3}\/\d{4}").ToString().Replace("/", ".");
                 string year = Regex.Match(fileNameDate, @"\d{4}").ToString();
                 string month = Regex.Match(fileNameDate, @"[A-Za-z]{3}").ToString();
+                string fileNameTime = Regex.Match(fileName, @"\d{1,2}:\d{1,2}:\d{1,2}").ToString().Replace(":", ".");
 
-                // Get the time from the fileName and replace colons: 15.44.39
-                string fileNameTime = Regex.Match(fileName, @"\d{1,2}:\d{1,2}:\d{1,2}").ToString();
-                fileNameTime = fileNameTime.Replace(":", ".");
-
-                // Throw error if the chat log format is incorrect
                 if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(fileNameDate) || string.IsNullOrWhiteSpace(fileNameTime) || string.IsNullOrWhiteSpace(year) || string.IsNullOrWhiteSpace(month))
-                    throw new IOException();
+                    throw new IOException("Chat log header did not match expected DATE/TIME format.");
 
-                // Create the final file name: 14.NOV.2018-15.44.39
-                // and the file path categorized under the year and month
-                fileName = fileNameDate + "-" + fileNameTime + ".txt";
-                string path = $"{backupPath}{year}\\{month}\\";
+                // Final name: 14.NOV.2018-15.44.39.txt, bucketed by year/month
+                fileName = $"{fileNameDate}-{fileNameTime}.txt";
+                string directory = Path.Combine(backupPath, year, month);
+                string finalPath = Path.Combine(directory, fileName);
+                string tempPath = Path.Combine(directory, ".temp");
 
-                // Make sure directory exists
-                if (!Directory.Exists(path))
-                    Directory.CreateDirectory(path);
+                Directory.CreateDirectory(directory);
 
-                // There is no backup file with this name yet,
-                // we are good to go
-                if (!File.Exists(path + fileName))
+                if (!File.Exists(finalPath))
                 {
-                    using (StreamWriter sw = new StreamWriter(path + fileName))
-                    {
-                        sw.Write(parsed.Replace("\n", Environment.NewLine));
-                    }
+                    File.WriteAllText(finalPath, parsed.Replace("\n", Environment.NewLine));
                 }
                 else
                 {
-                    // If the file already exists (i.e. backed up from the interval worker)
-                    // check if the current chat log is larger than the old one
-                    
-                    // Remove any temporary files that may
-                    // exist for some reason
-                    if (File.Exists(path + ".temp"))
-                        File.Delete(path + ".temp");
-                    
-                    // Write a temporary file
-                    using (StreamWriter sw = new StreamWriter(path + ".temp"))
-                    {
-                        sw.Write(parsed.Replace("\n", Environment.NewLine));
-                    }
+                    // File from a prior interval write exists — keep whichever copy is larger
+                    if (File.Exists(tempPath))
+                        File.Delete(tempPath);
 
-                    // Check to see which file is bigger
-                    FileInfo oldFile = new FileInfo(path + fileName);
-                    FileInfo newFile = new FileInfo(path + ".temp");
+                    File.WriteAllText(tempPath, parsed.Replace("\n", Environment.NewLine));
 
-                    // New file larger, overwrite the old file
-                    if (oldFile.Length < newFile.Length)
+                    long oldLen = new FileInfo(finalPath).Length;
+                    long newLen = new FileInfo(tempPath).Length;
+
+                    if (oldLen < newLen)
                     {
-                        File.Delete(path + fileName);
-                        File.Move(path + ".temp", path + fileName);
+                        File.Delete(finalPath);
+                        File.Move(tempPath, finalPath);
                     }
-                    else // Old file larger, delete the temporary file
-                        File.Delete(path + ".temp");
+                    else
+                    {
+                        File.Delete(tempPath);
+                    }
                 }
 
                 if (!gameClosed) return;
                 if (!Properties.Settings.Default.SuppressNotifications)
-                    DisplayBackupResultMessage(string.Format(Strings.SuccessfulBackup, path + fileName), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
+                    DisplayBackupResultMessage(string.Format(Strings.SuccessfulBackup, finalPath), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Save the MD5 hash of the chat log
                 if (Properties.Settings.Default.WarnOnSameHash)
                     HashGenerator.SaveParsedHash(parsed);
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"ParseThenSaveToFile failed: {ex}");
                 if (gameClosed)
                     DisplayBackupResultMessage(Strings.BackupError, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }

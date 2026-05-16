@@ -38,7 +38,6 @@ namespace Assistant.UI
             Top = _mainWindow.Top + (_mainWindow.Height / 2 - Height / 2) + 55;
 
             CloseWindow.Focus();
-            StyleController.ValidStyles.Remove("Windows");
             LoadSettings();
         }
 
@@ -130,7 +129,7 @@ namespace Assistant.UI
             Properties.Settings.Default.FollowSystemMode = AppController.CanFollowSystemMode;
 
             StyleController.DarkMode = AppController.CanFollowSystemMode && StyleController.GetAppMode();
-            StyleController.Style = AppController.CanFollowSystemColor ? "Windows" : "Default";
+            StyleController.Style = "Default";
 
             Properties.Settings.Default.Save();
         }
@@ -209,13 +208,10 @@ namespace Assistant.UI
             Properties.Settings.Default.FollowSystemColor = FollowSystemColor.IsChecked == true;
 
             Themes.IsEnabled = FollowSystemColor.IsChecked != true;
-            if (FollowSystemColor.IsChecked == true)
-                StyleController.ValidStyles.Add("Windows");
-            else
-                StyleController.ValidStyles.Remove("Windows");
 
             UpdateThemeSwitcher();
-            Themes.SelectedItem = FollowSystemColor.IsChecked == true ? "Windows" : "Default";
+            if (FollowSystemColor.IsChecked != true)
+                Themes.SelectedItem = "Default";
         }
 
         /// <summary>

@@ -9,16 +9,9 @@
                       WindowStartupLocation="Manual"
                       ResizeMode="NoResize"
                       Closing="ChatLogFilter_Closing"
-                      WindowTransitionsEnabled="True"
-                      BorderThickness="0" 
+                      BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Filter Chat Log" Height="324" Width="494" ShowInTaskbar="True" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCaps="False" Icon="../Resources/AppIcon.ico">
-
-    <Controls:MetroWindow.WindowButtonCommands>
-        <Controls:WindowButtonCommands 
-                                       LightCloseButtonStyle="{StaticResource MahApps.Metro.Styles.WindowButton.Close.Light.Win10}"
-                                       DarkCloseButtonStyle="{StaticResource MahApps.Metro.Styles.WindowButton.Close.Dark.Win10}"/>
-    </Controls:MetroWindow.WindowButtonCommands>
+                      Title="Filter Chat Log" Height="324" Width="494" ShowInTaskbar="True" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCharacterCasing="Normal" Icon="../Resources/AppIcon.ico">
 
     <Grid>
         <Label x:Name="StatusLabel" Content="Chat log not loaded" FontWeight="DemiBold" HorizontalContentAlignment="Center" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="329" Foreground="Red"/>

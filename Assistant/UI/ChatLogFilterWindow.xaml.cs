@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -23,17 +24,30 @@ namespace Assistant.UI
         private bool _usingAdvancedFilter;
         private bool _skippedWord;
 
-        // Assign each filter criterion to a regex pattern
-        private readonly Dictionary<string, Tuple<string, bool>> _filterCriteria = new Dictionary<string, Tuple<string, bool>>
+        private static readonly Regex TimestampRegex = new Regex(@"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", RegexOptions.Compiled);
+
+        private sealed class FilterCriterion
         {
-            // Filter, regex pattern, isEnabled (false = remove from log)
-            { "OOC", Tuple.Create(@"^\(\( \(\d*\) [\p{L}]+ {0,1}([\p{L}]+){0,1}:.*?\)\)$", Properties.Settings.Default.OOCCriterionEnabled) },
-            { "IC", Tuple.Create(@"^(\(Car\) ){0,1}[\p{L}]+ {0,1}([\p{L}]+){0,1} (says|shouts|whispers)( \[low\]){0,1}:.*$", Properties.Settings.Default.ICCriterionEnabled) },
-            { "Emote", Tuple.Create(@"^\* [\p{L}]+ {0,1}([\p{L}]+){0,1} .*$", Properties.Settings.Default.EmoteCriterionEnabled) },
-            { "Action", Tuple.Create(@"^\* .* \(\([\p{L}]+ {0,1}([\p{L}]+){0,1}\)\)\*$", Properties.Settings.Default.ActionCriterionEnabled) },
-            { "PM", Tuple.Create(@"^\(\( PM (to|from) \(\d*\) [\p{L}]+ {0,1}([\p{L}]+){0,1}:.*?\)\)$", Properties.Settings.Default.PMCriterionEnabled) },
-            { "Radio", Tuple.Create(@"^\*\*\[S: .* CH: .*\] [\p{L}]+ {0,1}([\p{L}]+){0,1}.*$", Properties.Settings.Default.RadioCriterionEnabled) },
-            { "Ads", Tuple.Create(@"^\[.*Advertisement.*\] .*$", Properties.Settings.Default.AdsCriterionEnabled) }
+            public Regex Pattern { get; }
+            public bool Enabled { get; set; }
+
+            public FilterCriterion(string pattern, bool enabled)
+            {
+                Pattern = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                Enabled = enabled;
+            }
+        }
+
+        // Filter, regex pattern, isEnabled (false = remove from log)
+        private readonly Dictionary<string, FilterCriterion> _filterCriteria = new Dictionary<string, FilterCriterion>
+        {
+            { "OOC",    new FilterCriterion(@"^\(\( \(\d*\) [\p{L}]+ ?([\p{L}]+)?:.*?\)\)$",                       Properties.Settings.Default.OOCCriterionEnabled) },
+            { "IC",     new FilterCriterion(@"^(\(Car\) )?[\p{L}]+ ?([\p{L}]+)? (says|shouts|whispers)( \[low\])?:.*$", Properties.Settings.Default.ICCriterionEnabled) },
+            { "Emote",  new FilterCriterion(@"^\* [\p{L}]+ ?([\p{L}]+)? .*$",                                       Properties.Settings.Default.EmoteCriterionEnabled) },
+            { "Action", new FilterCriterion(@"^\* .* \(\([\p{L}]+ ?([\p{L}]+)?\)\)\*$",                             Properties.Settings.Default.ActionCriterionEnabled) },
+            { "PM",     new FilterCriterion(@"^\(\( PM (to|from) \(\d*\) [\p{L}]+ ?([\p{L}]+)?:.*?\)\)$",          Properties.Settings.Default.PMCriterionEnabled) },
+            { "Radio",  new FilterCriterion(@"^\*\*\[S: .* CH: .*\] [\p{L}]+ ?([\p{L}]+)?.*$",                     Properties.Settings.Default.RadioCriterionEnabled) },
+            { "Ads",    new FilterCriterion(@"^\[.*Advertisement.*\] .*$",                                          Properties.Settings.Default.AdsCriterionEnabled) }
         };
 
         private bool OtherEnabled => Other.IsChecked == true;
@@ -225,13 +239,9 @@ namespace Assistant.UI
             if (string.IsNullOrWhiteSpace(criterionName))
                 return;
 
-            KeyValuePair<string, Tuple<string, bool>>? entry = _filterCriteria.Where(pair => pair.Key == criterionName)
-                            .Select(pair => (KeyValuePair<string, Tuple<string, bool>>?)pair)
-                            .FirstOrDefault();
+            if (_filterCriteria.TryGetValue(criterionName, out FilterCriterion criterion))
+                criterion.Enabled = !criterion.Enabled;
 
-            if (entry != null)
-                _filterCriteria[entry.Value.Key] = Tuple.Create(_filterCriteria[entry.Value.Key].Item1, !_filterCriteria[entry.Value.Key].Item2);
-            
             if (_chatLogLoaded)
                 TryToFilter(true);
         }
@@ -263,45 +273,12 @@ namespace Assistant.UI
             _skippedWord = false;
             string logToCheck = ChatLog;
             string[] lines = logToCheck.Split('\n');
-            string filtered = string.Empty;
+            StringBuilder filtered = new StringBuilder(logToCheck.Length);
 
-            // Simple filtering
-            if (!_usingAdvancedFilter)
+            List<string> wordsToCheck = null;
+            if (_usingAdvancedFilter)
             {
-                // Loop through every line in the
-                // loaded chat log
-                foreach (string line in lines)
-                {
-                    // Skip blank lines
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
-
-                    // Assume the criterion is disabled
-                    bool isCriterionEnabled = false;
-                    bool matchedRegularCriterion = false;
-                    
-                    // Loop through every criterion and check if the line matches any of them
-                    foreach (KeyValuePair<string, Tuple<string, bool>> keyValuePair in _filterCriteria.Where(keyValuePair => !string.IsNullOrWhiteSpace(keyValuePair.Key) && !string.IsNullOrWhiteSpace(keyValuePair.Value.Item1)).Where(keyValuePair => Regex.IsMatch(Regex.Replace(line, @"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", string.Empty), keyValuePair.Value.Item1, RegexOptions.IgnoreCase)))
-                    {
-                        matchedRegularCriterion = true;
-
-                        if (keyValuePair.Value.Item2 != true) continue;
-                        isCriterionEnabled = true;
-                        break;
-                    }
-
-                    // Add the line to the filtered chat log if the criterion is
-                    // enabled or if it didn't match any criterion and Other is enabled
-                    if (isCriterionEnabled || !matchedRegularCriterion && OtherEnabled)
-                        filtered += line + "\n";
-
-                    // Next line
-                }
-            }
-            else // Advanced filtering
-            {
-                // Get the words we need to look for
-                List<string> wordsToCheck = GetWordsToFilterIn();
+                wordsToCheck = GetWordsToFilterIn();
                 if (wordsToCheck.Count == 0)
                 {
                     MessageBox.Show(
@@ -311,57 +288,63 @@ namespace Assistant.UI
                     return;
                 }
 
-                // Loop through every line in the
-                // loaded chat log
-                foreach (string line in lines)
+                for (int i = 0; i < wordsToCheck.Count; i++)
+                    wordsToCheck[i] = wordsToCheck[i]?.ToLower();
+            }
+
+            foreach (string line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                string lineForMatch = TimestampRegex.Replace(line, string.Empty);
+
+                // Advanced filter: drop lines that don't contain any of the words of interest
+                if (_usingAdvancedFilter)
                 {
-                    // Skip blank lines
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
-
-                    // Skip the line if there are no words of
-                    // interest in it
-                    if (!wordsToCheck.Where(word => !string.IsNullOrWhiteSpace(word)).Any(word =>
-                        Regex.Replace(line, @"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", string.Empty).ToLower()
-                            .Contains(word.ToLower()))) continue;
-
-                    // Assume the criterion is disabled
-                    bool isCriterionEnabled = false;
-                    bool matchedRegularCriterion = false;
-
-                    // Loop through every criterion and check if the line matches any of them
-                    foreach (KeyValuePair<string, Tuple<string, bool>> keyValuePair in _filterCriteria.Where(keyValuePair => !string.IsNullOrWhiteSpace(keyValuePair.Key) && !string.IsNullOrWhiteSpace(keyValuePair.Value.Item1)).Where(keyValuePair => Regex.IsMatch(Regex.Replace(line, @"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", string.Empty), keyValuePair.Value.Item1, RegexOptions.IgnoreCase)))
+                    string lineLower = lineForMatch.ToLower();
+                    bool wordHit = false;
+                    foreach (string word in wordsToCheck)
                     {
-                        matchedRegularCriterion = true;
-
-                        if (keyValuePair.Value.Item2 != true) continue;
-                        isCriterionEnabled = true;
-                        break;
+                        if (!string.IsNullOrWhiteSpace(word) && lineLower.Contains(word))
+                        {
+                            wordHit = true;
+                            break;
+                        }
                     }
-
-                    // Add the line to the filtered chat log if the criterion is
-                    // enabled or if it didn't match any criterion and Other is enabled
-                    if (isCriterionEnabled || !matchedRegularCriterion && OtherEnabled)
-                        filtered += line + "\n";
-
-                    // Next line
+                    if (!wordHit) continue;
                 }
+
+                bool isCriterionEnabled = false;
+                bool matchedRegularCriterion = false;
+
+                foreach (KeyValuePair<string, FilterCriterion> pair in _filterCriteria)
+                {
+                    if (!pair.Value.Pattern.IsMatch(lineForMatch)) continue;
+                    matchedRegularCriterion = true;
+                    if (!pair.Value.Enabled) continue;
+                    isCriterionEnabled = true;
+                    break;
+                }
+
+                if (isCriterionEnabled || (!matchedRegularCriterion && OtherEnabled))
+                    filtered.Append(line).Append('\n');
             }
 
             // Filter successful
             if (filtered.Length > 0)
             {
-                filtered = filtered.TrimEnd('\r', '\n');
+                string result = filtered.ToString().TrimEnd('\r', '\n');
 
                 if (RemoveTimestamps.IsChecked == true)
-                    filtered = Regex.Replace(filtered, @"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", string.Empty);
+                    result = TimestampRegex.Replace(result, string.Empty);
 
-                Filtered.Text = filtered;
+                Filtered.Text = result;
             }
             else // Nothing found
             {
                 if (RemoveTimestamps.IsChecked == true)
-                    logToCheck = Regex.Replace(logToCheck, @"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", string.Empty);
+                    logToCheck = TimestampRegex.Replace(logToCheck, string.Empty);
 
                 Filtered.Text = logToCheck;
 

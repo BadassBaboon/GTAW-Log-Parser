@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Diagnostics;
+using GTAWParser.Shared;
 using Parser.Controllers;
 using Parser.Localization;
 using System.Windows.Forms;
@@ -44,17 +45,20 @@ namespace Parser.UI
                     // Make sure the user wants to switch
                     if (MessageBox.Show(Strings.SwitchServer, Strings.Restart, MessageBoxButtons.YesNo,
                         MessageBoxIcon.Question) != DialogResult.Yes) return;
-                    LocalizationController.SetLanguage(language);
+                    LocalizationController.SetLanguage(language, code =>
+                    {
+                        Properties.Settings.Default.LanguageCode = code;
+                        Properties.Settings.Default.Save();
+                    });
 
                     // Restart the program
-                    ProcessStartInfo startInfo = Process.GetCurrentProcess().StartInfo;
-                    startInfo.FileName = Application.ExecutablePath;
-                    startInfo.Arguments = $"{ProgramController.ParameterPrefix}restart";
-                    var exit = typeof(Application).GetMethod("ExitInternal",
-                        System.Reflection.BindingFlags.NonPublic |
-                        System.Reflection.BindingFlags.Static);
-                    exit?.Invoke(null, null);
-                    Process.Start(startInfo);
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = Application.ExecutablePath,
+                        Arguments = $"{ProgramController.ParameterPrefix}restart",
+                        UseShellExecute = true
+                    });
+                    Application.Exit();
                 };
 
                 // Check the current Language
@@ -80,11 +84,7 @@ namespace Parser.UI
         /// </summary>
         private void LoadSettings()
         {
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            // ReSharper disable once UnreachableCode
-#pragma warning disable 162
             Version.Text = string.Format(Strings.VersionInfo, ProgramController.Version, ProgramController.IsBetaVersion ? Strings.BetaShort : string.Empty);
-#pragma warning restore 162
             DirectoryPath.Text = Properties.Settings.Default.DirectoryPath;
             RemoveTimestamps.Checked = Properties.Settings.Default.RemoveTimestamps;
 
@@ -243,11 +243,7 @@ namespace Parser.UI
         /// <param name="e"></param>
         private void AboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // ReSharper disable once UnreachableCode
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-#pragma warning disable 162
             MessageBox.Show(string.Format(Strings.About, ProgramController.Version, ProgramController.IsBetaVersion ? Strings.Beta : string.Empty, ProgramController.ResourceDirectory), Strings.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
-#pragma warning restore 162
         }
     }
 }

@@ -10,27 +10,20 @@
                       ResizeMode="CanMinimize"
                       WindowStartupLocation="CenterScreen"
                       Closing="Main_Closing"
-                      WindowTransitionsEnabled="True"
-                      GlowBrush="{DynamicResource AccentColorBrush}"
-                      Title="GTA World Chat Log Assistant" Height="260" Width="638" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCaps="False" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
+                      Title="GTA World Chat Log Assistant" Height="260" Width="638" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
-    <Controls:MetroWindow.WindowButtonCommands>
-        <Controls:WindowButtonCommands 
-                                       LightCloseButtonStyle="{StaticResource MahApps.Metro.Styles.WindowButton.Close.Light.Win10}"
-                                       DarkCloseButtonStyle="{StaticResource MahApps.Metro.Styles.WindowButton.Close.Dark.Win10}"/>
-    </Controls:MetroWindow.WindowButtonCommands>
-    
     <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands>
             <Button x:Name="OpenProgramSettings"
                     Click="OpenProgramSettings_Click"
-                    Content="{iconPacks:Material Settings, Width=18, Height=18}"
+                    Content="{iconPacks:Material Cog, Width=18, Height=18}"
                     ToolTip="Settings" />
 
             <Button x:Name="OpenGithubProject"
                     Visibility="Collapsed"
                     Click="OpenGithubProject_Click"
-                    Content="{iconPacks:Material GithubFace, Width=20, Height=20}"
+                    Content="{iconPacks:Material Github, Width=20, Height=20}"
                     ToolTip="Open the project page on GitHub" />
 
             <Button x:Name="OpenGithubReleases"
@@ -48,7 +41,7 @@
             <Button x:Name="OpenFacebrowser"
                     Visibility="Collapsed"
                     Click="OpenFacebrowser_Click"
-                    Content="{iconPacks:Material FacebookBox, Width=16, Height=16}"
+                    Content="{iconPacks:Material Facebook, Width=16, Height=16}"
                     ToolTip="Open Facebrowser" />
 
             <Button x:Name="OpenForums"
@@ -70,7 +63,7 @@
         </Menu>
 
         <Grid>
-            <Image x:Name="Logo" HorizontalAlignment="Left" Height="140" VerticalAlignment="Top" Width="288" Source="../Resources/Logo.png" Margin="10,0,0,0" Stretch="Fill" MouseLeftButtonUp="Logo_MouseLeftButtonUp"/>
+            <Image x:Name="Logo" HorizontalAlignment="Left" Height="140" VerticalAlignment="Top" Width="288" Source="../Resources/Logo.png" Margin="10,0,0,0" Stretch="Fill"/>
             <CheckBox x:Name="CheckForUpdatesOnStartup" Checked="CheckForUpdatesOnStartup_CheckedChanged" Unchecked="CheckForUpdatesOnStartup_CheckedChanged" Content="Check for updates automatically" HorizontalAlignment="Left" Margin="10,145,0,0" VerticalAlignment="Top" Width="288"/>
             <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top" Width="288"/>
             <Controls:ProgressRing x:Name="UpdateCheckProgress"

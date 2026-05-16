@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>GTAWParser.Shared</RootNamespace>
+    <AssemblyName>GTAWParser.Shared</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+</Project>

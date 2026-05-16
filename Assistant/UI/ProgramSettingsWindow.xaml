@@ -10,16 +10,9 @@
                       WindowStartupLocation="Manual"
                       ResizeMode="NoResize"
                       Closing="ProgramSettings_Closing"
-                      WindowTransitionsEnabled="True"
-                      BorderThickness="0" 
+                      BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Program Settings" Height="308" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCaps="False" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
-
-    <Controls:MetroWindow.WindowButtonCommands>
-        <Controls:WindowButtonCommands 
-                                       LightCloseButtonStyle="{StaticResource MahApps.Metro.Styles.WindowButton.Close.Light.Win10}"
-                                       DarkCloseButtonStyle="{StaticResource MahApps.Metro.Styles.WindowButton.Close.Dark.Win10}"/>
-    </Controls:MetroWindow.WindowButtonCommands>
+                      Title="Program Settings" Height="308" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
     <Grid>
         <Label Content="Title Bar" HorizontalAlignment="Left" Margin="4,10,0,0" VerticalAlignment="Top" FontSize="14"/>

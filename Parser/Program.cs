@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using GTAWParser.Shared;
 using Parser.Controllers;
 using Parser.Localization;
 using System.Windows.Forms;
@@ -25,7 +26,7 @@ namespace Parser
 
             // Make sure only one instance is running
             // if the application is not currently restarting
-            Mutex mutex = new Mutex(true, "GTAWParserMini", out bool isUnique);
+            Mutex mutex = new Mutex(true, ProgramController.MutexName, out bool isUnique);
             if (!isUnique && !isRestarted)
             {
                 MessageBox.Show(Strings.OtherInstanceRunning, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -40,7 +41,7 @@ namespace Parser
             if (Properties.Settings.Default.FirstStart)
                 Properties.Settings.Default.Upgrade();
 
-            LocalizationController.InitializeLocale();
+            LocalizationController.InitializeLocale(Properties.Settings.Default.LanguageCode);
             ProgramController.InitializeServerIp();
             Application.Run(new UI.Main());
 

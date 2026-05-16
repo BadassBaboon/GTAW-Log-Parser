@@ -5,7 +5,7 @@ This program is used to convert the chat logs generated while playing on GTA Wor
 
 ## Getting Started
 
-No installation is required. Simply download the latest [release](https://github.com/AdvGTAW/GTAW-Log-Parser/releases) and run the executable.
+No installation is required. Simply download the latest [release](https://github.com/blancodagoat/GTAW-Log-Parser/releases) and run the executable.
 
 ## Building
 
@@ -13,7 +13,7 @@ The NuGet package dependencies must be restored before compiling the project.
 
 ## Contributing
 
-1. Fork Project (<https://github.com/your_name/GTAW-Log-Parser>)
+1. Fork Project (<https://github.com/blancodagoat/GTAW-Log-Parser>)
 2. Create Branch (`git checkout -b branch_name`)
 3. Commit (`git commit -am "Add feature_name"`)
 4. Push (`git push origin branch_name`)
@@ -21,7 +21,15 @@ The NuGet package dependencies must be restored before compiling the project.
 
 ## Roadmap
 
-- Switch to .NET Core 3.1, then .NET 5 (when available)
+- Migrate to .NET 8 (LTS) with `Microsoft.NET.Sdk.WindowsDesktop`
+- Upgrade MahApps.Metro 1.6 → 2.4 (theming API rewrite required)
+- Drop Costura.Fody in favour of `<PublishSingleFile>`
+- Extract duplicated controllers (`InitializeServerIp`, `ParseChatLog`, `LocalizationController`) into a shared library
+
+## Building
+
+- The solution now uses SDK-style csproj files. `dotnet build` works for `Parser`.
+- `Assistant` has a COM reference (`IWshRuntimeLibrary`) that requires full Visual Studio MSBuild (`MSBuild.exe`) rather than `dotnet build`. Build it from Visual Studio 2022 or the Developer Command Prompt.
 
 ## Additional Information
 
