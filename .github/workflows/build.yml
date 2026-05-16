@@ -1,0 +1,30 @@
+name: Build & test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & test
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore GTAW-Log-Parser.sln
+
+      - name: Build
+        run: dotnet build GTAW-Log-Parser.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Shared.Tests/Shared.Tests.csproj --configuration Release --no-build --verbosity normal

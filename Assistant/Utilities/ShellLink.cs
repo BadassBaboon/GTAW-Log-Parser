@@ -14,12 +14,14 @@ namespace Assistant.Utilities
         private const int MaxPath = 260;
         private const uint SLGP_UNCPRIORITY = 0x0002;
 
-        private IShellLinkW _link;
+        private IShellLinkW? _link;
 
         public ShellLink()
         {
             _link = (IShellLinkW)new CShellLink();
         }
+
+        private IShellLinkW Link => _link ?? throw new ObjectDisposedException(nameof(ShellLink));
 
         public string TargetPath
         {
@@ -27,10 +29,10 @@ namespace Assistant.Utilities
             {
                 StringBuilder sb = new StringBuilder(MaxPath);
                 WIN32_FIND_DATAW find = default;
-                _link.GetPath(sb, sb.Capacity, ref find, SLGP_UNCPRIORITY);
+                Link.GetPath(sb, sb.Capacity, ref find, SLGP_UNCPRIORITY);
                 return sb.ToString();
             }
-            set => _link.SetPath(value);
+            set => Link.SetPath(value);
         }
 
         public string Arguments
@@ -38,10 +40,10 @@ namespace Assistant.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder(1024);
-                _link.GetArguments(sb, sb.Capacity);
+                Link.GetArguments(sb, sb.Capacity);
                 return sb.ToString();
             }
-            set => _link.SetArguments(value);
+            set => Link.SetArguments(value);
         }
 
         public string WorkingDirectory
@@ -49,20 +51,20 @@ namespace Assistant.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder(MaxPath);
-                _link.GetWorkingDirectory(sb, sb.Capacity);
+                Link.GetWorkingDirectory(sb, sb.Capacity);
                 return sb.ToString();
             }
-            set => _link.SetWorkingDirectory(value);
+            set => Link.SetWorkingDirectory(value);
         }
 
         public void Load(string path)
         {
-            ((IPersistFile)_link).Load(path, 0);
+            ((IPersistFile)Link).Load(path, 0);
         }
 
         public void Save(string path)
         {
-            ((IPersistFile)_link).Save(path, true);
+            ((IPersistFile)Link).Save(path, true);
         }
 
         public void Dispose()

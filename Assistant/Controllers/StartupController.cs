@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using Assistant.Utilities;
+using Serilog;
 using System.Collections.Generic;
 
 namespace Assistant.Controllers
@@ -108,7 +109,7 @@ namespace Assistant.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"CheckIfLegitimate failed: {ex}");
+                Log.Error(ex, "CheckIfLegitimate failed");
             }
         }
 
@@ -134,7 +135,7 @@ namespace Assistant.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"TryAddingToStartup failed: {ex}");
+                Log.Error(ex, "TryAddingToStartup failed");
                 if (showError)
                     MessageBox.Show(Localization.Strings.AutoStartEnableError, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -165,7 +166,7 @@ namespace Assistant.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"TryRemovingFromStartup failed: {ex}");
+                Log.Error(ex, "TryRemovingFromStartup failed");
                 if (showError)
                     MessageBox.Show(Localization.Strings.AutoStartDisableError, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -204,7 +205,7 @@ namespace Assistant.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"GetParserShortcuts failed: {ex}");
+                Log.Error(ex, "GetParserShortcuts failed");
                 return new List<FileInfo>();
             }
         }

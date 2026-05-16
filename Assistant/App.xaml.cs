@@ -24,6 +24,8 @@ namespace Assistant
         /// <param name="e"></param>
         protected override void OnStartup(StartupEventArgs e)
         {
+            Logging.Initialize("Assistant");
+
             // Initialize the eligibility
             StyleController.InitializeFollowEligibility();
 
@@ -113,6 +115,7 @@ namespace Assistant
         {
             StyleController.StopWatchers();
             BackupController.Quitting = true;
+            Logging.Shutdown();
         }
     }
 }

@@ -35,6 +35,8 @@ namespace Parser
 
             // Initialize the controllers and
             // display the main user form
+            Logging.Initialize("Parser");
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -44,6 +46,8 @@ namespace Parser
             LocalizationController.InitializeLocale(Properties.Settings.Default.LanguageCode);
             ProgramController.InitializeServerIp();
             Application.Run(new UI.Main());
+
+            Logging.Shutdown();
 
             // Don't let the garbage
             // collector touch the Mutex

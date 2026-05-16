@@ -25,7 +25,7 @@ namespace GTAWParser.Shared
         /// <summary>
         /// Initializes the locale from a saved code, falling back to English.
         /// </summary>
-        public static void InitializeLocale(string savedCode = null, Action<string> persist = null)
+        public static void InitializeLocale(string? savedCode = null, Action<string>? persist = null)
         {
             if (string.IsNullOrWhiteSpace(currentLanguage))
                 currentLanguage = string.IsNullOrWhiteSpace(savedCode) ? Languages[Language.English] : savedCode;
@@ -41,7 +41,7 @@ namespace GTAWParser.Shared
         /// Switches to the given language. If <paramref name="persist"/> is
         /// supplied, it is invoked with the new code so the caller can save it.
         /// </summary>
-        public static void SetLanguage(Language language, Action<string> persist = null)
+        public static void SetLanguage(Language language, Action<string>? persist = null)
         {
             if (!Languages.ContainsKey(language))
                 language = Language.English;
@@ -52,12 +52,12 @@ namespace GTAWParser.Shared
 
         public static string GetLanguageFromCode(string code)
         {
-            return Languages.FirstOrDefault(x => x.Value == code).Key.ToString();
+            return Languages.FirstOrDefault(x => x.Value == code).Key.ToString() ?? Language.English.ToString();
         }
 
         public static string GetCodeFromLanguage(Language language)
         {
-            return Languages.TryGetValue(language, out string code) ? code : Languages[Language.English];
+            return Languages.TryGetValue(language, out string? code) ? code : Languages[Language.English];
         }
     }
 }

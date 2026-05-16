@@ -13,6 +13,7 @@
     <LangVersion>latest</LangVersion>
     <Deterministic>true</Deterministic>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <Nullable>enable</Nullable>
     <NoWarn>CA1416</NoWarn>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>

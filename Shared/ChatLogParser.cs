@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Serilog;
 
 namespace GTAWParser.Shared
 {
@@ -20,7 +21,7 @@ namespace GTAWParser.Shared
         /// with the exception (or null when the chat_log field was absent) and
         /// returns empty.
         /// </summary>
-        public static string Parse(string directoryPath, Action<Exception> onError = null)
+        public static string Parse(string directoryPath, Action<Exception?>? onError = null)
         {
             try
             {
@@ -36,7 +37,7 @@ namespace GTAWParser.Shared
                     if (!reader.Read() || reader.TokenType != JsonTokenType.String)
                         break;
 
-                    string log = reader.GetString();
+                    string? log = reader.GetString();
                     if (string.IsNullOrWhiteSpace(log))
                         break;
 
@@ -53,7 +54,7 @@ namespace GTAWParser.Shared
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"ChatLogParser.Parse failed: {ex}");
+                Log.Error(ex, "ChatLogParser.Parse failed");
                 onError?.Invoke(ex);
                 return string.Empty;
             }

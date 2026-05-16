@@ -64,7 +64,7 @@ namespace Assistant.UI
             }
         }
 
-        private string _chatLog;
+        private string _chatLog = string.Empty;
         private bool _chatLogLoaded;
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace Assistant.UI
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Timer_Tick(object sender, EventArgs e)
+        private void Timer_Tick(object? sender, EventArgs e)
         {
             TimeLabel.Content = string.Format(Strings.CurrentTime, DateTime.Now.ToString("HH:mm:ss"));
         }
@@ -222,7 +222,7 @@ namespace Assistant.UI
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Criterion_CheckedChanged(object sender, RoutedEventArgs e)
+        private void Criterion_CheckedChanged(object? sender, RoutedEventArgs e)
         {
             if (_isLoading)
                 return;
@@ -230,7 +230,7 @@ namespace Assistant.UI
             string criterionName;
             try
             {
-                criterionName = ((System.Windows.Controls.CheckBox)sender).Name;
+                criterionName = ((System.Windows.Controls.CheckBox)sender!).Name;
             }
             catch
             {
@@ -239,7 +239,7 @@ namespace Assistant.UI
             if (string.IsNullOrWhiteSpace(criterionName))
                 return;
 
-            if (_filterCriteria.TryGetValue(criterionName, out FilterCriterion criterion))
+            if (_filterCriteria.TryGetValue(criterionName, out FilterCriterion? criterion))
                 criterion.Enabled = !criterion.Enabled;
 
             if (_chatLogLoaded)
@@ -275,7 +275,7 @@ namespace Assistant.UI
             string[] lines = logToCheck.Split('\n');
             StringBuilder filtered = new StringBuilder(logToCheck.Length);
 
-            List<string> wordsToCheck = null;
+            List<string>? wordsToCheck = null;
             if (_usingAdvancedFilter)
             {
                 wordsToCheck = GetWordsToFilterIn();
@@ -289,7 +289,7 @@ namespace Assistant.UI
                 }
 
                 for (int i = 0; i < wordsToCheck.Count; i++)
-                    wordsToCheck[i] = wordsToCheck[i]?.ToLower();
+                    wordsToCheck[i] = wordsToCheck[i]?.ToLower() ?? string.Empty;
             }
 
             foreach (string line in lines)
@@ -304,7 +304,7 @@ namespace Assistant.UI
                 {
                     string lineLower = lineForMatch.ToLower();
                     bool wordHit = false;
-                    foreach (string word in wordsToCheck)
+                    foreach (string word in wordsToCheck!)
                     {
                         if (!string.IsNullOrWhiteSpace(word) && lineLower.Contains(word))
                         {

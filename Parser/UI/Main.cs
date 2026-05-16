@@ -138,7 +138,7 @@ namespace Parser.UI
         /// <param name="e"></param>
         private void Browse_Click(object sender, EventArgs e)
         {
-            DirectoryBrowserDialog.SelectedPath = string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text) ? Path.GetPathRoot(Environment.SystemDirectory) : DirectoryPath.Text;
+            DirectoryBrowserDialog.SelectedPath = string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text) ? (Path.GetPathRoot(Environment.SystemDirectory) ?? string.Empty) : DirectoryPath.Text;
 
             bool validLocation = false;
             while (!validLocation)

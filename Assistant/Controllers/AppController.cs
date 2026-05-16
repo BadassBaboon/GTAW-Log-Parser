@@ -8,7 +8,7 @@ namespace Assistant.Controllers
 {
     public static class AppController
     {
-        public const string AssemblyVersion = "4.1.8";
+        public const string AssemblyVersion = "5.0.0";
         public static readonly string Version = $"v{AssemblyVersion}";
         public static bool IsBetaVersion => false;
         public static bool CanFollowSystemColor = false;
@@ -24,8 +24,8 @@ namespace Assistant.Controllers
         public static string ResourceDirectory => ChatLogScanner.ResourceDirectory;
         public static string LogLocation => ChatLogScanner.LogLocation;
 
-        public static readonly string ExecutablePath = Process.GetCurrentProcess().MainModule?.FileName;
-        public static readonly string StartupPath = Path.GetDirectoryName(ExecutablePath);
+        public static readonly string ExecutablePath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+        public static readonly string StartupPath = Path.GetDirectoryName(ExecutablePath) ?? string.Empty;
         public static string PreviousLog = string.Empty;
 
         /// <summary>

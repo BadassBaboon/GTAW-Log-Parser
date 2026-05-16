@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v5.0.0)'
+        required: true
+
+jobs:
+  release:
+    name: Build & publish single-file binaries
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore GTAW-Log-Parser.sln
+
+      - name: Run tests
+        run: dotnet test Shared.Tests/Shared.Tests.csproj --configuration Release --verbosity normal
+
+      - name: Publish Parser (framework-dependent)
+        run: dotnet publish Parser/Parser.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -o publish/parser-fdd
+
+      - name: Publish Parser (self-contained)
+        run: dotnet publish Parser/Parser.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/parser-sc
+
+      - name: Publish Assistant (framework-dependent)
+        run: dotnet publish Assistant/Assistant.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -o publish/assistant-fdd
+
+      - name: Publish Assistant (self-contained)
+        run: dotnet publish Assistant/Assistant.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/assistant-sc
+
+      - name: Stage release artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts | Out-Null
+          Copy-Item publish/parser-fdd/ParserMini.exe       artifacts/ParserMini-fdd-win-x64.exe
+          Copy-Item publish/parser-sc/ParserMini.exe        artifacts/ParserMini-selfcontained-win-x64.exe
+          Copy-Item publish/assistant-fdd/GTAWAssistant.exe artifacts/GTAWAssistant-fdd-win-x64.exe
+          Copy-Item publish/assistant-sc/GTAWAssistant.exe  artifacts/GTAWAssistant-selfcontained-win-x64.exe
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: ${{ github.event.inputs.tag || github.ref_name }}
+          body: |
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for the full release notes.
+
+            **Artifacts:**
+            - `*-fdd-win-x64.exe` — framework-dependent. Requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) installed.
+            - `*-selfcontained-win-x64.exe` — self-contained. Bigger but no runtime install needed.
+          files: artifacts/*.exe
+          draft: false
+          prerelease: false

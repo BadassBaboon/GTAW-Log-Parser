@@ -9,6 +9,7 @@ using System.Globalization;
 using Assistant.Controllers;
 using Assistant.Localization;
 using GTAWParser.Shared;
+using Serilog;
 using System.Windows.Controls;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -22,7 +23,7 @@ namespace Assistant.UI
     /// </summary>
     public partial class MainWindow
     {
-        private System.Windows.Forms.NotifyIcon _trayIcon;
+        private System.Windows.Forms.NotifyIcon _trayIcon = null!;
 
         private GitHubClient _client;
         private bool _isUpdateCheckRunning;
@@ -206,7 +207,7 @@ namespace Assistant.UI
         private void DirectoryPath_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(DirectoryPath.Text))
-                Browse_Click(this, null);
+                Browse_Click(this, null!);
         }
 
         /// <summary>
@@ -221,7 +222,7 @@ namespace Assistant.UI
             {
                 Description = @"RAGEMP Directory Path",
                 RootFolder = Environment.SpecialFolder.MyComputer,
-                SelectedPath = string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text) ? Path.GetPathRoot(Environment.SystemDirectory) : DirectoryPath.Text,
+                SelectedPath = string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text) ? (Path.GetPathRoot(Environment.SystemDirectory) ?? string.Empty) : DirectoryPath.Text,
                 ShowNewFolderButton = false
             };
 
@@ -470,13 +471,9 @@ namespace Assistant.UI
         }
 
         /// <summary>
-        /// Displays a message box
-        /// on the main UI thread
+        /// Displays a message box on the main UI thread; if the user clicks
+        /// Yes we open the releases page in their browser.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        /// <param name="buttons"></param>
-        /// <param name="image"></param>
         private void DisplayUpdateMessage(string text, string title, MessageBoxButton buttons, MessageBoxImage image)
         {
             ToggleControls(true);
@@ -486,6 +483,47 @@ namespace Assistant.UI
             {
                 if (MessageBox.Show(text, title, buttons, image) == MessageBoxResult.Yes)
                     OpenUrl(Strings.ReleasesLink);
+            });
+        }
+
+        /// <summary>
+        /// Offers an in-app update for the given release. Yes = download and
+        /// swap automatically; No = open the releases page; Cancel = nothing.
+        /// </summary>
+        private void OfferAutoUpdate(string text, string title, Release release)
+        {
+            ToggleControls(true);
+            StopUpdateIndicator();
+
+            Dispatcher?.Invoke(async () =>
+            {
+                MessageBoxResult choice = MessageBox.Show(
+                    text + "\n\nYes = update now (download + restart)\nNo = open releases page in browser",
+                    title,
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Information);
+
+                if (choice == MessageBoxResult.Yes)
+                {
+                    ToggleControls();
+                    UpdateCheckProgress.Visibility = Visibility.Visible;
+                    UpdateCheckProgress.IsActive = true;
+
+                    bool ok = await AutoUpdater.TryUpdateAsync(release).ConfigureAwait(true);
+                    if (ok)
+                    {
+                        System.Windows.Application.Current.Shutdown();
+                        return;
+                    }
+
+                    MessageBox.Show("Auto-update failed. Opening the releases page instead.",
+                        title, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    OpenUrl(Strings.ReleasesLink);
+                }
+                else if (choice == MessageBoxResult.No)
+                {
+                    OpenUrl(Strings.ReleasesLink);
+                }
             });
         }
 
@@ -502,12 +540,14 @@ namespace Assistant.UI
 
                 string newVersion = string.Empty;
                 bool isNewVersionBeta = false;
+                Release? matchedRelease = null;
 
                 // Prereleases are a go
                 if (!Properties.Settings.Default.IgnoreBetaVersions)
                 {
-                    newVersion = releases[0].TagName;
-                    isNewVersionBeta = releases[0].Prerelease;
+                    matchedRelease = releases[0];
+                    newVersion = matchedRelease.TagName;
+                    isNewVersionBeta = matchedRelease.Prerelease;
                 }
                 else
                 {
@@ -519,25 +559,31 @@ namespace Assistant.UI
                         if (release.Prerelease)
                             continue;
 
+                        matchedRelease = release;
                         newVersion = release.TagName;
                         isNewVersionBeta = release.Prerelease;
                         break;
                     }
                 }
 
-                if (AppController.IsBetaVersion && !isNewVersionBeta && string.CompareOrdinal(installedVersion, newVersion) == 0 || string.CompareOrdinal(installedVersion, newVersion) < 0)
+                if (matchedRelease != null && (AppController.IsBetaVersion && !isNewVersionBeta && string.CompareOrdinal(installedVersion, newVersion) == 0 || string.CompareOrdinal(installedVersion, newVersion) < 0))
                 { // Update available
                     if (Visibility != Visibility.Visible)
                         ResumeTrayStripMenuItem_Click(this, EventArgs.Empty);
 
-                    DisplayUpdateMessage(string.Format(Strings.UpdateAvailable, installedVersion + (AppController.IsBetaVersion ? " Beta" : string.Empty), newVersion + (isNewVersionBeta ? " Beta" : string.Empty)), Strings.UpdateAvailableTitle, MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    OfferAutoUpdate(
+                        string.Format(Strings.UpdateAvailable,
+                            installedVersion + (AppController.IsBetaVersion ? " Beta" : string.Empty),
+                            newVersion + (isNewVersionBeta ? " Beta" : string.Empty)),
+                        Strings.UpdateAvailableTitle,
+                        matchedRelease);
                 }
                 else if (manual) // Latest version
                     DisplayUpdateMessage(string.Format(Strings.RunningLatest, installedVersion + (AppController.IsBetaVersion ? " Beta" : string.Empty)), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"CheckForUpdates failed: {ex}");
+                Log.Error(ex, "CheckForUpdates failed");
                 if (manual)
                     DisplayUpdateMessage(string.Format(Strings.NoInternet, AppController.Version + (AppController.IsBetaVersion ? " Beta" : string.Empty)), Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -548,7 +594,7 @@ namespace Assistant.UI
         /// <summary>
         /// Opens the backup settings window
         /// </summary>
-        private static BackupSettingsWindow backupSettings;
+        private static BackupSettingsWindow? backupSettings;
         private void BackupSettingsToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text + "client_resources\\"))
@@ -593,7 +639,7 @@ namespace Assistant.UI
         /// <summary>
         /// Opens the chat log filter window
         /// </summary>
-        private static ChatLogFilterWindow chatLogFilter;
+        private static ChatLogFilterWindow? chatLogFilter;
         private void FilterChatLogToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text + "client_resources\\"))
@@ -614,6 +660,21 @@ namespace Assistant.UI
             }
 
             chatLogFilter.ShowDialog();
+        }
+
+        /// <summary>
+        /// Opens the live tail window
+        /// </summary>
+        private static LiveTailWindow? liveTail;
+        private void LiveTailToolStripMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (liveTail == null)
+            {
+                liveTail = new LiveTailWindow();
+                liveTail.Closed += (s, args) => liveTail = null;
+            }
+            liveTail.Show();
+            liveTail.Activate();
         }
 
         /// <summary>
@@ -684,7 +745,7 @@ namespace Assistant.UI
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void TrayIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void TrayIcon_MouseDoubleClick(object? sender, System.Windows.Forms.MouseEventArgs e)
         {
             ResumeTrayStripMenuItem_Click(sender, EventArgs.Empty);
         }
@@ -694,7 +755,7 @@ namespace Assistant.UI
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ResumeTrayStripMenuItem_Click(object sender, EventArgs e)
+        private void ResumeTrayStripMenuItem_Click(object? sender, EventArgs e)
         {
             if (isRestarting)
                 return;
@@ -711,7 +772,7 @@ namespace Assistant.UI
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ExitTrayToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ExitTrayToolStripMenuItem_Click(object? sender, EventArgs e)
         {
             BackupController.Quitting = true;
             StyleController.StopWatchers();
@@ -743,7 +804,7 @@ namespace Assistant.UI
         /// <summary>
         /// Opens the program settings window
         /// </summary>
-        private static ProgramSettingsWindow programSettings;
+        private static ProgramSettingsWindow? programSettings;
         private void OpenProgramSettings_Click(object sender, RoutedEventArgs e)
         {
             SaveSettings();

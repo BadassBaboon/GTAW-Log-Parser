@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using Assistant.Utilities;
 using Assistant.Localization;
+using Serilog;
 using System.Text.RegularExpressions;
 
 namespace Assistant.Controllers
@@ -15,12 +16,12 @@ namespace Assistant.Controllers
     {
         private const int GameClosedCheckTime = 10;
 
-        private static CancellationTokenSource _cts;
-        private static Task _backupTask;
-        private static Task _intervalTask;
+        private static CancellationTokenSource? _cts;
+        private static Task? _backupTask;
+        private static Task? _intervalTask;
 
-        private static string directoryPath;
-        private static string backupPath;
+        private static string directoryPath = string.Empty;
+        private static string backupPath = string.Empty;
         private static bool isGameRunning;
 
         private static bool _quitting;
@@ -81,7 +82,7 @@ namespace Assistant.Controllers
         public static void AbortAll()
         {
             try { _cts?.Cancel(); }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"AbortAll failed: {ex}"); }
+            catch (Exception ex) { Log.Error(ex, "AbortAll failed"); }
         }
 
         private static async Task BackupWorkerAsync(CancellationToken ct)
@@ -111,7 +112,7 @@ namespace Assistant.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"BackupWorker failed: {ex}");
+                Log.Error(ex, "BackupWorker failed");
             }
         }
 
@@ -135,7 +136,7 @@ namespace Assistant.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"IntervalWorker failed: {ex}");
+                Log.Error(ex, "IntervalWorker failed");
             }
         }
 
@@ -206,7 +207,7 @@ namespace Assistant.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"ParseThenSaveToFile failed: {ex}");
+                Log.Error(ex, "ParseThenSaveToFile failed");
                 if (gameClosed)
                     DisplayBackupResultMessage(Strings.BackupError, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }

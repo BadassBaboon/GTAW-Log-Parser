@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using Serilog;
 
 namespace GTAWParser.Shared
 {
@@ -70,7 +71,7 @@ namespace GTAWParser.Shared
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"InitializeServerIp failed: {ex}");
+                Log.Error(ex, "InitializeServerIp failed");
             }
         }
     }

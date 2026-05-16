@@ -3,6 +3,7 @@ using ControlzEx.Theming;
 using System.Windows;
 using Microsoft.Win32;
 using Assistant.Properties;
+using Serilog;
 using System.Collections.Generic;
 
 namespace Assistant.Controllers
@@ -49,27 +50,27 @@ namespace Assistant.Controllers
         {
             try
             {
-                object keyValue = Registry.GetValue(
+                object? keyValue = Registry.GetValue(
                     @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
                     "AppsUseLightTheme", null);
                 AppController.CanFollowSystemMode = keyValue != null;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"AppMode probe failed: {ex}");
+                Log.Error(ex, "AppMode probe failed");
                 AppController.CanFollowSystemMode = false;
             }
 
             try
             {
-                object keyValue = Registry.GetValue(
+                object? keyValue = Registry.GetValue(
                     @"HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM",
                     "ColorizationColor", null);
                 AppController.CanFollowSystemColor = keyValue != null && AppController.CanFollowSystemMode;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SystemAccent probe failed: {ex}");
+                Log.Error(ex, "SystemAccent probe failed");
                 AppController.CanFollowSystemColor = false;
             }
         }
@@ -89,14 +90,14 @@ namespace Assistant.Controllers
         {
             try
             {
-                object keyValue = Registry.GetValue(
+                object? keyValue = Registry.GetValue(
                     @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
                     "AppsUseLightTheme", null);
                 return keyValue != null && (uint)(int)keyValue == 0;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"GetAppMode failed: {ex}");
+                Log.Error(ex, "GetAppMode failed");
                 AppController.CanFollowSystemMode = false;
                 Settings.Default.FollowSystemMode = false;
                 Settings.Default.Save();
@@ -129,7 +130,7 @@ namespace Assistant.Controllers
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"ChangeTheme failed for {baseColor}.{accent}: {ex}");
+                    Log.Error(ex, "ChangeTheme failed for {BaseColor}.{Accent}", baseColor, accent);
                     ThemeManager.Current.ChangeTheme(Application.Current, $"{baseColor}.{(DarkMode ? DefaultDarkAccent : DefaultLightAccent)}");
                 }
             });

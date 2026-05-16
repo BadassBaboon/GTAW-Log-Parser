@@ -61,7 +61,7 @@ namespace Assistant.UI
             Properties.Settings.Default.FollowSystemMode = FollowSystemMode.IsChecked == true;
 
             StyleController.DarkMode = ToggleDarkMode.IsChecked == true;
-            StyleController.Style = Themes.SelectedItem.ToString();
+            StyleController.Style = Themes.SelectedItem?.ToString() ?? "Default";
 
             Properties.Settings.Default.Save();
         }
@@ -251,7 +251,7 @@ namespace Assistant.UI
             if (Themes.Items.Count < StyleController.ValidStyles.Count)
                 return;
 
-            StyleController.Style = Themes.SelectedItem.ToString();
+            StyleController.Style = Themes.SelectedItem?.ToString() ?? "Default";
             StyleController.UpdateTheme();
         }
 
