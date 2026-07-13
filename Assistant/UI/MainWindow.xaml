@@ -1,4 +1,4 @@
-﻿<Controls:MetroWindow x:Name="Main" x:Class="Assistant.UI.MainWindow"
+<Controls:MetroWindow x:Name="Main" x:Class="Assistant.UI.MainWindow"
                       xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                       xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -11,7 +11,7 @@
                       WindowStartupLocation="CenterScreen"
                       Closing="Main_Closing"
                       GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
-                      Title="GTA World Chat Log Assistant" Height="260" Width="638" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="GTA World Chat Log Assistant" Height="370" Width="640" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
     <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands>
@@ -63,30 +63,99 @@
             <MenuItem x:Name="ExitToolStripMenuItem" Header="Exit" Visibility="Hidden" Click="ExitToolStripMenuItem_Click"/>
         </Menu>
 
-        <Grid>
-            <Image x:Name="Logo" HorizontalAlignment="Left" Height="140" VerticalAlignment="Top" Width="288" Source="../Resources/Logo.png" Margin="10,0,0,0" Stretch="Fill"/>
-            <CheckBox x:Name="CheckForUpdatesOnStartup" Checked="CheckForUpdatesOnStartup_CheckedChanged" Unchecked="CheckForUpdatesOnStartup_CheckedChanged" Content="Check for updates automatically" HorizontalAlignment="Left" Margin="10,145,0,0" VerticalAlignment="Top" Width="288"/>
-            <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top" Width="288"/>
-            <Controls:ProgressRing x:Name="UpdateCheckProgress"
-                                   Width="16"
-                                   Height="16"
-                                   Foreground="Black"
-                                   IsActive="False"
-                                   HorizontalAlignment="Left"
-                                   VerticalAlignment="Top"
-                                   Visibility="Collapsed" Margin="210,145,0,0"/>
+        <TabControl x:Name="MainTabs">
+            <TabItem Header="Log Parser">
+                <Grid>
+                    <Image x:Name="Logo" HorizontalAlignment="Left" Height="140" VerticalAlignment="Top" Width="288" Source="../Resources/Logo.png" Margin="10,0,0,0" Stretch="Fill"/>
+                    <CheckBox x:Name="CheckForUpdatesOnStartup" Checked="CheckForUpdatesOnStartup_CheckedChanged" Unchecked="CheckForUpdatesOnStartup_CheckedChanged" Content="Check for updates automatically" HorizontalAlignment="Left" Margin="10,145,0,0" VerticalAlignment="Top" Width="288"/>
+                    <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top" Width="288"/>
+                    <CheckBox x:Name="BindTilde" Checked="BindTilde_CheckedChanged" Unchecked="BindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" HorizontalAlignment="Left" Margin="10,191,0,0" VerticalAlignment="Top" Width="288"/>
+                    <Controls:ProgressRing x:Name="UpdateCheckProgress"
+                                           Width="16"
+                                           Height="16"
+                                           Foreground="Black"
+                                           IsActive="False"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Top"
+                                           Visibility="Collapsed" Margin="210,145,0,0"/>
 
-            <Label x:Name="PathLabel" Content="RAGEMP Directory:" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,0,0,0" VerticalAlignment="Top"/>
-            <TextBlock x:Name="Version" TextWrapping="NoWrap" Text="v1.0.0" TextAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="549,5,0,0" Height="26"/>
-            <TextBox x:Name="DirectoryPath" MouseLeftButtonUp="DirectoryPath_MouseLeftButtonUp" TextChanged="DirectoryPath_TextChanged" HorizontalAlignment="Left" Height="23" Margin="303,23,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="241" IsReadOnly="True" VerticalScrollBarVisibility="Disabled"/>
-            <Button x:Name="Browse" Click="Browse_Click" Content="Browse" HorizontalAlignment="Left" Margin="549,23,0,0" VerticalAlignment="Top" Width="75"/>
-            <TextBox x:Name="Parsed" TextChanged="Parsed_TextChanged" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Height="79" Margin="303,54,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="321" AcceptsReturn="True"/>
-            <Label x:Name="StatusLabel" Content="Automatic Backup: OFF" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,133,0,0" VerticalAlignment="Top" Width="160"/>
-            <TextBlock TextWrapping="NoWrap" x:Name="Counter" Text="0 characters and 0 lines" TextAlignment="Right" HorizontalAlignment="Left" Margin="463,138,0,0" VerticalAlignment="Top" Width="161" Height="26"/>
+                    <Label x:Name="PathLabel" Content="RAGEMP Directory:" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,0,0,0" VerticalAlignment="Top"/>
+                    <TextBlock x:Name="Version" TextWrapping="NoWrap" Text="v1.0.0" TextAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="549,5,0,0" Height="26"/>
+                    <TextBox x:Name="DirectoryPath" MouseLeftButtonUp="DirectoryPath_MouseLeftButtonUp" TextChanged="DirectoryPath_TextChanged" HorizontalAlignment="Left" Height="23" Margin="303,23,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="241" IsReadOnly="True" VerticalScrollBarVisibility="Disabled"/>
+                    <Button x:Name="Browse" Click="Browse_Click" Content="Browse" HorizontalAlignment="Left" Margin="549,23,0,0" VerticalAlignment="Top" Width="75"/>
+                    <TextBox x:Name="Parsed" TextChanged="Parsed_TextChanged" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Height="79" Margin="303,54,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="321" AcceptsReturn="True"/>
+                    <Label x:Name="StatusLabel" Content="Automatic Backup: OFF" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,133,0,0" VerticalAlignment="Top" Width="160"/>
+                    <TextBlock TextWrapping="NoWrap" x:Name="Counter" Text="0 characters and 0 lines" TextAlignment="Right" HorizontalAlignment="Left" Margin="463,138,0,0" VerticalAlignment="Top" Width="161" Height="26"/>
+                    
+                    <Button x:Name="Parse" Click="Parse_Click" Content="Parse" HorizontalAlignment="Left" Margin="303,159,0,0" VerticalAlignment="Top" Width="75"/>
+                    <Button x:Name="SaveParsed" Click="SaveParsed_Click" Content="Save As" HorizontalAlignment="Left" Margin="383,159,0,0" VerticalAlignment="Top" Width="75"/>
+                    <Button x:Name="CopyParsedToClipboard" Click="CopyParsedToClipboard_Click" Content="Copy To Clipboard" HorizontalAlignment="Left" Margin="463,159,0,0" VerticalAlignment="Top" Width="161"/>
+                </Grid>
+            </TabItem>
             
-            <Button x:Name="Parse" Click="Parse_Click" Content="Parse" HorizontalAlignment="Left" Margin="303,159,0,0" VerticalAlignment="Top" Width="75"/>
-            <Button x:Name="SaveParsed" Click="SaveParsed_Click" Content="Save As" HorizontalAlignment="Left" Margin="383,159,0,0" VerticalAlignment="Top" Width="75"/>
-            <Button x:Name="CopyParsedToClipboard" Click="CopyParsedToClipboard_Click" Content="Copy To Clipboard" HorizontalAlignment="Left" Margin="463,159,0,0" VerticalAlignment="Top" Width="161"/>
-        </Grid>
+            <TabItem Header="AI Assistant">
+                <Grid>
+                    <!-- Left Column: Settings -->
+                    <Label Content="AI Mode:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="100"/>
+                    <ComboBox x:Name="AiMode" SelectionChanged="AiMode_SelectionChanged" HorizontalAlignment="Left" Margin="10,33,0,0" VerticalAlignment="Top" Width="260">
+                        <ComboBoxItem Content="Change Accent"/>
+                        <ComboBoxItem Content="Translate Language"/>
+                        <ComboBoxItem Content="Auto-Correct"/>
+                    </ComboBox>
+
+                    <Label x:Name="AiTargetLabel" Content="Target Accent (e.g. Texan Accent, Donald Trump):" HorizontalAlignment="Left" Margin="10,65,0,0" VerticalAlignment="Top" Width="280"/>
+                    <TextBox x:Name="AiTargetInput" TextChanged="AiTargetInput_TextChanged" HorizontalAlignment="Left" Margin="10,88,0,0" VerticalAlignment="Top" Width="260" Height="25" VerticalContentAlignment="Center"/>
+
+                    <Label Content="Output Length Constraint:" HorizontalAlignment="Left" Margin="10,120,0,0" VerticalAlignment="Top" Width="180"/>
+                    <ComboBox x:Name="AiLength" SelectionChanged="AiLength_SelectionChanged" HorizontalAlignment="Left" Margin="10,143,0,0" VerticalAlignment="Top" Width="260">
+                        <ComboBoxItem Content="No Constraint"/>
+                        <ComboBoxItem Content="Similar Length"/>
+                        <ComboBoxItem Content="Concise"/>
+                    </ComboBox>
+
+                    <Label Content="AI Model (Groq):" HorizontalAlignment="Left" Margin="10,175,0,0" VerticalAlignment="Top" Width="150"/>
+                    <ComboBox x:Name="AiModel" IsEditable="True" SelectionChanged="AiModel_SelectionChanged" TextBoxBase.TextChanged="AiModel_TextChanged" HorizontalAlignment="Left" Margin="10,198,0,0" VerticalAlignment="Top" Width="260">
+                        <ComboBoxItem Content="llama-3.1-8b-instant"/>
+                        <ComboBoxItem Content="llama-3.3-70b-versatile"/>
+                        <ComboBoxItem Content="qwen3-32b"/>
+                        <ComboBoxItem Content="deepseek-r1-distill"/>
+                        <ComboBoxItem Content="gpt-oss-120b"/>
+                    </ComboBox>
+                    
+                    <TextBlock x:Name="ModelInfoText" TextWrapping="Wrap" Foreground="Gray" FontSize="11" HorizontalAlignment="Left" Margin="10,230,0,0" VerticalAlignment="Top" Width="260" Height="50"/>
+
+                    <!-- Right Column: Hook & Keys -->
+                    <Label Content="Hotkey &amp; Setup:" HorizontalAlignment="Left" Margin="300,10,0,0" VerticalAlignment="Top" Width="150"/>
+                    
+                    <Button x:Name="RecordHotkeyBtn" Click="RecordHotkeyBtn_Click" Content="Shortcut: Ctrl+T" HorizontalAlignment="Left" Margin="300,33,0,0" VerticalAlignment="Top" Width="145" Height="26"/>
+                    <Button x:Name="ManageKeysBtn" Click="ManageKeysBtn_Click" Content="Manage API Keys" HorizontalAlignment="Left" Margin="455,33,0,0" VerticalAlignment="Top" Width="145" Height="26"/>
+
+                    <CheckBox x:Name="AiSoundEnabled" Checked="AiSoundEnabled_CheckedChanged" Unchecked="AiSoundEnabled_CheckedChanged" Content="Notification sound" HorizontalAlignment="Left" Margin="300,70,0,0" VerticalAlignment="Top" Width="280"/>
+                    <CheckBox x:Name="AiBindTilde" Checked="AiBindTilde_CheckedChanged" Unchecked="AiBindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" HorizontalAlignment="Left" Margin="300,92,0,0" VerticalAlignment="Top" Width="280"/>
+
+                    <Border BorderBrush="{DynamicResource MahApps.Brushes.Accent}" BorderThickness="0.5" CornerRadius="3" Margin="300,120,15,10" Padding="8">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Label Grid.Row="0" Content="Test Assistant:" FontWeight="Bold" Padding="0,0,0,5"/>
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TestInput" Grid.Column="0" Controls:TextBoxHelper.Watermark="Type something to test..." Height="25" VerticalContentAlignment="Center" Margin="0,0,5,0"/>
+                                <Button x:Name="TestRunBtn" Grid.Column="1" Content="Run" Click="TestRunBtn_Click" Width="60" Height="25"/>
+                            </Grid>
+                            <ScrollViewer Grid.Row="2" Margin="0,5,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <TextBlock x:Name="TestOutput" TextWrapping="Wrap" Foreground="#00AA00" FontSize="11"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </Controls:MetroWindow>

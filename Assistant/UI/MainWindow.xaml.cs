@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Octokit;
 using System.IO;
 using System.Windows;
@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Globalization;
 using Assistant.Controllers;
 using Assistant.Localization;
+using Assistant.Utilities;
 using GTAWParser.Shared;
 using Serilog;
 using System.Windows.Controls;
@@ -51,6 +52,7 @@ namespace Assistant.UI
 
             // Also checks for the RAGEMP directory on the first start
             LoadSettings();
+            InitializeAiAssistant();
 
             SetupServerList();
             BackupController.Initialize();
@@ -736,6 +738,7 @@ namespace Assistant.UI
             StyleController.StopWatchers();
             BackupController.Quitting = true;
             SaveSettings();
+            KeyboardHookManager.Stop();
 
             System.Windows.Application.Current.Shutdown();
         }
@@ -776,6 +779,7 @@ namespace Assistant.UI
         {
             BackupController.Quitting = true;
             StyleController.StopWatchers();
+            KeyboardHookManager.Stop();
 
             _trayIcon.Visible = false;
             isRestarting = true;
@@ -877,6 +881,405 @@ namespace Assistant.UI
         private void OpenForums_Click(object sender, RoutedEventArgs e)
         {
             OpenUrl(Strings.ForumsLink);
+        }
+
+        // ==========================================
+        // AI ASSISTANT & KEYBOARD HOOK INTEGRATIONS
+        // ==========================================
+
+        private bool _isRecordingHotkey;
+
+        private void InitializeAiAssistant()
+        {
+            this.PreviewKeyDown += MainWindow_PreviewKeyDown;
+
+            // Load settings
+            AiAssistantController.LoadSettings();
+
+            // Set up hotkey manager properties and start it
+            KeyboardHookManager.BindTildeToT = AiAssistantController.Settings.BindTildeEnabled;
+            KeyboardHookManager.ParseShortcutString(AiAssistantController.Settings.ShortcutKey);
+            KeyboardHookManager.OnShortcutPressed = OnAiShortcutTriggered;
+            KeyboardHookManager.Start();
+
+            // Sync controls
+            BindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
+            AiBindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
+            AiSoundEnabled.IsChecked = AiAssistantController.Settings.SoundEnabled;
+
+            switch (AiAssistantController.Settings.LengthConstraint)
+            {
+                case "NoConstraint":
+                    AiLength.SelectedIndex = 0;
+                    break;
+                case "Similar":
+                    AiLength.SelectedIndex = 1;
+                    break;
+                case "Concise":
+                    AiLength.SelectedIndex = 2;
+                    break;
+                default:
+                    AiLength.SelectedIndex = 1;
+                    break;
+            }
+
+            switch (AiAssistantController.Settings.Mode)
+            {
+                case "Accent":
+                    AiMode.SelectedIndex = 0;
+                    AiTargetInput.Text = AiAssistantController.Settings.TargetAccent;
+                    break;
+                case "Translate":
+                    AiMode.SelectedIndex = 1;
+                    AiTargetInput.Text = AiAssistantController.Settings.TargetLanguage;
+                    break;
+                case "Correct":
+                    AiMode.SelectedIndex = 2;
+                    AiTargetInput.Text = string.Empty;
+                    AiTargetInput.IsEnabled = false;
+                    AiTargetLabel.IsEnabled = false;
+                    break;
+            }
+
+            AiModel.Text = AiAssistantController.Settings.ActiveModel;
+            RecordHotkeyBtn.Content = $"Shortcut: {AiAssistantController.Settings.ShortcutKey}";
+            UpdateModelInfo();
+        }
+
+        private void PlaySound(bool success)
+        {
+            if (!AiAssistantController.Settings.SoundEnabled)
+                return;
+
+            try
+            {
+                string uriString = success 
+                    ? "pack://application:,,,/Resources/done.wav" 
+                    : "pack://application:,,,/Resources/failed.wav";
+
+                var resourceInfo = System.Windows.Application.GetResourceStream(new Uri(uriString));
+                if (resourceInfo != null)
+                {
+                    using (var player = new System.Media.SoundPlayer(resourceInfo.Stream))
+                    {
+                        player.Play();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to play notification sound from resources.");
+            }
+        }
+
+        private void OnAiShortcutTriggered()
+        {
+            Thread thread = new Thread(async () =>
+            {
+                try
+                {
+                    string oldClipboard = string.Empty;
+                    Dispatcher.Invoke(() =>
+                    {
+                        try { oldClipboard = Clipboard.GetText(); } catch { }
+                    });
+
+                    Dispatcher.Invoke(() => { try { Clipboard.Clear(); } catch { } });
+
+                    KeyboardHookManager.SimulateCopy();
+                    Thread.Sleep(150);
+
+                    string capturedText = string.Empty;
+                    Dispatcher.Invoke(() =>
+                    {
+                        try { capturedText = Clipboard.GetText(); } catch { }
+                    });
+
+                    if (string.IsNullOrWhiteSpace(capturedText))
+                    {
+                        KeyboardHookManager.SimulateSelectAllAndCopy();
+                        Thread.Sleep(150);
+                        Dispatcher.Invoke(() =>
+                        {
+                            try { capturedText = Clipboard.GetText(); } catch { }
+                        });
+                    }
+
+                    if (string.IsNullOrWhiteSpace(capturedText))
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            try { Clipboard.SetText(oldClipboard); } catch { }
+                        });
+                        PlaySound(false);
+                        return;
+                    }
+
+                    // Process text via Groq
+                    string result = await AiAssistantController.ProcessTextAsync(capturedText);
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        try { Clipboard.SetText(result); } catch { }
+                    });
+
+                    KeyboardHookManager.SimulatePaste();
+                    Thread.Sleep(150);
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        try { Clipboard.SetText(oldClipboard); } catch { }
+                    });
+
+                    PlaySound(true);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "AI Assistant processing trigger failed.");
+                    PlaySound(false);
+                }
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+        }
+
+        private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (_isRecordingHotkey)
+            {
+                e.Handled = true;
+
+                if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl ||
+                    e.Key == Key.LeftAlt || e.Key == Key.RightAlt ||
+                    e.Key == Key.LeftShift || e.Key == Key.RightShift ||
+                    e.Key == Key.LWin || e.Key == Key.RWin)
+                {
+                    return;
+                }
+
+                if (e.Key == Key.Escape)
+                {
+                    _isRecordingHotkey = false;
+                    RecordHotkeyBtn.Content = $"Shortcut: {AiAssistantController.Settings.ShortcutKey}";
+                    return;
+                }
+
+                var modifiers = Keyboard.Modifiers;
+                List<string> parts = new List<string>();
+                if ((modifiers & ModifierKeys.Control) != 0) parts.Add("Ctrl");
+                if ((modifiers & ModifierKeys.Alt) != 0) parts.Add("Alt");
+                if ((modifiers & ModifierKeys.Shift) != 0) parts.Add("Shift");
+
+                string keyName = e.Key.ToString();
+                if (e.Key >= Key.D0 && e.Key <= Key.D9)
+                    keyName = ((int)e.Key - (int)Key.D0).ToString();
+                else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
+                    keyName = ((int)e.Key - (int)Key.NumPad0).ToString();
+
+                parts.Add(keyName);
+
+                string hotkey = string.Join("+", parts);
+                AiAssistantController.Settings.ShortcutKey = hotkey;
+                AiAssistantController.SaveSettings();
+
+                KeyboardHookManager.ParseShortcutString(hotkey);
+
+                _isRecordingHotkey = false;
+                RecordHotkeyBtn.Content = $"Shortcut: {hotkey}";
+            }
+        }
+
+        private void BindTilde_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = BindTilde.IsChecked == true;
+            AiAssistantController.Settings.BindTildeEnabled = isChecked;
+            AiAssistantController.SaveSettings();
+
+            KeyboardHookManager.BindTildeToT = isChecked;
+
+            if (AiBindTilde != null && AiBindTilde.IsChecked != isChecked)
+            {
+                AiBindTilde.IsChecked = isChecked;
+            }
+        }
+
+        private void AiBindTilde_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = AiBindTilde.IsChecked == true;
+            AiAssistantController.Settings.BindTildeEnabled = isChecked;
+            AiAssistantController.SaveSettings();
+
+            KeyboardHookManager.BindTildeToT = isChecked;
+
+            if (BindTilde != null && BindTilde.IsChecked != isChecked)
+            {
+                BindTilde.IsChecked = isChecked;
+            }
+        }
+
+        private void AiSoundEnabled_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            AiAssistantController.Settings.SoundEnabled = AiSoundEnabled.IsChecked == true;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiLength_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AiLength == null || AiAssistantController.Settings == null) return;
+
+            string constraint = "Similar";
+            if (AiLength.SelectedIndex == 0) constraint = "NoConstraint";
+            else if (AiLength.SelectedIndex == 1) constraint = "Similar";
+            else if (AiLength.SelectedIndex == 2) constraint = "Concise";
+
+            AiAssistantController.Settings.LengthConstraint = constraint;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AiMode == null || AiTargetInput == null || AiTargetLabel == null) return;
+
+            string mode = "Accent";
+            if (AiMode.SelectedIndex == 1) mode = "Translate";
+            else if (AiMode.SelectedIndex == 2) mode = "Correct";
+
+            AiAssistantController.Settings.Mode = mode;
+            AiAssistantController.SaveSettings();
+
+            if (mode == "Accent")
+            {
+                AiTargetInput.IsEnabled = true;
+                AiTargetLabel.IsEnabled = true;
+                AiTargetLabel.Content = "Target Accent (e.g. Texan Accent, Donald Trump):";
+                AiTargetInput.Text = AiAssistantController.Settings.TargetAccent;
+            }
+            else if (mode == "Translate")
+            {
+                AiTargetInput.IsEnabled = true;
+                AiTargetLabel.IsEnabled = true;
+                AiTargetLabel.Content = "Target Language (e.g. Spanish, French, Italian):";
+                AiTargetInput.Text = AiAssistantController.Settings.TargetLanguage;
+            }
+            else // Correct
+            {
+                AiTargetInput.Text = string.Empty;
+                AiTargetInput.IsEnabled = false;
+                AiTargetLabel.IsEnabled = false;
+                AiTargetLabel.Content = "Target Accent / Language:";
+            }
+        }
+
+        private void AiTargetInput_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (AiAssistantController.Settings == null) return;
+
+            if (AiAssistantController.Settings.Mode == "Accent")
+            {
+                AiAssistantController.Settings.TargetAccent = AiTargetInput.Text;
+            }
+            else if (AiAssistantController.Settings.Mode == "Translate")
+            {
+                AiAssistantController.Settings.TargetLanguage = AiTargetInput.Text;
+            }
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiModel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AiModel == null || AiModel.SelectedItem == null) return;
+            if (AiModel.SelectedItem is ComboBoxItem item && item.Content != null)
+            {
+                string model = item.Content.ToString() ?? string.Empty;
+                AiAssistantController.Settings.ActiveModel = model;
+                AiAssistantController.SaveSettings();
+                UpdateModelInfo();
+            }
+        }
+
+        private void AiModel_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (AiModel == null || AiAssistantController.Settings == null) return;
+            string model = AiModel.Text.Trim();
+            if (!string.IsNullOrEmpty(model))
+            {
+                AiAssistantController.Settings.ActiveModel = model;
+                AiAssistantController.SaveSettings();
+                UpdateModelInfo();
+            }
+        }
+
+        private void UpdateModelInfo()
+        {
+            if (ModelInfoText == null) return;
+
+            string model = AiModel.Text.Trim();
+            string info;
+            switch (model)
+            {
+                case "llama-3.1-8b-instant":
+                    info = "llama-3.1-8b-instant:\nQuality: Good\nSpeed: Extremely Fast\nDaily Limit: Very High (~14k req/day)\nRecommendation: Default / Best for most users.";
+                    break;
+                case "llama-3.3-70b-versatile":
+                    info = "llama-3.3-70b-versatile:\nQuality: Excellent\nSpeed: Fast\nDaily Limit: Medium (~1,000 req/day)\nRecommendation: High Quality option.";
+                    break;
+                case "qwen3-32b":
+                    info = "qwen3-32b:\nQuality: Very Good\nSpeed: Fast\nDaily Limit: High\nRecommendation: Great for creative style.";
+                    break;
+                case "deepseek-r1-distill":
+                    info = "deepseek-r1-distill:\nQuality: Excellent Reasoning\nSpeed: Fast\nDaily Limit: Medium-High\nRecommendation: Good for complex personas.";
+                    break;
+                case "gpt-oss-120b":
+                    info = "gpt-oss-120b:\nQuality: Good\nSpeed: Fast\nDaily Limit: High\nRecommendation: Fun variety.";
+                    break;
+                default:
+                    info = "Custom Model:\nEnsure this model is supported on Groq. Limits and speeds depend on the specific model.";
+                    break;
+            }
+            ModelInfoText.Text = info;
+        }
+
+        private void RecordHotkeyBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _isRecordingHotkey = true;
+            RecordHotkeyBtn.Content = "Press key combo (Esc to cancel)...";
+        }
+
+        private void ManageKeysBtn_Click(object sender, RoutedEventArgs e)
+        {
+            GroqApiWindow keysWindow = new GroqApiWindow();
+            keysWindow.Owner = this;
+            keysWindow.ShowDialog();
+        }
+
+        private async void TestRunBtn_Click(object sender, RoutedEventArgs e)
+        {
+            string input = TestInput.Text;
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                TestOutput.Text = "Please enter some text to test.";
+                return;
+            }
+
+            TestOutput.Text = "Processing...";
+            TestRunBtn.IsEnabled = false;
+
+            try
+            {
+                string result = await AiAssistantController.ProcessTextAsync(input);
+                TestOutput.Text = result;
+                PlaySound(true);
+            }
+            catch (Exception ex)
+            {
+                TestOutput.Text = $"Error: {ex.Message}";
+                PlaySound(false);
+            }
+            finally
+            {
+                TestRunBtn.IsEnabled = true;
+            }
         }
     }
 }
