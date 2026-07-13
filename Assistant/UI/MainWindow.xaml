@@ -122,7 +122,13 @@
                         <ComboBoxItem Content="gpt-oss-120b"/>
                     </ComboBox>
                     
-                    <TextBlock x:Name="ModelInfoText" TextWrapping="Wrap" Foreground="Gray" FontSize="11" HorizontalAlignment="Left" Margin="10,230,0,0" VerticalAlignment="Top" Width="260" Height="50"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="10,228,0,0" VerticalAlignment="Top">
+                        <Label Content="Temperature:" Width="82" Padding="0,0,0,0" VerticalContentAlignment="Center"/>
+                        <Slider x:Name="AiTemperature" ValueChanged="AiTemperature_ValueChanged" Minimum="0" Maximum="1" TickFrequency="0.1" IsSnapToTickEnabled="True" Width="140" VerticalAlignment="Center"/>
+                        <Label x:Name="AiTemperatureLabel" Content="0.6" Width="30" Padding="4,0,0,0" VerticalContentAlignment="Center"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="ModelInfoText" TextWrapping="Wrap" Foreground="Gray" FontSize="11" HorizontalAlignment="Left" Margin="10,255,0,0" VerticalAlignment="Top" Width="260" Height="30"/>
 
                     <!-- Right Column: Hook & Keys -->
                     <Label Content="Hotkey &amp; Setup:" HorizontalAlignment="Left" Margin="300,10,0,0" VerticalAlignment="Top" Width="150"/>

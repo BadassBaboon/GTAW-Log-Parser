@@ -907,6 +907,8 @@ namespace Assistant.UI
             AiBindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
             AiSoundEnabled.IsChecked = AiAssistantController.Settings.SoundEnabled;
             AiPhoneticEnabled.IsChecked = AiAssistantController.Settings.PhoneticEnabled;
+            AiTemperature.Value = AiAssistantController.Settings.Temperature;
+            AiTemperatureLabel.Content = AiAssistantController.Settings.Temperature.ToString("0.0");
 
             switch (AiAssistantController.Settings.LengthConstraint)
             {
@@ -1128,6 +1130,15 @@ namespace Assistant.UI
         private void AiPhoneticEnabled_CheckedChanged(object sender, RoutedEventArgs e)
         {
             AiAssistantController.Settings.PhoneticEnabled = AiPhoneticEnabled.IsChecked == true;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiTemperature_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (AiTemperatureLabel == null || AiAssistantController.Settings == null) return;
+            double val = Math.Round(e.NewValue, 1);
+            AiTemperatureLabel.Content = val.ToString("0.0");
+            AiAssistantController.Settings.Temperature = val;
             AiAssistantController.SaveSettings();
         }
 
