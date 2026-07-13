@@ -187,23 +187,16 @@ namespace Assistant.Controllers
                     phoneticInstruction = "- Use standard English spelling. Do not write words phonetically, but adjust vocabulary and sentence structure to fit the voice.\n";
                 }
 
-                systemPrompt = $"You are an expert at mimicking the exact speaking style of {Settings.TargetAccent}.\n\n" +
-                               $"TASK: Rewrite the user's text so it sounds like it was spoken by that character/person. " +
-                               $"Capture their unique voice, vocabulary, rhythm, phrasing, attitude, and common expressions.\n\n" +
+                systemPrompt = $"You are a text restyling API. You rewrite input text into a specified dialect or style.\n\n" +
                                $"RULES:\n" +
-                               $"- Return ONLY the rewritten text. No explanations, no quotes, no extra words.\n" +
-                               $"- Keep the core meaning and intent of every sentence exactly the same.\n" +
+                               $"1. DO NOT reply to the text. You are translating it, not participating in a conversation.\n" +
+                               $"2. NEVER start the output with a question (e.g. 'Whaddaya mean?') unless the original text starts with a question.\n" +
+                               $"3. DO NOT add conversational reactions, filler, or cartoonish catchphrases (e.g. 'Fuggedaboutit').\n" +
+                               $"4. DO NOT change the meaning. Preserve the original intent and core message of every sentence.\n" +
+                               $"5. BE AUTHENTIC. Avoid caricatures or extreme stereotypes. Capture the natural cadence of the target voice.\n" +
+                               $"6. NO AI SLOP. Avoid words like 'delve', 'tapestry', or flowery language. Use natural contractions and varied sentence lengths.\n" +
                                constraintRules +
-                               phoneticInstruction +
-                               $"\nCHARACTER GUIDELINES for {Settings.TargetAccent}:\n" +
-                               $"- Speak exactly like the real character would in casual conversation.\n" +
-                               $"- Use their signature phrasing, slang, tone, and speech patterns.\n" +
-                               $"- Avoid over-the-top stereotypes or stand-up comedy impressions.\n" +
-                               $"- Do not add fake stutters, excessive catchphrases, or cartoonish exaggerations unless that is genuinely how the character speaks.\n" +
-                               $"- Sound natural and in-character, not like someone doing an impression.\n\n" +
-                               $"WRITING QUALITY:\n" +
-                               $"- Use natural contractions and sentence rhythm.\n" +
-                               $"- No AI slop, no flowery language, no modern internet slang unless the character uses it.";
+                               phoneticInstruction;
             }
             else if (Settings.Mode == "Translate")
             {
@@ -275,7 +268,7 @@ namespace Assistant.Controllers
                         messages = new[]
                         {
                             new { role = "system", content = systemPrompt },
-                            new { role = "user", content = textToProcess }
+                            new { role = "user", content = $"Target Style: {Settings.TargetAccent}\nOriginal Text: \"{textToProcess}\"\nRewritten Text:" }
                         },
                         temperature = Settings.Temperature
                     };
