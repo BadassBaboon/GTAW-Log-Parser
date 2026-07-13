@@ -906,6 +906,7 @@ namespace Assistant.UI
             BindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
             AiBindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
             AiSoundEnabled.IsChecked = AiAssistantController.Settings.SoundEnabled;
+            AiPhoneticEnabled.IsChecked = AiAssistantController.Settings.PhoneticEnabled;
 
             switch (AiAssistantController.Settings.LengthConstraint)
             {
@@ -1121,6 +1122,12 @@ namespace Assistant.UI
         private void AiSoundEnabled_CheckedChanged(object sender, RoutedEventArgs e)
         {
             AiAssistantController.Settings.SoundEnabled = AiSoundEnabled.IsChecked == true;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiPhoneticEnabled_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            AiAssistantController.Settings.PhoneticEnabled = AiPhoneticEnabled.IsChecked == true;
             AiAssistantController.SaveSettings();
         }
 

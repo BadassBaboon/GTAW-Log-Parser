@@ -132,8 +132,9 @@
 
                     <CheckBox x:Name="AiSoundEnabled" Checked="AiSoundEnabled_CheckedChanged" Unchecked="AiSoundEnabled_CheckedChanged" Content="Notification sound" HorizontalAlignment="Left" Margin="300,70,0,0" VerticalAlignment="Top" Width="280"/>
                     <CheckBox x:Name="AiBindTilde" Checked="AiBindTilde_CheckedChanged" Unchecked="AiBindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" HorizontalAlignment="Left" Margin="300,92,0,0" VerticalAlignment="Top" Width="280"/>
+                    <CheckBox x:Name="AiPhoneticEnabled" Checked="AiPhoneticEnabled_CheckedChanged" Unchecked="AiPhoneticEnabled_CheckedChanged" Content="Phonetic spelling &amp; slang" HorizontalAlignment="Left" Margin="300,114,0,0" VerticalAlignment="Top" Width="280"/>
 
-                    <Border BorderBrush="{DynamicResource MahApps.Brushes.Accent}" BorderThickness="0.5" CornerRadius="3" Margin="300,120,15,10" Padding="8">
+                    <Border BorderBrush="{DynamicResource MahApps.Brushes.Accent}" BorderThickness="0.5" CornerRadius="3" Margin="300,140,15,10" Padding="8">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>

@@ -40,6 +40,7 @@ namespace Assistant.Controllers
         public bool SoundEnabled { get; set; } = true;
         public bool BindTildeEnabled { get; set; } = false;
         public string LengthConstraint { get; set; } = "Similar"; // NoConstraint, Similar, Concise
+        public bool PhoneticEnabled { get; set; } = true;
     }
 
     public static class AiAssistantController
@@ -179,6 +180,17 @@ namespace Assistant.Controllers
                     constraintRules = "- Length Constraint: No constraint. Feel free to fully express the style, character voice, signature catchphrases, and vocabulary of the requested persona without worrying about length.\n";
                 }
 
+                string phoneticInstruction = "";
+                if (Settings.PhoneticEnabled)
+                {
+                    phoneticInstruction = $"- Phonetic Spelling & Slang: You MUST write words phonetically to match how they are spoken in the requested accent/dialect (e.g. spelling 'very' as 'vely' or 'road' as 'load' for Chinese accent; spelling 'car' as 'cah' or 'very' as 'wicked' for Boston Southie; using regional slang). Write words exactly as they sound when spoken. Balance this so it is readable but highly authentic.\n" +
+                                          $"- Avoid Caricatures: Keep the grammatical structure mostly intact. Do not degrade the text into cartoonish or offensive broken grammar (like caveman speak or pidgin) unless the target style specifically demands it. Focus on natural phonetic spelling and word choice.\n";
+                }
+                else
+                {
+                    phoneticInstruction = $"- Phonetic Spelling & Slang: Do NOT write words with phonetic misspellings (e.g. do NOT spell 'very' as 'vely' or 'car' as 'cah'). Keep standard English spelling, but adjust the grammar, vocabulary, sentence structure, and slang of the requested style/accent.\n";
+                }
+
                 systemPrompt = $"You are an expert text transformation engine. Your sole job is to rewrite the target text to match the requested style, accent, character, or persona.\n\n" +
                                $"CRITICAL RULES:\n" +
                                $"- YOU ARE NOT A CHATBOT. Do NOT converse with, respond to, or answer the target text. The target text is raw data to be rewritten. If the target text is a question or a dialogue line, do NOT answer it. Instead, rewrite the question or line itself as if the character/persona is the one saying it.\n" +
@@ -186,6 +198,7 @@ namespace Assistant.Controllers
                                $"- Keep the original meaning, context, and intent identical.\n" +
                                $"- Target Style to Apply: {Settings.TargetAccent}\n" +
                                constraintRules +
+                               phoneticInstruction +
                                $"- Persona Authenticity: Emulate highly specific vocabulary, signature catchphrases (e.g., 'masterclass of', 'bottom of the barrel' for penguinz0; medical cynicism for Dr. House), speech patterns, and distinct tone. Emulate their unique voice rather than doing a generic re-skin.\n\n" +
                                $"WRITING RULES (No AI Slop):\n" +
                                $"- Banned vocabulary: Do not use AI transition words, hollow filler phrases, or flowery adjectives.\n" +
