@@ -170,70 +170,67 @@ namespace Assistant.Controllers
                 string constraintRules = "";
                 if (Settings.LengthConstraint == "Similar")
                 {
-                    constraintRules = "- Maintain similar length and structure to the original.\n";
+                    constraintRules = "Maintain similar length. ";
                 }
                 else if (Settings.LengthConstraint == "Concise")
                 {
-                    constraintRules = "- Keep the output short and punchy.\n";
+                    constraintRules = "Keep it short and punchy. ";
                 }
 
                 string phoneticInstruction = "";
                 if (Settings.PhoneticEnabled)
                 {
-                    phoneticInstruction = "- Write words phonetically where this character/accent would pronounce them differently (spell words how they sound when spoken).\n";
+                    phoneticInstruction = "Write words phonetically where they would pronounce them differently (spell words how they sound when spoken). ";
                 }
                 else
                 {
-                    phoneticInstruction = "- Use standard English spelling. Do not write words phonetically, but adjust vocabulary and sentence structure to fit the voice.\n";
+                    phoneticInstruction = "Use standard English spelling. Do not write words phonetically, but adjust vocabulary and syntax. ";
                 }
 
-                systemPrompt = $"You are a text restyling API. You rewrite input text into a specified dialect or style.\n\n" +
-                               $"RULES:\n" +
-                               $"1. DO NOT reply to the text. You are translating it, not participating in a conversation.\n" +
-                               $"2. NEVER start the output with a question (e.g. 'Whaddaya mean?') unless the original text starts with a question.\n" +
-                               $"3. DO NOT add conversational reactions, filler, or cartoonish catchphrases (e.g. 'Fuggedaboutit').\n" +
-                               $"4. DO NOT change the meaning. Preserve the original intent and core message of every sentence.\n" +
-                               $"5. BE AUTHENTIC. Avoid caricatures or extreme stereotypes. Capture the natural cadence of the target voice.\n" +
-                               $"6. NO AI SLOP. Avoid words like 'delve', 'tapestry', or flowery language. Use natural contractions and varied sentence lengths.\n" +
+                systemPrompt = $"Rewrite the text in the requested style. " +
+                               $"RULES: DO NOT write conversational replies. " +
+                               $"DO NOT start with 'Whaddaya mean' or caricature phrases like 'Fuggedaboutit'. " +
+                               $"Paraphrase deeply to match how the character would express the underlying thought in a realistic conversation. " +
+                               $"Use natural profanity or complaints (like headaches/stress) if it fits. " +
                                constraintRules +
-                               phoneticInstruction;
+                               phoneticInstruction +
+                               $"No AI slop, no flowery language.";
             }
             else if (Settings.Mode == "Translate")
             {
                 string constraintRules = "";
                 if (Settings.LengthConstraint == "Similar")
                 {
-                    constraintRules = "- Keep the translation close to the original length and sentence structure.\n";
+                    constraintRules = "Keep translation close to original length. ";
                 }
                 else if (Settings.LengthConstraint == "Concise")
                 {
-                    constraintRules = "- Keep the translation as short and concise as possible.\n";
+                    constraintRules = "Keep translation as short as possible. ";
                 }
 
-                systemPrompt = $"You are a translation engine. Translate the user's text into {Settings.TargetLanguage}.\n\n" +
-                               $"RULES:\n" +
-                               $"- Return ONLY the translation. No explanations, no quotes, no extra words.\n" +
+                systemPrompt = $"Translate the text into the requested language. " +
+                               $"RULES: Return ONLY the translation. " +
+                               $"Do not explain or add commentary. " +
                                constraintRules +
-                               $"- Sound natural to a native speaker. Avoid flowery or AI-sounding language.";
+                               $"Sound natural to a native speaker.";
             }
             else // Correct
             {
                 string constraintRules = "";
                 if (Settings.LengthConstraint == "Similar")
                 {
-                    constraintRules = "- Keep the corrected text approximately the same length.\n";
+                    constraintRules = "Keep corrected text same length. ";
                 }
                 else if (Settings.LengthConstraint == "Concise")
                 {
-                    constraintRules = "- Make the corrected text concise, clear, and direct.\n";
+                    constraintRules = "Make corrected text concise. ";
                 }
 
-                systemPrompt = $"You are a grammar and spelling correction engine. Fix errors in the user's text while keeping the tone and style identical.\n\n" +
-                               $"RULES:\n" +
-                               $"- Return ONLY the corrected text. No explanations, no quotes, no extra words.\n" +
-                               $"- If the text has no errors, return it exactly as-is.\n" +
+                systemPrompt = $"Correct grammar and spelling errors in the text while keeping tone and style identical. " +
+                               $"RULES: Return ONLY the corrected text. " +
+                               $"If there are no errors, return the text exactly as-is. " +
                                constraintRules +
-                               $"- Correct mistakes invisibly without polishing away the voice.";
+                               $"Do not explain.";
             }
 
             // 3. Request Loop with Key Rotation
@@ -262,13 +259,27 @@ namespace Assistant.Controllers
 
                 try
                 {
+                    string userPromptContent = "";
+                    if (Settings.Mode == "Accent")
+                    {
+                        userPromptContent = $"Style: {Settings.TargetAccent}\nOriginal: {textToProcess}\nTranslation:";
+                    }
+                    else if (Settings.Mode == "Translate")
+                    {
+                        userPromptContent = $"Language: {Settings.TargetLanguage}\nOriginal: {textToProcess}\nTranslation:";
+                    }
+                    else // Correct
+                    {
+                        userPromptContent = $"Original: {textToProcess}\nCorrected:";
+                    }
+
                     var requestBody = new
                     {
                         model = Settings.ActiveModel,
                         messages = new[]
                         {
                             new { role = "system", content = systemPrompt },
-                            new { role = "user", content = $"Target Style: {Settings.TargetAccent}\nOriginal Text: \"{textToProcess}\"\nRewritten Text:" }
+                            new { role = "user", content = userPromptContent }
                         },
                         temperature = Settings.Temperature
                     };
