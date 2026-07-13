@@ -160,29 +160,97 @@ namespace Assistant.Controllers
                 textToProcess = match.Groups[2].Value;
             }
 
-            // 2. Build system and user messages based on mode
-            string lengthInstruction = "";
-            if (Settings.LengthConstraint == "Similar")
-            {
-                lengthInstruction = " CRITICAL: Keep the output text approximately the same length as the original input text. Do not add excessive detail or make it significantly longer.";
-            }
-            else if (Settings.LengthConstraint == "Concise")
-            {
-                lengthInstruction = " CRITICAL: Keep the output text concise, short, and to the point.";
-            }
-
+            // 2. Build system prompt based on mode and length constraints
             string systemPrompt = "";
+
             if (Settings.Mode == "Accent")
             {
-                systemPrompt = $"You are a text rewrite assistant. Rewrite the user's text to match the requested accent, style, character, or persona. Return ONLY the rewritten text, with no introductory text, no explanations, no quotes around the output, and no commentary. Keep the original meaning and context. Style to apply: {Settings.TargetAccent}.{lengthInstruction}";
+                if (Settings.LengthConstraint == "Similar")
+                {
+                    systemPrompt = $"You are an expert text rewrite assistant. Your job is to rewrite the user's text to match the requested accent, style, character, or persona, while keeping the output length similar to the input.\n" +
+                                   $"Instructions:\n" +
+                                   $"- Return ONLY the rewritten text, with no introductory text, no explanations, no quotes around the output, and no commentary.\n" +
+                                   $"- Keep the original meaning and context.\n" +
+                                   $"- Style to apply: {Settings.TargetAccent}\n" +
+                                   $"- Length Constraint: Keep the output length reasonably close to the original input (no more than 20-30% longer). Balance this by retaining the most iconic catchphrases, slang, vocal tics, and characteristic tone of the requested style so it sounds authentic but remains compact.\n\n" +
+                                   $"Here are examples of how to apply a persona while keeping the length similar:\n" +
+                                   $"Example 1:\n" +
+                                   $"Input: \"I am going to the store to buy some milk.\"\n" +
+                                   $"Requested Style: \"Pirate\"\n" +
+                                   $"Output: \"I be headin' to the store for some milk, matey.\"\n\n" +
+                                   $"Example 2:\n" +
+                                   $"Input: \"Today I saw this woman, turns out it was a man.\"\n" +
+                                   $"Requested Style: \"Donald Trump\"\n" +
+                                   $"Output: \"I saw this person today, folks. Turns out, total fake, it was a man. Believe me.\"";
+                }
+                else if (Settings.LengthConstraint == "Concise")
+                {
+                    systemPrompt = $"You are an expert text rewrite assistant. Your job is to rewrite the user's text to match the requested accent, style, character, or persona, making the output short and punchy.\n" +
+                                   $"Instructions:\n" +
+                                   $"- Return ONLY the rewritten text, with no introductory text, no explanations, no quotes around the output, and no commentary.\n" +
+                                   $"- Keep the original meaning and context.\n" +
+                                   $"- Style to apply: {Settings.TargetAccent}\n" +
+                                   $"- Length Constraint: Keep the output as short, concise, and to the point as possible, while still using the signature vocabulary and tone of the requested style.\n\n" +
+                                   $"Here are examples of applying a style concisely:\n" +
+                                   $"Example 1:\n" +
+                                   $"Input: \"I am going to the store to buy some milk.\"\n" +
+                                   $"Requested Style: \"Pirate\"\n" +
+                                   $"Output: \"Off to buy milk, matey!\"\n\n" +
+                                   $"Example 2:\n" +
+                                   $"Input: \"Today I saw this woman, turns out it was a man.\"\n" +
+                                   $"Requested Style: \"Donald Trump\"\n" +
+                                   $"Output: \"Saw a person today. Total fake. It was a man, believe me.\"";
+                }
+                else // NoConstraint
+                {
+                    systemPrompt = $"You are an expert text rewrite assistant. Your job is to rewrite the user's text to match the requested accent, style, character, or persona.\n" +
+                                   $"Instructions:\n" +
+                                   $"- Return ONLY the rewritten text, with no introductory text, no explanations, no quotes around the output, and no commentary.\n" +
+                                   $"- Keep the original meaning and context.\n" +
+                                   $"- Style to apply: {Settings.TargetAccent}\n" +
+                                   $"- Length Constraint: No constraint. Feel free to fully express the style, character voice, signature catchphrases, and vocabulary of the requested persona without worrying about length.";
+                }
             }
             else if (Settings.Mode == "Translate")
             {
-                systemPrompt = $"You are a professional translator. Translate the user's text into the requested language. Return ONLY the translation, with no explanations, no introductory text, no quotes around the output, and no commentary. Target language: {Settings.TargetLanguage}.{lengthInstruction}";
+                if (Settings.LengthConstraint == "Similar")
+                {
+                    systemPrompt = $"You are a professional translator. Translate the user's text into the requested language: {Settings.TargetLanguage}.\n" +
+                                   $"- Return ONLY the translation, with no explanations, no introductory text, no quotes around the output, and no commentary.\n" +
+                                   $"- Keep the translation close to the original length and sentence structure.";
+                }
+                else if (Settings.LengthConstraint == "Concise")
+                {
+                    systemPrompt = $"You are a professional translator. Translate the user's text into the requested language: {Settings.TargetLanguage}.\n" +
+                                   $"- Return ONLY the translation, with no explanations, no introductory text, no quotes around the output, and no commentary.\n" +
+                                   $"- Keep the translation as short and concise as possible.";
+                }
+                else // NoConstraint
+                {
+                    systemPrompt = $"You are a professional translator. Translate the user's text into the requested language: {Settings.TargetLanguage}.\n" +
+                                   $"- Return ONLY the translation, with no explanations, no introductory text, no quotes around the output, and no commentary.";
+                }
             }
             else // Correct
             {
-                systemPrompt = $"You are a grammar and spelling correction assistant. Correct any spelling, grammar, or punctuation errors in the user's text while keeping the tone and style identical. Return ONLY the corrected text, with no explanations, no introductory text, no quotes around the output, and no commentary. If the text has no errors, return the original text exactly.{lengthInstruction}";
+                if (Settings.LengthConstraint == "Similar")
+                {
+                    systemPrompt = "You are a grammar and spelling correction assistant. Correct any spelling, grammar, or punctuation errors in the user's text while keeping the tone and style identical.\n" +
+                                   $"- Return ONLY the corrected text, with no explanations, no introductory text, no quotes around the output, and no commentary.\n" +
+                                   $"- If the text has no errors, return the original text exactly.\n" +
+                                   $"- Keep the corrected text approximately the same length.";
+                }
+                else if (Settings.LengthConstraint == "Concise")
+                {
+                    systemPrompt = "You are a grammar and spelling correction assistant. Correct any spelling, grammar, or punctuation errors in the user's text while making it concise, clear, and direct.\n" +
+                                   $"- Return ONLY the corrected text, with no explanations, no introductory text, no quotes around the output, and no commentary.";
+                }
+                else // NoConstraint
+                {
+                    systemPrompt = "You are a grammar and spelling correction assistant. Correct any spelling, grammar, or punctuation errors in the user's text while keeping the tone and style identical.\n" +
+                                   $"- Return ONLY the corrected text, with no explanations, no introductory text, no quotes around the output, and no commentary.\n" +
+                                   $"- If the text has no errors, return the original text exactly.";
+                }
             }
 
             // 3. Request Loop with Key Rotation
