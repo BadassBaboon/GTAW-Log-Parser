@@ -172,7 +172,8 @@ namespace Assistant.Controllers
                                    $"- Return ONLY the rewritten text, with no introductory text, no explanations, no quotes around the output, and no commentary.\n" +
                                    $"- Keep the original meaning and context.\n" +
                                    $"- Style to apply: {Settings.TargetAccent}\n" +
-                                   $"- Length Constraint: Keep the output length reasonably close to the original input (no more than 20-30% longer). Balance this by retaining the most iconic catchphrases, slang, vocal tics, and characteristic tone of the requested style so it sounds authentic but remains compact.\n\n" +
+                                   $"- Length Constraint: Keep the output length reasonably close to the original input (no more than 20-30% longer). Balance this by retaining the most iconic catchphrases, slang, vocal tics, and characteristic tone of the requested style so it sounds authentic but remains compact.\n" +
+                                   $"- Persona Authenticity: If the requested style is a YouTuber, streamer, internet personality, celebrity, or character (e.g. penguinz0 / moistcritykal / Charlie, Donald Trump, etc.), you MUST adopt their highly specific vocabulary, signature catchphrases (e.g., using 'masterclass of...', 'bottom of the barrel', 'absolute garbage', 'incompetence' for penguinz0), speech patterns, and distinct tone. Emulate their unique voice rather than doing a generic re-skin.\n\n" +
                                    $"Here are examples of how to apply a persona while keeping the length similar:\n" +
                                    $"Example 1:\n" +
                                    $"Input: \"I am going to the store to buy some milk.\"\n" +
@@ -190,7 +191,8 @@ namespace Assistant.Controllers
                                    $"- Return ONLY the rewritten text, with no introductory text, no explanations, no quotes around the output, and no commentary.\n" +
                                    $"- Keep the original meaning and context.\n" +
                                    $"- Style to apply: {Settings.TargetAccent}\n" +
-                                   $"- Length Constraint: Keep the output as short, concise, and to the point as possible, while still using the signature vocabulary and tone of the requested style.\n\n" +
+                                   $"- Length Constraint: Keep the output as short, concise, and to the point as possible, while still using the signature vocabulary and tone of the requested style.\n" +
+                                   $"- Persona Authenticity: If the requested style is a YouTuber, streamer, internet personality, celebrity, or character (e.g. penguinz0 / moistcritykal / Charlie, Donald Trump, etc.), you MUST adopt their highly specific vocabulary, signature catchphrases (e.g., using 'masterclass of...', 'bottom of the barrel', 'absolute garbage', 'incompetence' for penguinz0), speech patterns, and distinct tone. Emulate their unique voice rather than doing a generic re-skin.\n\n" +
                                    $"Here are examples of applying a style concisely:\n" +
                                    $"Example 1:\n" +
                                    $"Input: \"I am going to the store to buy some milk.\"\n" +
@@ -208,7 +210,8 @@ namespace Assistant.Controllers
                                    $"- Return ONLY the rewritten text, with no introductory text, no explanations, no quotes around the output, and no commentary.\n" +
                                    $"- Keep the original meaning and context.\n" +
                                    $"- Style to apply: {Settings.TargetAccent}\n" +
-                                   $"- Length Constraint: No constraint. Feel free to fully express the style, character voice, signature catchphrases, and vocabulary of the requested persona without worrying about length.";
+                                   $"- Length Constraint: No constraint. Feel free to fully express the style, character voice, signature catchphrases, and vocabulary of the requested persona without worrying about length.\n" +
+                                   $"- Persona Authenticity: If the requested style is a YouTuber, streamer, internet personality, celebrity, or character (e.g. penguinz0 / moistcritykal / Charlie, Donald Trump, etc.), you MUST adopt their highly specific vocabulary, signature catchphrases (e.g., using 'masterclass of...', 'bottom of the barrel', 'absolute garbage', 'incompetence' for penguinz0), speech patterns, and distinct tone. Emulate their unique voice rather than doing a generic re-skin.";
                 }
             }
             else if (Settings.Mode == "Translate")
