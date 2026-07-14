@@ -12,7 +12,7 @@
                       Closing="ProgramSettings_Closing"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Program Settings" Height="365" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="Program Settings" Height="380" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
     <Grid>
         <!-- Column Separator -->
@@ -21,40 +21,40 @@
         <!-- LEFT COLUMN: TITLE BAR & THEME -->
         <Label Content="Title Bar Icons" HorizontalAlignment="Left" Margin="4,10,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
         
-        <CheckBox x:Name="DisableForumsButton" Checked="DisableForumsButton_CheckedChanged" Unchecked="DisableForumsButton_CheckedChanged" Content="Disable the forums icon" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="193"/>
-        <CheckBox x:Name="DisableFacebrowserButton" Checked="DisableFacebrowserButton_CheckedChanged" Unchecked="DisableFacebrowserButton_CheckedChanged" Content="Disable the Facebrowser icon" HorizontalAlignment="Left" Margin="10,61,0,0" VerticalAlignment="Top" Width="193"/>
-        <CheckBox x:Name="DisableUCPButton" Checked="DisableUCPButton_CheckedChanged" Unchecked="DisableUCPButton_CheckedChanged" Content="Disable the UCP icon" HorizontalAlignment="Left" Margin="10,84,0,0" VerticalAlignment="Top" Width="193"/>
-        <CheckBox x:Name="DisableReleasesButton" Checked="DisableReleasesButton_CheckedChanged" Unchecked="DisableReleasesButton_CheckedChanged" Content="Disable the releases page icon" HorizontalAlignment="Left" Margin="10,107,0,0" VerticalAlignment="Top" Width="193"/>
-        <CheckBox x:Name="DisableProjectButton" Checked="DisableProjectButton_CheckedChanged" Unchecked="DisableProjectButton_CheckedChanged" Content="Disable the project page icon" HorizontalAlignment="Left" Margin="10,130,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="DisableForumsButton" Checked="DisableForumsButton_CheckedChanged" Unchecked="DisableForumsButton_CheckedChanged" Content="Disable the forums icon" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="DisableFacebrowserButton" Checked="DisableFacebrowserButton_CheckedChanged" Unchecked="DisableFacebrowserButton_CheckedChanged" Content="Disable the Facebrowser icon" HorizontalAlignment="Left" Margin="10,63,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="DisableUCPButton" Checked="DisableUCPButton_CheckedChanged" Unchecked="DisableUCPButton_CheckedChanged" Content="Disable the UCP icon" HorizontalAlignment="Left" Margin="10,86,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="DisableReleasesButton" Checked="DisableReleasesButton_CheckedChanged" Unchecked="DisableReleasesButton_CheckedChanged" Content="Disable the releases page icon" HorizontalAlignment="Left" Margin="10,109,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="DisableProjectButton" Checked="DisableProjectButton_CheckedChanged" Unchecked="DisableProjectButton_CheckedChanged" Content="Disable the project page icon" HorizontalAlignment="Left" Margin="10,132,0,0" VerticalAlignment="Top" Width="193"/>
         
-        <Label Content="Theme" HorizontalAlignment="Left" Margin="4,160,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
+        <Label Content="Theme" HorizontalAlignment="Left" Margin="4,170,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
         
-        <ComboBox x:Name="Themes" IsEnabled="False" SelectionChanged="Themes_SelectionChanged" HorizontalAlignment="Left" Margin="10,185,0,0" VerticalAlignment="Top" Width="193"/>
-        <CheckBox x:Name="ToggleDarkMode" IsEnabled="False" Checked="ToggleDarkMode_CheckedChanged" Unchecked="ToggleDarkMode_CheckedChanged" Content="Dark Mode" HorizontalAlignment="Left" Margin="10,215,0,0" VerticalAlignment="Top" Width="193"/>
-        <CheckBox x:Name="FollowSystemColor" IsEnabled="False" Checked="FollowSystemColor_CheckedChanged" Unchecked="FollowSystemColor_CheckedChanged" Content="Use system accent color" HorizontalAlignment="Left" Margin="10,238,0,0" VerticalAlignment="Top" Width="193"/>
-        <CheckBox x:Name="FollowSystemMode" IsEnabled="False" Checked="FollowSystemMode_CheckedChanged" Unchecked="FollowSystemMode_CheckedChanged" Content="Follow system app mode" HorizontalAlignment="Left" Margin="10,261,0,0" VerticalAlignment="Top" Width="193"/>
+        <ComboBox x:Name="Themes" IsEnabled="False" SelectionChanged="Themes_SelectionChanged" HorizontalAlignment="Left" Margin="10,200,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="ToggleDarkMode" IsEnabled="False" Checked="ToggleDarkMode_CheckedChanged" Unchecked="ToggleDarkMode_CheckedChanged" Content="Dark Mode" HorizontalAlignment="Left" Margin="10,233,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="FollowSystemColor" IsEnabled="False" Checked="FollowSystemColor_CheckedChanged" Unchecked="FollowSystemColor_CheckedChanged" Content="Use system accent color" HorizontalAlignment="Left" Margin="10,256,0,0" VerticalAlignment="Top" Width="193"/>
+        <CheckBox x:Name="FollowSystemMode" IsEnabled="False" Checked="FollowSystemMode_CheckedChanged" Unchecked="FollowSystemMode_CheckedChanged" Content="Follow system app mode" HorizontalAlignment="Left" Margin="10,279,0,0" VerticalAlignment="Top" Width="193"/>
 
         <!-- RIGHT COLUMN: POPUPS, UPDATES, APPLICATION -->
         <Label Content="Popups &amp; Alerts" HorizontalAlignment="Left" Margin="229,10,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
         
-        <CheckBox x:Name="DisableInformationPopups" Content="Disable most Information popups" HorizontalAlignment="Left" Margin="235,38,0,0" VerticalAlignment="Top" Width="281"/>
-        <CheckBox x:Name="DisableWarningPopups" Content="Disable most Warning popups" HorizontalAlignment="Left" Margin="235,61,0,0" VerticalAlignment="Top" Width="281"/>
-        <CheckBox x:Name="DisableErrorPopups" Content="Disable most Error popups" HorizontalAlignment="Left" Margin="235,84,0,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="DisableInformationPopups" Content="Disable most Information popups" HorizontalAlignment="Left" Margin="235,40,0,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="DisableWarningPopups" Content="Disable most Warning popups" HorizontalAlignment="Left" Margin="235,63,0,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="DisableErrorPopups" Content="Disable most Error popups" HorizontalAlignment="Left" Margin="235,86,0,0" VerticalAlignment="Top" Width="281"/>
         
-        <Label Content="Updates" HorizontalAlignment="Left" Margin="229,115,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
+        <Label Content="Updates" HorizontalAlignment="Left" Margin="229,120,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
         
-        <Label x:Name="TimeoutLabel1" Content="Abort checking for updates after " HorizontalAlignment="Left" Margin="230,140,0,0" VerticalAlignment="Top" Width="195"/>
-        <xctk:IntegerUpDown ValueChanged="Timeout_ValueChanged" TextAlignment="Center" x:Name="Timeout" Margin="413,141,0,0" Maximum="60" Minimum="1" Value="4" Text="4" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="45" />
-        <Label x:Name="TimeoutLabel2" Content="seconds." HorizontalAlignment="Left" Margin="459,140,0,0" VerticalAlignment="Top" Width="57"/>
-        <CheckBox x:Name="IgnoreBetaVersions" Content="Ignore beta versions in the update check" HorizontalAlignment="Left" Margin="235,168,0,0" VerticalAlignment="Top" Width="281"/>
+        <Label x:Name="TimeoutLabel1" Content="Abort checking for updates after " HorizontalAlignment="Left" Margin="230,150,0,0" VerticalAlignment="Top" Width="195"/>
+        <xctk:IntegerUpDown ValueChanged="Timeout_ValueChanged" TextAlignment="Center" x:Name="Timeout" Margin="413,151,0,0" Maximum="60" Minimum="1" Value="4" Text="4" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="45" />
+        <Label x:Name="TimeoutLabel2" Content="seconds." HorizontalAlignment="Left" Margin="459,150,0,0" VerticalAlignment="Top" Width="57"/>
+        <CheckBox x:Name="IgnoreBetaVersions" Content="Ignore beta versions in the update check" HorizontalAlignment="Left" Margin="235,178,0,0" VerticalAlignment="Top" Width="281"/>
         
-        <Label Content="Application" HorizontalAlignment="Left" Margin="229,200,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
+        <Label Content="Application" HorizontalAlignment="Left" Margin="229,210,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
         
-        <CheckBox x:Name="AlwaysCloseToTray" Content="Always close to the system tray" HorizontalAlignment="Left" Margin="235,225,0,0" VerticalAlignment="Top" Width="281"/>
-        <CheckBox x:Name="StartWithWindows" Checked="StartWithWindows_CheckedChanged" Unchecked="StartWithWindows_CheckedChanged" Content="Start with Windows (minimized)" HorizontalAlignment="Left" Margin="235,248,0,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="AlwaysCloseToTray" Content="Always close to the system tray" HorizontalAlignment="Left" Margin="235,240,0,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="StartWithWindows" Checked="StartWithWindows_CheckedChanged" Unchecked="StartWithWindows_CheckedChanged" Content="Start with Windows (minimized)" HorizontalAlignment="Left" Margin="235,263,0,0" VerticalAlignment="Top" Width="281"/>
 
         <!-- BOTTOM BUTTONS -->
-        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="430,295,0,0" VerticalAlignment="Top" Width="75"/>
-        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="350,295,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="430,310,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="350,310,0,0" VerticalAlignment="Top" Width="75"/>
     </Grid>
 </Controls:MetroWindow>
