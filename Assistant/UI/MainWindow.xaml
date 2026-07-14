@@ -121,12 +121,6 @@
                     <ComboBoxItem Content="gemma2-9b-it"/>
                 </ComboBox>
                 <Button x:Name="ModelInfoHelpBtn" Click="ModelInfoHelpBtn_Click" Content="?" HorizontalAlignment="Left" Margin="248,198,0,0" VerticalAlignment="Top" Width="22" Height="25" FontWeight="Bold"/>
-                
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="10,228,0,0" VerticalAlignment="Top">
-                    <Label Content="Temperature:" Width="82" Padding="0,0,0,0" VerticalContentAlignment="Center"/>
-                    <Slider x:Name="AiTemperature" ValueChanged="AiTemperature_ValueChanged" Minimum="0" Maximum="1" TickFrequency="0.1" IsSnapToTickEnabled="True" Width="140" VerticalAlignment="Center"/>
-                    <Label x:Name="AiTemperatureLabel" Content="0.6" Width="30" Padding="4,0,0,0" VerticalContentAlignment="Center"/>
-                </StackPanel>
 
                 <!-- Right Column: Hook & Keys -->
                 <Label Content="Settings:" HorizontalAlignment="Left" Margin="300,10,0,0" VerticalAlignment="Top" Width="150"/>
@@ -137,6 +131,12 @@
                 <Button x:Name="RecordAccentHotkeyBtn" Click="RecordAccentHotkeyBtn_Click" Content="Accent Shortcut: Ctrl+T" HorizontalAlignment="Left" Margin="300,108,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
                 <Button x:Name="RecordTranslateHotkeyBtn" Click="RecordTranslateHotkeyBtn_Click" Content="Translate Shortcut: Ctrl+Y" HorizontalAlignment="Left" Margin="300,138,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
                 <Button x:Name="RecordCorrectHotkeyBtn" Click="RecordCorrectHotkeyBtn_Click" Content="Correct Shortcut: Ctrl+H" HorizontalAlignment="Left" Margin="300,168,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="300,200,0,0" VerticalAlignment="Top">
+                    <Label Content="Temperature:" Width="82" Padding="0,0,0,0" VerticalContentAlignment="Center"/>
+                    <Slider x:Name="AiTemperature" ValueChanged="AiTemperature_ValueChanged" Minimum="0" Maximum="1" TickFrequency="0.1" IsSnapToTickEnabled="True" Width="140" VerticalAlignment="Center"/>
+                    <Label x:Name="AiTemperatureLabel" Content="0.6" Width="30" Padding="4,0,0,0" VerticalContentAlignment="Center"/>
+                </StackPanel>
 
                 <Button x:Name="ManageKeysBtn" Click="ManageKeysBtn_Click" Content="Manage API Keys" HorizontalAlignment="Left" Margin="300,238,0,0" VerticalAlignment="Top" Width="305" Height="26"/>
             </Grid>
