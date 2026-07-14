@@ -173,7 +173,6 @@ namespace Assistant.Controllers
                 }
 
                 string json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
-                File.ReadAllText(ConfigFile); // probe
                 File.WriteAllText(ConfigFile, json);
             }
             catch (Exception ex)

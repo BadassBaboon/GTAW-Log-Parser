@@ -1252,12 +1252,12 @@ namespace Assistant.UI
                           "  Extremely fast, lowest latency. Great for standard accent conversion.\n\n" +
                           "• llama-3.3-70b-versatile:\n" +
                           "  High quality and versatile. Best balance of reasoning and vocabulary.\n\n" +
-                          "• deepseek-r1-distill-llama-70b:\n" +
-                          "  Excellent reasoning model distilled from DeepSeek R1. Recommended for complex personas.\n\n" +
-                          "• deepseek-r1-distill-qwen-32b:\n" +
-                          "  Great creative writing and reasoning quality. Fast speed.\n\n" +
-                          "• gemma2-9b-it:\n" +
-                          "  Google's efficient 9B model. Fast speed, good daily limit.\n\n" +
+                          "• qwen/qwen3.6-27b:\n" +
+                          "  Alibaba's advanced 27B reasoning/text model. Great balance of quality and speed.\n\n" +
+                          "• qwen/qwen3-32b:\n" +
+                          "  Alibaba's Qwen3 32B model. Excellent text quality and creative styling.\n\n" +
+                          "• openai/gpt-oss-120b:\n" +
+                          "  Huge open-source 120B parameter model. Good daily limits and quality.\n\n" +
                           "• Temperature Slider:\n" +
                           "  Controls model output variance. Lower values (e.g. 0.2) produce highly predictable, faithful responses. " +
                           "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.\n\n" +

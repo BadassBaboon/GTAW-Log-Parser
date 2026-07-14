@@ -116,9 +116,9 @@
                 <ComboBox x:Name="AiModel" IsEditable="True" SelectionChanged="AiModel_SelectionChanged" TextBoxBase.TextChanged="AiModel_TextChanged" HorizontalAlignment="Left" Margin="10,198,0,0" VerticalAlignment="Top" Width="235">
                     <ComboBoxItem Content="llama-3.1-8b-instant"/>
                     <ComboBoxItem Content="llama-3.3-70b-versatile"/>
-                    <ComboBoxItem Content="deepseek-r1-distill-llama-70b"/>
-                    <ComboBoxItem Content="deepseek-r1-distill-qwen-32b"/>
-                    <ComboBoxItem Content="gemma2-9b-it"/>
+                    <ComboBoxItem Content="qwen/qwen3.6-27b"/>
+                    <ComboBoxItem Content="qwen/qwen3-32b"/>
+                    <ComboBoxItem Content="openai/gpt-oss-120b"/>
                 </ComboBox>
                 <Button x:Name="ModelInfoHelpBtn" Click="ModelInfoHelpBtn_Click" Content="?" HorizontalAlignment="Left" Margin="248,198,0,0" VerticalAlignment="Top" Width="22" Height="25" FontWeight="Bold"/>
 
