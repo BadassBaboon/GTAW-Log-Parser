@@ -249,74 +249,109 @@ namespace Assistant.Utilities
             SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
         }
 
+        /// <summary>
+        /// Sends multiple key events in a single atomic SendInput call.
+        /// Events from a single SendInput call are guaranteed by the OS to not
+        /// be interleaved with any other input events (user or programmatic).
+        /// </summary>
+        private static void SendKeys(params (ushort vk, bool down)[] keys)
+        {
+            INPUT[] inputs = new INPUT[keys.Length];
+            for (int i = 0; i < keys.Length; i++)
+            {
+                inputs[i] = new INPUT
+                {
+                    type = INPUT_KEYBOARD,
+                    U = new InputUnion
+                    {
+                        ki = new KEYBDINPUT
+                        {
+                            wVk = keys[i].vk,
+                            wScan = 0,
+                            dwFlags = keys[i].down ? 0 : KEYEVENTF_KEYUP,
+                            time = 0,
+                            dwExtraInfo = IntPtr.Zero
+                        }
+                    }
+                };
+            }
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
+
         public static void SimulateCopy()
         {
-            SendKey(VK_CONTROL, true);
-            SendKey(0x43, true); // C
-            Thread.Sleep(20);
-            SendKey(0x43, false);
-            SendKey(VK_CONTROL, false);
+            SendKeys(
+                (VK_CONTROL, true),
+                (0x43, true),   // C down
+                (0x43, false),  // C up
+                (VK_CONTROL, false)
+            );
         }
 
         public static void SimulateSelectAll()
         {
-            SendKey(VK_CONTROL, true);
-            SendKey(0x41, true); // A
-            Thread.Sleep(20);
-            SendKey(0x41, false);
-            SendKey(VK_CONTROL, false);
-        }
-
-        public static void SimulateSelectToHome()
-        {
-            SendKey(0x10, true);  // Shift
-            SendKey(0x24, true);  // Home
-            Thread.Sleep(20);
-            SendKey(0x24, false);
-            SendKey(0x10, false);
-        }
-
-        public static void SimulateSelectToHomeAndCopy()
-        {
-            SendKey(0x10, true);  // Shift
-            SendKey(0x24, true);  // Home
-            Thread.Sleep(20);
-            SendKey(0x24, false);
-            SendKey(0x10, false);
-
-            Thread.Sleep(50);
-
-            SendKey(VK_CONTROL, true);
-            SendKey(0x43, true);  // C
-            Thread.Sleep(20);
-            SendKey(0x43, false);
-            SendKey(VK_CONTROL, false);
+            SendKeys(
+                (VK_CONTROL, true),
+                (0x41, true),   // A down
+                (0x41, false),  // A up
+                (VK_CONTROL, false)
+            );
         }
 
         public static void SimulateSelectAllAndCopy()
         {
-            SendKey(VK_CONTROL, true);
-            SendKey(0x41, true); // A
-            Thread.Sleep(20);
-            SendKey(0x41, false);
-            SendKey(VK_CONTROL, false);
+            // Ctrl+A then Ctrl+C in one atomic batch
+            SendKeys(
+                (VK_CONTROL, true),
+                (0x41, true),   // A down
+                (0x41, false),  // A up
+                (0x43, true),   // C down
+                (0x43, false),  // C up
+                (VK_CONTROL, false)
+            );
+        }
 
-            Thread.Sleep(50);
-
-            SendKey(VK_CONTROL, true);
-            SendKey(0x43, true); // C
-            Thread.Sleep(20);
-            SendKey(0x43, false);
-            SendKey(VK_CONTROL, false);
+        /// <summary>
+        /// Sends Ctrl+A (Select All) immediately followed by Ctrl+V (Paste)
+        /// as a single atomic SendInput call. This guarantees no other input
+        /// events can slip between the selection and the paste.
+        /// </summary>
+        public static void SimulateSelectAllAndPaste()
+        {
+            SendKeys(
+                (VK_CONTROL, true),
+                (0x41, true),   // A down  (select all)
+                (0x41, false),  // A up
+                (0x56, true),   // V down  (paste)
+                (0x56, false),  // V up
+                (VK_CONTROL, false)
+            );
         }
 
         public static void SimulatePaste()
         {
-            SendKey(VK_CONTROL, true);
-            SendKey(0x56, true); // V
-            Thread.Sleep(20);
-            SendKey(0x56, false);
-            SendKey(VK_CONTROL, false);
+            SendKeys(
+                (VK_CONTROL, true),
+                (0x56, true),   // V down
+                (0x56, false),  // V up
+                (VK_CONTROL, false)
+            );
+        }
+
+        /// <summary>
+        /// Sends key-up events for all common modifier keys (Ctrl, Shift, Alt, Win)
+        /// to clear any stale "held down" state left over from the user's hotkey press.
+        /// Must be called at the start of any simulated keystroke sequence.
+        /// </summary>
+        public static void ReleaseAllModifiers()
+        {
+            SendKeys(
+                (VK_CONTROL, false),
+                (VK_SHIFT, false),
+                (VK_MENU, false),   // Alt
+                (VK_LWIN, false),
+                (VK_RWIN, false)
+            );
         }
 
         // Helper to parse hotkey string, e.g., "Ctrl+T" or "Ctrl+Alt+S"

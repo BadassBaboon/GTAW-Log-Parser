@@ -987,6 +987,13 @@ namespace Assistant.UI
             {
                 try
                 {
+                    // Wait for the user to physically release the hotkey combo,
+                    // then force-release all modifier keys so subsequent simulated
+                    // keystrokes are not contaminated by stale Ctrl/Shift/Alt state.
+                    Thread.Sleep(100);
+                    KeyboardHookManager.ReleaseAllModifiers();
+                    Thread.Sleep(50);
+
                     string oldClipboard = string.Empty;
                     Dispatcher.Invoke(() =>
                     {
@@ -1008,7 +1015,7 @@ namespace Assistant.UI
 
                     if (!wasHighlightedInitially)
                     {
-                        KeyboardHookManager.SimulateSelectToHomeAndCopy();
+                        KeyboardHookManager.SimulateSelectAllAndCopy();
                         Thread.Sleep(150);
                         Dispatcher.Invoke(() =>
                         {
@@ -1036,11 +1043,15 @@ namespace Assistant.UI
 
                     if (!wasHighlightedInitially)
                     {
-                        KeyboardHookManager.SimulateSelectToHome();
-                        Thread.Sleep(80);
+                        // Atomic Ctrl+A → Ctrl+V in a single SendInput call
+                        // so no events can slip between select-all and paste.
+                        KeyboardHookManager.SimulateSelectAllAndPaste();
                     }
-
-                    KeyboardHookManager.SimulatePaste();
+                    else
+                    {
+                        // Text was already highlighted; paste replaces the selection.
+                        KeyboardHookManager.SimulatePaste();
+                    }
                     Thread.Sleep(150);
 
                     Dispatcher.Invoke(() =>
