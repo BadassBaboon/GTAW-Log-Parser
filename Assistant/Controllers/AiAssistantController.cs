@@ -29,9 +29,16 @@ namespace Assistant.Controllers
         }
     }
 
+    public class CustomAccentProfile
+    {
+        public string TargetAccent { get; set; } = string.Empty;
+        public string CustomDirectives { get; set; } = string.Empty;
+    }
+
     public class AiAssistantSettings
     {
         public List<GroqApiKeyInfo> ApiKeys { get; set; } = new List<GroqApiKeyInfo>();
+        public List<CustomAccentProfile> CustomProfiles { get; set; } = new List<CustomAccentProfile>();
         public string ActiveModel { get; set; } = "llama-3.1-8b-instant";
         public string Mode { get; set; } = "Accent"; // Accent, Translate, Correct
         public string TargetAccent { get; set; } = "Texan Accent";
@@ -196,7 +203,26 @@ namespace Assistant.Controllers
                 {
                     phoneticInstruction = "Apply the target style's spelling conventions and slang words (e.g., dropping ending 'g' on 'ing' words, writing contractions, and using regional slang) directly to the rewritten statement. ";
                     
-                    if (Settings.TargetAccent != null && Settings.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0)
+                    // Look for custom profiles matching the target accent name
+                    CustomAccentProfile? matchedProfile = null;
+                    if (Settings.CustomProfiles != null && Settings.TargetAccent != null)
+                    {
+                        foreach (var profile in Settings.CustomProfiles)
+                        {
+                            if (!string.IsNullOrEmpty(profile.TargetAccent) &&
+                                Settings.TargetAccent.IndexOf(profile.TargetAccent, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                matchedProfile = profile;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (matchedProfile != null && !string.IsNullOrEmpty(matchedProfile.CustomDirectives))
+                    {
+                        phoneticInstruction += $"Specific speech guidelines for {matchedProfile.TargetAccent}: {matchedProfile.CustomDirectives} ";
+                    }
+                    else if (Settings.TargetAccent != null && Settings.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         phoneticInstruction += "Specific speech guidelines for Tony Soprano: " +
                                                "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +

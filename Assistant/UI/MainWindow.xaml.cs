@@ -1328,5 +1328,12 @@ namespace Assistant.UI
             keysWindow.Owner = this;
             keysWindow.ShowDialog();
         }
+
+        private void ManageProfilesBtn_Click(object sender, RoutedEventArgs e)
+        {
+            CustomAccentProfilesWindow profilesWindow = new CustomAccentProfilesWindow();
+            profilesWindow.Owner = this;
+            profilesWindow.ShowDialog();
+        }
     }
 }
