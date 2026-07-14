@@ -1302,10 +1302,6 @@ namespace Assistant.UI
                           "  Extremely fast, lowest latency. Great for standard accent conversion.\n\n" +
                           "• llama-3.3-70b-versatile:\n" +
                           "  High quality and versatile. Best balance of reasoning and vocabulary.\n\n" +
-                          "• qwen/qwen3.6-27b:\n" +
-                          "  Alibaba's advanced 27B reasoning/text model. Great balance of quality and speed.\n\n" +
-                          "• qwen/qwen3-32b:\n" +
-                          "  Alibaba's Qwen3 32B model. Excellent text quality and creative styling.\n\n" +
                           "• openai/gpt-oss-120b:\n" +
                           "  Huge open-source 120B parameter model. Good daily limits and quality.\n\n" +
                           "• Temperature Slider:\n" +

@@ -373,7 +373,8 @@ namespace Assistant.Controllers
                             new { role = "system", content = systemPrompt },
                             new { role = "user", content = userPromptContent }
                         },
-                        temperature = Settings.Temperature
+                        temperature = Settings.Temperature,
+                        max_tokens = 1024
                     };
 
                     string jsonBody = JsonSerializer.Serialize(requestBody);
@@ -424,6 +425,11 @@ namespace Assistant.Controllers
                                     if (cleanedResult.StartsWith("\"") && cleanedResult.EndsWith("\""))
                                     {
                                         cleanedResult = cleanedResult.Substring(1, cleanedResult.Length - 2).Trim();
+                                    }
+
+                                    if (string.IsNullOrWhiteSpace(cleanedResult))
+                                    {
+                                        return text;
                                     }
 
                                     return commandPrefix + cleanedResult;
