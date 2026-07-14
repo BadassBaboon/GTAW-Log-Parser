@@ -11,7 +11,7 @@
                       WindowStartupLocation="CenterScreen"
                       Closing="Main_Closing"
                       GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
-                      Title="GTA World Chat Log Assistant" Height="330" Width="640" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="GTA World Chat Log Assistant" Height="335" Width="640" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
     <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands>
@@ -112,7 +112,7 @@
                     <ComboBoxItem Content="Concise"/>
                 </ComboBox>
 
-                <Label Content="AI Model (Groq):" HorizontalAlignment="Left" Margin="10,175,0,0" VerticalAlignment="Top" Width="150"/>
+                <Label Content="AI Model:" HorizontalAlignment="Left" Margin="10,175,0,0" VerticalAlignment="Top" Width="150"/>
                 <ComboBox x:Name="AiModel" IsEditable="True" SelectionChanged="AiModel_SelectionChanged" TextBoxBase.TextChanged="AiModel_TextChanged" HorizontalAlignment="Left" Margin="10,198,0,0" VerticalAlignment="Top" Width="235">
                     <ComboBoxItem Content="llama-3.1-8b-instant"/>
                     <ComboBoxItem Content="llama-3.3-70b-versatile"/>

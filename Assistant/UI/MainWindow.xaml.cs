@@ -1257,8 +1257,11 @@ namespace Assistant.UI
                           "• deepseek-r1-distill-qwen-32b:\n" +
                           "  Great creative writing and reasoning quality. Fast speed.\n\n" +
                           "• gemma2-9b-it:\n" +
-                          "  Google's efficient 9B model. Fast speed, good daily limit.";
-            MessageBox.Show(this, info, "Model Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                          "  Google's efficient 9B model. Fast speed, good daily limit.\n\n" +
+                          "• Temperature Slider:\n" +
+                          "  Controls model output variance. Lower values (e.g. 0.2) produce highly predictable, faithful responses. " +
+                          "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.";
+            MessageBox.Show(this, info, "Model & Parameter Information", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void TabLogParserBtn_Click(object sender, RoutedEventArgs e)
