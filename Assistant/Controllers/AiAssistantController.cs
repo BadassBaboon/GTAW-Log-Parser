@@ -96,6 +96,7 @@ namespace Assistant.Controllers
                             SaveSettings();
                         }
 #pragma warning restore CS0618
+                        EnsureDefaultProfiles();
                         ResetQuotasIfNeeded();
                         return;
                     }
@@ -108,7 +109,32 @@ namespace Assistant.Controllers
 
             // Create default settings if failed or not exist
             Settings = new AiAssistantSettings();
+            EnsureDefaultProfiles();
             SaveSettings();
+        }
+
+        private static void EnsureDefaultProfiles()
+        {
+            if (Settings.CustomProfiles == null)
+            {
+                Settings.CustomProfiles = new List<CustomAccentProfile>();
+            }
+
+            if (!Settings.CustomProfiles.Any(p => 
+                p.TargetAccent != null && 
+                p.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                Settings.CustomProfiles.Add(new CustomAccentProfile
+                {
+                    TargetAccent = "Tony Soprano",
+                    CustomDirectives = "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
+                                       "Use phonetic spelling and slang: 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'ova' (over), 'Chrishtufah' (Christopher). " +
+                                       "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
+                                       "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
+                                       "Use vocabulary terms: 'prick', 'broad' (woman), 'moolinyan/melanzana/ditsoon' (derogatory)."
+                });
+                SaveSettings();
+            }
         }
 
         public static void SaveSettings()
@@ -201,40 +227,32 @@ namespace Assistant.Controllers
                 string phoneticInstruction = "";
                 if (Settings.PhoneticEnabled)
                 {
-                    phoneticInstruction = "Apply the target style's spelling conventions and slang words (e.g., dropping ending 'g' on 'ing' words, writing contractions, and using regional slang) directly to the rewritten statement. ";
-                    
-                    // Look for custom profiles matching the target accent name
-                    CustomAccentProfile? matchedProfile = null;
-                    if (Settings.CustomProfiles != null && Settings.TargetAccent != null)
-                    {
-                        foreach (var profile in Settings.CustomProfiles)
-                        {
-                            if (!string.IsNullOrEmpty(profile.TargetAccent) &&
-                                Settings.TargetAccent.IndexOf(profile.TargetAccent, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                matchedProfile = profile;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (matchedProfile != null && !string.IsNullOrEmpty(matchedProfile.CustomDirectives))
-                    {
-                        phoneticInstruction += $"Specific speech guidelines for {matchedProfile.TargetAccent}: {matchedProfile.CustomDirectives} ";
-                    }
-                    else if (Settings.TargetAccent != null && Settings.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        phoneticInstruction += "Specific speech guidelines for Tony Soprano: " +
-                                               "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
-                                               "Use phonetic spelling and slang: 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'ova' (over), 'Chrishtufah' (Christopher). " +
-                                               "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
-                                               "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
-                                               "Use vocabulary terms: 'prick', 'broad' (woman), 'moolinyan/melanzana/ditsoon' (derogatory). ";
-                    }
+                    phoneticInstruction = "Apply spelling conventions and slang words (e.g., dropping ending 'g' on 'ing' words, writing contractions, and using regional slang) directly to the rewritten statement. ";
                 }
                 else
                 {
-                    phoneticInstruction = "Use standard English spelling. Do not write words phonetically, but adjust vocabulary and syntax. ";
+                    phoneticInstruction = "Use standard English spelling. Do not write words phonetically (like writing accent sounds, e.g. 'dat' or 'ova' unless explicitly instructed). Adjust vocabulary, phrasing, and syntax. ";
+                }
+
+                // Look for custom profiles matching the target accent name
+                CustomAccentProfile? matchedProfile = null;
+                if (Settings.CustomProfiles != null && Settings.TargetAccent != null)
+                {
+                    foreach (var profile in Settings.CustomProfiles)
+                    {
+                        if (!string.IsNullOrEmpty(profile.TargetAccent) &&
+                            Settings.TargetAccent.IndexOf(profile.TargetAccent, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            matchedProfile = profile;
+                            break;
+                        }
+                    }
+                }
+
+                string profileDirectives = "";
+                if (matchedProfile != null && !string.IsNullOrEmpty(matchedProfile.CustomDirectives))
+                {
+                    profileDirectives = $"Specific speech guidelines for {matchedProfile.TargetAccent}: {matchedProfile.CustomDirectives} ";
                 }
 
                 systemPrompt = $"Rewrite the text in the requested style. " +
@@ -244,6 +262,7 @@ namespace Assistant.Controllers
                                $"Use natural profanity or complaints (like headaches/stress) if it fits. " +
                                constraintRules +
                                phoneticInstruction +
+                               profileDirectives +
                                $"No AI slop, no flowery language.";
             }
             else if (activeMode == "Translate")
