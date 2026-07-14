@@ -54,6 +54,7 @@ namespace Assistant.Controllers
         public string LengthConstraint { get; set; } = "Similar"; // NoConstraint, Similar, Concise
         public bool PhoneticEnabled { get; set; } = false;
         public double Temperature { get; set; } = 0.6;
+        public bool MigratedToCtrlU { get; set; } = false;
     }
 
     public static class AiAssistantController
@@ -96,9 +97,13 @@ namespace Assistant.Controllers
                             SaveSettings();
                         }
 #pragma warning restore CS0618
-                        if (Settings.ShortcutTranslate == "Ctrl+Y")
+                        if (!Settings.MigratedToCtrlU)
                         {
-                            Settings.ShortcutTranslate = "Ctrl+U";
+                            if (Settings.ShortcutTranslate == "Ctrl+Y")
+                            {
+                                Settings.ShortcutTranslate = "Ctrl+U";
+                            }
+                            Settings.MigratedToCtrlU = true;
                             SaveSettings();
                         }
                         EnsureDefaultProfiles();
