@@ -1004,9 +1004,11 @@ namespace Assistant.UI
                         try { capturedText = Clipboard.GetText(); } catch { }
                     });
 
-                    if (string.IsNullOrWhiteSpace(capturedText))
+                    bool wasHighlightedInitially = !string.IsNullOrWhiteSpace(capturedText);
+
+                    if (!wasHighlightedInitially)
                     {
-                        KeyboardHookManager.SimulateSelectAllAndCopy();
+                        KeyboardHookManager.SimulateSelectToHomeAndCopy();
                         Thread.Sleep(150);
                         Dispatcher.Invoke(() =>
                         {
@@ -1031,6 +1033,12 @@ namespace Assistant.UI
                     {
                         try { Clipboard.SetText(result); } catch { }
                     });
+
+                    if (!wasHighlightedInitially)
+                    {
+                        KeyboardHookManager.SimulateSelectToHome();
+                        Thread.Sleep(80);
+                    }
 
                     KeyboardHookManager.SimulatePaste();
                     Thread.Sleep(150);

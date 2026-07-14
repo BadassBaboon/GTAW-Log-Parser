@@ -258,6 +258,41 @@ namespace Assistant.Utilities
             SendKey(VK_CONTROL, false);
         }
 
+        public static void SimulateSelectAll()
+        {
+            SendKey(VK_CONTROL, true);
+            SendKey(0x41, true); // A
+            Thread.Sleep(20);
+            SendKey(0x41, false);
+            SendKey(VK_CONTROL, false);
+        }
+
+        public static void SimulateSelectToHome()
+        {
+            SendKey(0x10, true);  // Shift
+            SendKey(0x24, true);  // Home
+            Thread.Sleep(20);
+            SendKey(0x24, false);
+            SendKey(0x10, false);
+        }
+
+        public static void SimulateSelectToHomeAndCopy()
+        {
+            SendKey(0x10, true);  // Shift
+            SendKey(0x24, true);  // Home
+            Thread.Sleep(20);
+            SendKey(0x24, false);
+            SendKey(0x10, false);
+
+            Thread.Sleep(50);
+
+            SendKey(VK_CONTROL, true);
+            SendKey(0x43, true);  // C
+            Thread.Sleep(20);
+            SendKey(0x43, false);
+            SendKey(VK_CONTROL, false);
+        }
+
         public static void SimulateSelectAllAndCopy()
         {
             SendKey(VK_CONTROL, true);

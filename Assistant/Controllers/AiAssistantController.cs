@@ -134,31 +134,27 @@ namespace Assistant.Controllers
                 p.TargetAccent != null && 
                 p.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0);
 
+            string latestSopranoDirectives = "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
+                                             "NEVER write 'ovah' or 'ova' for 'over' (Tony Soprano pronounces 'over' normally, he does not have a Boston accent). " +
+                                             "Avoid direct words like 'buddies', 'buddy', or 'friend'; use euphemisms instead (e.g. 'our friend from that thing', 'a friend of ours', 'our friend who celebrates Hanukkah'). " +
+                                             "Use light phonetic spellings for ending 'g' on 'ing' words ('talkin', 'goin') and words like 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'Chrishtufah' (Christopher). " +
+                                             "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
+                                             "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
+                                             "Vocabulary terms like 'prick' or 'broad' (woman) can be used when natural, but do not force them into every sentence.";
+
             if (sopranoProfile == null)
             {
                 Settings.CustomProfiles.Add(new CustomAccentProfile
                 {
                     TargetAccent = "Tony Soprano",
-                    CustomDirectives = "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
-                                       "NEVER write 'ovah' or 'ova' for 'over'—Tony Soprano pronounces 'over' normally, not like a Boston accent. " +
-                                       "Avoid direct words like 'buddies' or 'friend'; use euphemisms instead (e.g. 'our friend from that thing', 'a friend of ours', 'our friend who celebrates Hanukkah'). " +
-                                       "Use light phonetic spellings for ending 'g' on 'ing' words ('talkin', 'goin') and words like 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'Chrishtufah' (Christopher). " +
-                                       "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
-                                       "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
-                                       "Use vocabulary terms: 'prick', 'broad' (woman), 'moolinyan/melanzana/ditsoon' (derogatory)."
+                    CustomDirectives = latestSopranoDirectives
                 });
                 SaveSettings();
             }
-            else if (sopranoProfile.CustomDirectives != null && sopranoProfile.CustomDirectives.Contains("'ova' (over)"))
+            else if (sopranoProfile.CustomDirectives == null || !sopranoProfile.CustomDirectives.Contains("Vocabulary terms like 'prick'"))
             {
                 // Upgrade to the improved directives
-                sopranoProfile.CustomDirectives = "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
-                                                   "NEVER write 'ovah' or 'ova' for 'over'—Tony Soprano pronounces 'over' normally, not like a Boston accent. " +
-                                                   "Avoid direct words like 'buddies' or 'friend'; use euphemisms instead (e.g. 'our friend from that thing', 'a friend of ours', 'our friend who celebrates Hanukkah'). " +
-                                                   "Use light phonetic spellings for ending 'g' on 'ing' words ('talkin', 'goin') and words like 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'Chrishtufah' (Christopher). " +
-                                                   "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
-                                                   "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
-                                                   "Use vocabulary terms: 'prick', 'broad' (woman), 'moolinyan/melanzana/ditsoon' (derogatory).";
+                sopranoProfile.CustomDirectives = latestSopranoDirectives;
                 SaveSettings();
             }
         }
@@ -283,6 +279,8 @@ namespace Assistant.Controllers
                 systemPrompt = $"Rewrite the text in the requested style. " +
                                $"RULES: DO NOT write conversational replies. " +
                                $"DO NOT start with 'Whaddaya mean' or caricature phrases like 'Fuggedaboutit'. " +
+                               $"DO NOT add introductory questions or conversational preambles (e.g. 'You're telling me', 'Are you saying', 'Listen here') unless they correspond directly to words in the original text. " +
+                               $"DO NOT use em-dashes (— or --) under any circumstances. " +
                                $"Paraphrase deeply to match how the character would express the underlying thought in a realistic conversation. " +
                                $"Use natural profanity or complaints (like headaches/stress) if it fits. " +
                                constraintRules +
@@ -405,6 +403,9 @@ namespace Assistant.Controllers
                                     SaveSettings();
 
                                     string cleanedResult = content.Trim();
+                                    // Remove em-dashes
+                                    cleanedResult = cleanedResult.Replace("—", " ").Replace("--", " ");
+
                                     // Remove enclosing quotes if model incorrectly added them
                                     if (cleanedResult.StartsWith("\"") && cleanedResult.EndsWith("\""))
                                     {
