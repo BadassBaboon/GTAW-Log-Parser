@@ -63,8 +63,11 @@
             <MenuItem x:Name="ExitToolStripMenuItem" Header="Exit" Visibility="Hidden" Click="ExitToolStripMenuItem_Click"/>
         </Menu>
 
-        <TabControl x:Name="MainTabs">
-            <TabItem Header="Log Parser">
+        <TabControl x:Name="MainTabs" TabStripPlacement="Bottom">
+            <TabItem>
+                <TabItem.Header>
+                    <TextBlock Text="LOG PARSER" FontSize="11" FontWeight="Bold" Margin="4,2"/>
+                </TabItem.Header>
                 <Grid>
                     <Image x:Name="Logo" HorizontalAlignment="Left" Height="140" VerticalAlignment="Top" Width="288" Source="../Resources/Logo.png" Margin="10,0,0,0" Stretch="Fill"/>
                     <CheckBox x:Name="CheckForUpdatesOnStartup" Checked="CheckForUpdatesOnStartup_CheckedChanged" Unchecked="CheckForUpdatesOnStartup_CheckedChanged" Content="Check for updates automatically" HorizontalAlignment="Left" Margin="10,145,0,0" VerticalAlignment="Top" Width="288"/>
@@ -93,7 +96,10 @@
                 </Grid>
             </TabItem>
             
-            <TabItem Header="AI Assistant">
+            <TabItem>
+                <TabItem.Header>
+                    <TextBlock Text="AI ASSISTANT" FontSize="11" FontWeight="Bold" Margin="4,2"/>
+                </TabItem.Header>
                 <Grid>
                     <!-- Left Column: Settings -->
                     <Label Content="AI Mode:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="100"/>

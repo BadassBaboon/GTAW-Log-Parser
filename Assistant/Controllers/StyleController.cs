@@ -5,6 +5,7 @@ using Microsoft.Win32;
 using Assistant.Properties;
 using Serilog;
 using System.Collections.Generic;
+using System.Windows.Media;
 
 namespace Assistant.Controllers
 {
@@ -118,6 +119,9 @@ namespace Assistant.Controllers
             {
                 ApplyThemeSyncMode();
 
+                // Apply or remove GTA World theme overrides dynamically
+                ApplyGtaWorldThemeOverrides(Style == "Default");
+
                 string accent = Style == "Default"
                     ? (DarkMode ? DefaultDarkAccent : DefaultLightAccent)
                     : Style;
@@ -134,6 +138,72 @@ namespace Assistant.Controllers
                     ThemeManager.Current.ChangeTheme(Application.Current, $"{baseColor}.{(DarkMode ? DefaultDarkAccent : DefaultLightAccent)}");
                 }
             });
+        }
+
+        /// <summary>
+        /// Dynamically injects or removes the custom GTA World accent and title bar colors
+        /// so they do not bleed into other selectable themes.
+        /// </summary>
+        public static void ApplyGtaWorldThemeOverrides(bool apply)
+        {
+            var app = Application.Current;
+            if (app == null) return;
+
+            string[] brushKeys = new[]
+            {
+                "MahApps.Brushes.Accent",
+                "MahApps.Brushes.Accent2",
+                "MahApps.Brushes.Accent3",
+                "MahApps.Brushes.Accent4",
+                "MahApps.Brushes.WindowTitle",
+                "MahApps.Brushes.Border.Accent",
+                "MahApps.Brushes.IdealForeground",
+                "MahApps.Brushes.WindowTitleText"
+            };
+
+            string[] colorKeys = new[]
+            {
+                "MahApps.Colors.Accent",
+                "MahApps.Colors.Accent2",
+                "MahApps.Colors.Accent3",
+                "MahApps.Colors.Accent4",
+                "MahApps.Colors.IdealForeground",
+                "MahApps.Colors.WindowTitleText"
+            };
+
+            if (apply)
+            {
+                var brushConverter = new BrushConverter();
+                
+                app.Resources["MahApps.Colors.Accent"] = ColorConverter.ConvertFromString("#febf2d");
+                app.Resources["MahApps.Colors.Accent2"] = ColorConverter.ConvertFromString("#e0a724");
+                app.Resources["MahApps.Colors.Accent3"] = ColorConverter.ConvertFromString("#c28f1b");
+                app.Resources["MahApps.Colors.Accent4"] = ColorConverter.ConvertFromString("#a37812");
+                app.Resources["MahApps.Colors.IdealForeground"] = ColorConverter.ConvertFromString("#000000");
+                app.Resources["MahApps.Colors.WindowTitleText"] = ColorConverter.ConvertFromString("#000000");
+
+                app.Resources["MahApps.Brushes.Accent"] = brushConverter.ConvertFromString("#febf2d");
+                app.Resources["MahApps.Brushes.Accent2"] = brushConverter.ConvertFromString("#e0a724");
+                app.Resources["MahApps.Brushes.Accent3"] = brushConverter.ConvertFromString("#c28f1b");
+                app.Resources["MahApps.Brushes.Accent4"] = brushConverter.ConvertFromString("#a37812");
+                app.Resources["MahApps.Brushes.WindowTitle"] = brushConverter.ConvertFromString("#febf2d");
+                app.Resources["MahApps.Brushes.Border.Accent"] = brushConverter.ConvertFromString("#febf2d");
+                app.Resources["MahApps.Brushes.IdealForeground"] = brushConverter.ConvertFromString("#000000");
+                app.Resources["MahApps.Brushes.WindowTitleText"] = brushConverter.ConvertFromString("#000000");
+            }
+            else
+            {
+                foreach (var key in brushKeys)
+                {
+                    if (app.Resources.Contains(key))
+                        app.Resources.Remove(key);
+                }
+                foreach (var key in colorKeys)
+                {
+                    if (app.Resources.Contains(key))
+                        app.Resources.Remove(key);
+                }
+            }
         }
 
         private static void ApplyThemeSyncMode()

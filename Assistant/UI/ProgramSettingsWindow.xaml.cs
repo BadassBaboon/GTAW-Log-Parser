@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Input;
 using Assistant.Controllers;
 using Assistant.Localization;
@@ -61,7 +61,8 @@ namespace Assistant.UI
             Properties.Settings.Default.FollowSystemMode = FollowSystemMode.IsChecked == true;
 
             StyleController.DarkMode = ToggleDarkMode.IsChecked == true;
-            StyleController.Style = Themes.SelectedItem?.ToString() ?? "Default";
+            string selectedStyle = Themes.SelectedItem?.ToString() ?? "Default (GTA World)";
+            StyleController.Style = selectedStyle == "Default (GTA World)" ? "Default" : selectedStyle;
 
             Properties.Settings.Default.Save();
         }
@@ -104,9 +105,13 @@ namespace Assistant.UI
             Themes.Items.Clear();
             foreach (string style in StyleController.ValidStyles)
             {
-                Themes.Items.Add(style);
+                if (style == "Default")
+                    Themes.Items.Add("Default (GTA World)");
+                else
+                    Themes.Items.Add(style);
             }
-            Themes.SelectedItem = StyleController.Style;
+            string currentStyle = StyleController.Style;
+            Themes.SelectedItem = currentStyle == "Default" ? "Default (GTA World)" : currentStyle;
         }
 
         /// <summary>
@@ -251,7 +256,8 @@ namespace Assistant.UI
             if (Themes.Items.Count < StyleController.ValidStyles.Count)
                 return;
 
-            StyleController.Style = Themes.SelectedItem?.ToString() ?? "Default";
+            string selected = Themes.SelectedItem?.ToString() ?? "Default (GTA World)";
+            StyleController.Style = selected == "Default (GTA World)" ? "Default" : selected;
             StyleController.UpdateTheme();
         }
 
