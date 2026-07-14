@@ -1260,7 +1260,10 @@ namespace Assistant.UI
                           "  Google's efficient 9B model. Fast speed, good daily limit.\n\n" +
                           "• Temperature Slider:\n" +
                           "  Controls model output variance. Lower values (e.g. 0.2) produce highly predictable, faithful responses. " +
-                          "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.";
+                          "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.\n\n" +
+                          "• Phonetic Spelling & Slang:\n" +
+                          "  Toggles character-specific spelling rules. When enabled, the model writes phonetically (dropping ending 'g' on 'ing' words, using sound spellings like 'dat' or 'ova', etc.). " +
+                          "When disabled, it maintains standard English spelling rules while still respecting custom profile directives, syntax, and vocabulary.";
             MessageBox.Show(this, info, "Model & Parameter Information", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
