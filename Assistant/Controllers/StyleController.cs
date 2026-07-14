@@ -11,7 +11,7 @@ namespace Assistant.Controllers
     public static class StyleController
     {
         private const string DefaultLightAccent = "Amber";
-        private const string DefaultDarkAccent = "Cyan";
+        private const string DefaultDarkAccent = "Amber";
 
         public static bool DarkMode
         {

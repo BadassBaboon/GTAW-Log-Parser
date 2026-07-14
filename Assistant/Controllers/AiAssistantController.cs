@@ -36,7 +36,12 @@ namespace Assistant.Controllers
         public string Mode { get; set; } = "Accent"; // Accent, Translate, Correct
         public string TargetAccent { get; set; } = "Texan Accent";
         public string TargetLanguage { get; set; } = "Spanish";
-        public string ShortcutKey { get; set; } = "Ctrl+T";
+        [Obsolete("Use ShortcutAccent instead")]
+        public string? ShortcutKey { get; set; }
+
+        public string ShortcutAccent { get; set; } = "Ctrl+T";
+        public string ShortcutTranslate { get; set; } = "Ctrl+Y";
+        public string ShortcutCorrect { get; set; } = "Ctrl+H";
         public bool SoundEnabled { get; set; } = true;
         public bool BindTildeEnabled { get; set; } = false;
         public string LengthConstraint { get; set; } = "Similar"; // NoConstraint, Similar, Concise
@@ -76,6 +81,14 @@ namespace Assistant.Controllers
                     if (loaded != null)
                     {
                         Settings = loaded;
+#pragma warning disable CS0618
+                        if (!string.IsNullOrEmpty(Settings.ShortcutKey))
+                        {
+                            Settings.ShortcutAccent = Settings.ShortcutKey;
+                            Settings.ShortcutKey = null;
+                            SaveSettings();
+                        }
+#pragma warning restore CS0618
                         ResetQuotasIfNeeded();
                         return;
                     }
@@ -145,7 +158,7 @@ namespace Assistant.Controllers
             return availableKeys.FirstOrDefault();
         }
 
-        public static async Task<string> ProcessTextAsync(string text)
+        public static async Task<string> ProcessTextAsync(string text, string? overrideMode = null)
         {
             if (string.IsNullOrWhiteSpace(text))
                 return text;
@@ -164,8 +177,9 @@ namespace Assistant.Controllers
 
             // 2. Build system prompt based on mode and length constraints
             string systemPrompt = "";
+            string activeMode = overrideMode ?? Settings.Mode;
 
-            if (Settings.Mode == "Accent")
+            if (activeMode == "Accent")
             {
                 string constraintRules = "";
                 if (Settings.LengthConstraint == "Similar")
@@ -180,7 +194,17 @@ namespace Assistant.Controllers
                 string phoneticInstruction = "";
                 if (Settings.PhoneticEnabled)
                 {
-                    phoneticInstruction = "Write words phonetically where they would pronounce them differently (spell words how they sound when spoken). ";
+                    phoneticInstruction = "Apply the target style's spelling conventions and slang words (e.g., dropping ending 'g' on 'ing' words, writing contractions, and using regional slang) directly to the rewritten statement. ";
+                    
+                    if (Settings.TargetAccent != null && Settings.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        phoneticInstruction += "Specific speech guidelines for Tony Soprano: " +
+                                               "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
+                                               "Use phonetic spelling and slang: 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'ova' (over), 'Chrishtufah' (Christopher). " +
+                                               "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
+                                               "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
+                                               "Use vocabulary terms: 'prick', 'broad' (woman), 'moolinyan/melanzana/ditsoon' (derogatory). ";
+                    }
                 }
                 else
                 {
@@ -196,7 +220,7 @@ namespace Assistant.Controllers
                                phoneticInstruction +
                                $"No AI slop, no flowery language.";
             }
-            else if (Settings.Mode == "Translate")
+            else if (activeMode == "Translate")
             {
                 string constraintRules = "";
                 if (Settings.LengthConstraint == "Similar")
@@ -260,11 +284,11 @@ namespace Assistant.Controllers
                 try
                 {
                     string userPromptContent = "";
-                    if (Settings.Mode == "Accent")
+                    if (activeMode == "Accent")
                     {
                         userPromptContent = $"Style: {Settings.TargetAccent}\nOriginal: {textToProcess}\nTranslation:";
                     }
-                    else if (Settings.Mode == "Translate")
+                    else if (activeMode == "Translate")
                     {
                         userPromptContent = $"Language: {Settings.TargetLanguage}\nOriginal: {textToProcess}\nTranslation:";
                     }

@@ -887,7 +887,7 @@ namespace Assistant.UI
         // AI ASSISTANT & KEYBOARD HOOK INTEGRATIONS
         // ==========================================
 
-        private bool _isRecordingHotkey;
+        private string? _recordingHotkeyMode;
 
         private void InitializeAiAssistant()
         {
@@ -898,8 +898,10 @@ namespace Assistant.UI
 
             // Set up hotkey manager properties and start it
             KeyboardHookManager.BindTildeToT = AiAssistantController.Settings.BindTildeEnabled;
-            KeyboardHookManager.ParseShortcutString(AiAssistantController.Settings.ShortcutKey);
-            KeyboardHookManager.OnShortcutPressed = OnAiShortcutTriggered;
+            KeyboardHookManager.HotkeyAccent = KeyboardHookManager.HotkeyConfig.Parse(AiAssistantController.Settings.ShortcutAccent);
+            KeyboardHookManager.HotkeyTranslate = KeyboardHookManager.HotkeyConfig.Parse(AiAssistantController.Settings.ShortcutTranslate);
+            KeyboardHookManager.HotkeyCorrect = KeyboardHookManager.HotkeyConfig.Parse(AiAssistantController.Settings.ShortcutCorrect);
+            KeyboardHookManager.OnModeShortcutPressed = OnAiModeShortcutTriggered;
             KeyboardHookManager.Start();
 
             // Sync controls
@@ -945,7 +947,9 @@ namespace Assistant.UI
             }
 
             AiModel.Text = AiAssistantController.Settings.ActiveModel;
-            RecordHotkeyBtn.Content = $"Shortcut: {AiAssistantController.Settings.ShortcutKey}";
+            RecordAccentHotkeyBtn.Content = $"Accent Shortcut: {AiAssistantController.Settings.ShortcutAccent}";
+            RecordTranslateHotkeyBtn.Content = $"Translate Shortcut: {AiAssistantController.Settings.ShortcutTranslate}";
+            RecordCorrectHotkeyBtn.Content = $"Correct Shortcut: {AiAssistantController.Settings.ShortcutCorrect}";
             UpdateModelInfo();
         }
 
@@ -975,7 +979,7 @@ namespace Assistant.UI
             }
         }
 
-        private void OnAiShortcutTriggered()
+        private void OnAiModeShortcutTriggered(string mode)
         {
             Thread thread = new Thread(async () =>
             {
@@ -1018,8 +1022,8 @@ namespace Assistant.UI
                         return;
                     }
 
-                    // Process text via Groq
-                    string result = await AiAssistantController.ProcessTextAsync(capturedText);
+                    // Process text via Groq using the specific mode triggered by the shortcut
+                    string result = await AiAssistantController.ProcessTextAsync(capturedText, mode);
 
                     Dispatcher.Invoke(() =>
                     {
@@ -1047,9 +1051,43 @@ namespace Assistant.UI
             thread.Start();
         }
 
+        private string GetShortcutStringForMode(string mode)
+        {
+            if (mode == "Accent") return AiAssistantController.Settings.ShortcutAccent;
+            if (mode == "Translate") return AiAssistantController.Settings.ShortcutTranslate;
+            return AiAssistantController.Settings.ShortcutCorrect;
+        }
+
+        private Button GetButtonForMode(string mode)
+        {
+            if (mode == "Accent") return RecordAccentHotkeyBtn;
+            if (mode == "Translate") return RecordTranslateHotkeyBtn;
+            return RecordCorrectHotkeyBtn;
+        }
+
+        private void SaveShortcutForMode(string mode, string hotkey)
+        {
+            if (mode == "Accent")
+            {
+                AiAssistantController.Settings.ShortcutAccent = hotkey;
+                KeyboardHookManager.HotkeyAccent = KeyboardHookManager.HotkeyConfig.Parse(hotkey);
+            }
+            else if (mode == "Translate")
+            {
+                AiAssistantController.Settings.ShortcutTranslate = hotkey;
+                KeyboardHookManager.HotkeyTranslate = KeyboardHookManager.HotkeyConfig.Parse(hotkey);
+            }
+            else
+            {
+                AiAssistantController.Settings.ShortcutCorrect = hotkey;
+                KeyboardHookManager.HotkeyCorrect = KeyboardHookManager.HotkeyConfig.Parse(hotkey);
+            }
+            AiAssistantController.SaveSettings();
+        }
+
         private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (_isRecordingHotkey)
+            if (_recordingHotkeyMode != null)
             {
                 e.Handled = true;
 
@@ -1063,8 +1101,9 @@ namespace Assistant.UI
 
                 if (e.Key == Key.Escape)
                 {
-                    _isRecordingHotkey = false;
-                    RecordHotkeyBtn.Content = $"Shortcut: {AiAssistantController.Settings.ShortcutKey}";
+                    string oldKey = GetShortcutStringForMode(_recordingHotkeyMode);
+                    GetButtonForMode(_recordingHotkeyMode).Content = $"{_recordingHotkeyMode} Shortcut: {oldKey}";
+                    _recordingHotkeyMode = null;
                     return;
                 }
 
@@ -1083,13 +1122,10 @@ namespace Assistant.UI
                 parts.Add(keyName);
 
                 string hotkey = string.Join("+", parts);
-                AiAssistantController.Settings.ShortcutKey = hotkey;
-                AiAssistantController.SaveSettings();
+                SaveShortcutForMode(_recordingHotkeyMode, hotkey);
 
-                KeyboardHookManager.ParseShortcutString(hotkey);
-
-                _isRecordingHotkey = false;
-                RecordHotkeyBtn.Content = $"Shortcut: {hotkey}";
+                GetButtonForMode(_recordingHotkeyMode).Content = $"{_recordingHotkeyMode} Shortcut: {hotkey}";
+                _recordingHotkeyMode = null;
             }
         }
 
@@ -1258,10 +1294,22 @@ namespace Assistant.UI
             ModelInfoText.Text = info;
         }
 
-        private void RecordHotkeyBtn_Click(object sender, RoutedEventArgs e)
+        private void RecordAccentHotkeyBtn_Click(object sender, RoutedEventArgs e)
         {
-            _isRecordingHotkey = true;
-            RecordHotkeyBtn.Content = "Press key combo (Esc to cancel)...";
+            _recordingHotkeyMode = "Accent";
+            RecordAccentHotkeyBtn.Content = "Press key combo (Esc to cancel)...";
+        }
+
+        private void RecordTranslateHotkeyBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _recordingHotkeyMode = "Translate";
+            RecordTranslateHotkeyBtn.Content = "Press key combo (Esc to cancel)...";
+        }
+
+        private void RecordCorrectHotkeyBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _recordingHotkeyMode = "Correct";
+            RecordCorrectHotkeyBtn.Content = "Press key combo (Esc to cancel)...";
         }
 
         private void ManageKeysBtn_Click(object sender, RoutedEventArgs e)
@@ -1269,35 +1317,6 @@ namespace Assistant.UI
             GroqApiWindow keysWindow = new GroqApiWindow();
             keysWindow.Owner = this;
             keysWindow.ShowDialog();
-        }
-
-        private async void TestRunBtn_Click(object sender, RoutedEventArgs e)
-        {
-            string input = TestInput.Text;
-            if (string.IsNullOrWhiteSpace(input))
-            {
-                TestOutput.Text = "Please enter some text to test.";
-                return;
-            }
-
-            TestOutput.Text = "Processing...";
-            TestRunBtn.IsEnabled = false;
-
-            try
-            {
-                string result = await AiAssistantController.ProcessTextAsync(input);
-                TestOutput.Text = result;
-                PlaySound(true);
-            }
-            catch (Exception ex)
-            {
-                TestOutput.Text = $"Error: {ex.Message}";
-                PlaySound(false);
-            }
-            finally
-            {
-                TestRunBtn.IsEnabled = true;
-            }
         }
     }
 }

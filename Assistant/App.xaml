@@ -12,6 +12,19 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Amber.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- GTA World Logo Theme Color (#febf2d) Overrides -->
+            <SolidColorBrush x:Key="MahApps.Brushes.Accent" Color="#febf2d" />
+            <SolidColorBrush x:Key="MahApps.Brushes.Accent2" Color="#e0a724" />
+            <SolidColorBrush x:Key="MahApps.Brushes.Accent3" Color="#c28f1b" />
+            <SolidColorBrush x:Key="MahApps.Brushes.Accent4" Color="#a37812" />
+            <SolidColorBrush x:Key="MahApps.Brushes.WindowTitle" Color="#febf2d" />
+            <SolidColorBrush x:Key="MahApps.Brushes.Border.Accent" Color="#febf2d" />
+            
+            <Color x:Key="MahApps.Colors.Accent">#febf2d</Color>
+            <Color x:Key="MahApps.Colors.Accent2">#e0a724</Color>
+            <Color x:Key="MahApps.Colors.Accent3">#c28f1b</Color>
+            <Color x:Key="MahApps.Colors.Accent4">#a37812</Color>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -100,12 +100,39 @@ namespace Assistant.Utilities
         // Settings
         public static bool BindTildeToT { get; set; } = false;
         public static bool HotkeyEnabled { get; set; } = true;
-        public static int ShortcutVirtualKey { get; set; } = VK_T;
-        public static bool ShortcutCtrl { get; set; } = true;
-        public static bool ShortcutAlt { get; set; } = false;
-        public static bool ShortcutShift { get; set; } = false;
 
-        public static Action? OnShortcutPressed { get; set; }
+        public class HotkeyConfig
+        {
+            public int VirtualKey { get; set; }
+            public bool Ctrl { get; set; }
+            public bool Alt { get; set; }
+            public bool Shift { get; set; }
+            public string ShortcutString { get; set; } = "";
+
+            public static HotkeyConfig Parse(string shortcutStr)
+            {
+                var config = new HotkeyConfig { ShortcutString = shortcutStr };
+                if (string.IsNullOrWhiteSpace(shortcutStr))
+                    return config;
+
+                string[] parts = shortcutStr.Split('+');
+                foreach (var part in parts)
+                {
+                    string trimmed = part.Trim().ToLower();
+                    if (trimmed == "ctrl" || trimmed == "control") config.Ctrl = true;
+                    else if (trimmed == "alt") config.Alt = true;
+                    else if (trimmed == "shift") config.Shift = true;
+                    else config.VirtualKey = GetVirtualKeyCode(trimmed);
+                }
+                return config;
+            }
+        }
+
+        public static HotkeyConfig HotkeyAccent { get; set; } = new HotkeyConfig();
+        public static HotkeyConfig HotkeyTranslate { get; set; } = new HotkeyConfig();
+        public static HotkeyConfig HotkeyCorrect { get; set; } = new HotkeyConfig();
+
+        public static Action<string>? OnModeShortcutPressed { get; set; }
 
         public static void Start()
         {
@@ -136,6 +163,14 @@ namespace Assistant.Utilities
             }
         }
 
+        private static bool CheckModifiers(HotkeyConfig config)
+        {
+            bool ctrlPressed = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+            bool altPressed = (GetKeyState(VK_MENU) & 0x8000) != 0;
+            bool shiftPressed = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+            return ctrlPressed == config.Ctrl && altPressed == config.Alt && shiftPressed == config.Shift;
+        }
+
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             if (nCode >= 0)
@@ -159,22 +194,31 @@ namespace Assistant.Utilities
                     return (IntPtr)1;
                 }
 
-                // 2. Custom hotkey check
-                if (HotkeyEnabled && vkCode == ShortcutVirtualKey)
+                // 2. Custom hotkey checks for different modes
+                if (HotkeyEnabled)
                 {
-                    // Check modifiers state
-                    bool ctrlPressed = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
-                    bool altPressed = (GetKeyState(VK_MENU) & 0x8000) != 0;
-                    bool shiftPressed = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-
-                    if (ctrlPressed == ShortcutCtrl && altPressed == ShortcutAlt && shiftPressed == ShortcutShift)
+                    if (vkCode == HotkeyAccent.VirtualKey && CheckModifiers(HotkeyAccent))
                     {
                         if (isKeyDown)
                         {
-                            // Trigger callback asynchronously
-                            OnShortcutPressed?.Invoke();
+                            OnModeShortcutPressed?.Invoke("Accent");
                         }
-                        // Suppress key combination
+                        return (IntPtr)1;
+                    }
+                    if (vkCode == HotkeyTranslate.VirtualKey && CheckModifiers(HotkeyTranslate))
+                    {
+                        if (isKeyDown)
+                        {
+                            OnModeShortcutPressed?.Invoke("Translate");
+                        }
+                        return (IntPtr)1;
+                    }
+                    if (vkCode == HotkeyCorrect.VirtualKey && CheckModifiers(HotkeyCorrect))
+                    {
+                        if (isKeyDown)
+                        {
+                            OnModeShortcutPressed?.Invoke("Correct");
+                        }
                         return (IntPtr)1;
                     }
                 }
@@ -241,38 +285,6 @@ namespace Assistant.Utilities
         }
 
         // Helper to parse hotkey string, e.g., "Ctrl+T" or "Ctrl+Alt+S"
-        public static void ParseShortcutString(string shortcutStr)
-        {
-            ShortcutCtrl = false;
-            ShortcutAlt = false;
-            ShortcutShift = false;
-            ShortcutVirtualKey = VK_T; // Fallback default
-
-            if (string.IsNullOrWhiteSpace(shortcutStr))
-                return;
-
-            string[] parts = shortcutStr.Split('+');
-            foreach (var part in parts)
-            {
-                string trimmed = part.Trim().ToLower();
-                if (trimmed == "ctrl" || trimmed == "control")
-                {
-                    ShortcutCtrl = true;
-                }
-                else if (trimmed == "alt")
-                {
-                    ShortcutAlt = true;
-                }
-                else if (trimmed == "shift")
-                {
-                    ShortcutShift = true;
-                }
-                else
-                {
-                    ShortcutVirtualKey = GetVirtualKeyCode(trimmed);
-                }
-            }
-        }
 
         private static int GetVirtualKeyCode(string keyName)
         {
