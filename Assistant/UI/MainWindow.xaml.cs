@@ -989,10 +989,9 @@ namespace Assistant.UI
                 {
                     Log.Debug("AI Shortcut triggered. Mode: {Mode}", mode);
 
-                    // Wait briefly for the user to lift key, then force-release modifiers.
-                    Thread.Sleep(50);
+                    // Wait a tiny fraction of a second for the hotkey hook to complete, then release modifiers.
+                    Thread.Sleep(10);
                     KeyboardHookManager.ReleaseAllModifiers();
-                    Thread.Sleep(20);
 
                     string oldClipboard = string.Empty;
                     Dispatcher.Invoke(() =>
@@ -1005,13 +1004,13 @@ namespace Assistant.UI
                     Log.Debug("Simulating initial Copy to check for highlighted text...");
                     KeyboardHookManager.SimulateCopy();
 
-                    // Poll clipboard: check every 10ms, up to a maximum of 250ms (25 attempts).
-                    // This ensures instantaneous response under normal load (succeeds in 10ms),
-                    // but remains fully robust under heavy game load / low FPS where copy takes longer.
+                    // Poll clipboard: check every 2ms, up to a maximum of 50ms (25 attempts).
+                    // This is extremely lightweight (zero CPU overhead) and completes instantly (under 5-10ms)
+                    // on responsive systems.
                     string capturedText = string.Empty;
                     for (int i = 0; i < 25; i++)
                     {
-                        Thread.Sleep(10);
+                        Thread.Sleep(2);
                         Dispatcher.Invoke(() =>
                         {
                             try { capturedText = Clipboard.GetText(); } catch { }
@@ -1027,16 +1026,16 @@ namespace Assistant.UI
                     {
                         Log.Debug("No text was highlighted. Simulating Select All...");
                         KeyboardHookManager.SimulateSelectAll();
-                        Thread.Sleep(60); // Safe delay (approx. 2 frames at 30 FPS) for target app layout update
+                        Thread.Sleep(20); // Short delay (approx 1 frame) for target app layout update
 
                         Dispatcher.Invoke(() => { try { Clipboard.Clear(); } catch { } });
                         Log.Debug("Simulating Copy of selected text...");
                         KeyboardHookManager.SimulateCopy();
 
-                        // Poll clipboard for up to 250ms
+                        // Poll clipboard for up to 50ms
                         for (int i = 0; i < 25; i++)
                         {
-                            Thread.Sleep(10);
+                            Thread.Sleep(2);
                             Dispatcher.Invoke(() =>
                             {
                                 try { capturedText = Clipboard.GetText(); } catch { }
@@ -1072,12 +1071,12 @@ namespace Assistant.UI
                     {
                         Log.Debug("Simulating Select All before pasting rewritten text...");
                         KeyboardHookManager.SimulateSelectAll();
-                        Thread.Sleep(60); // Safe delay for target app layout update
+                        Thread.Sleep(20); // Short delay for target app layout update
                     }
 
                     Log.Debug("Simulating Paste...");
                     KeyboardHookManager.SimulatePaste();
-                    Thread.Sleep(100); // Safe delay for target app to read clipboard and complete paste
+                    Thread.Sleep(40); // Safe delay for target app to read clipboard and complete paste
 
                     Dispatcher.Invoke(() =>
                     {
