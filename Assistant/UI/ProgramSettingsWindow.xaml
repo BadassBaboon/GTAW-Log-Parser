@@ -12,7 +12,7 @@
                       Closing="ProgramSettings_Closing"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Program Settings" Height="308" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="Program Settings" Height="355" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
     <Grid>
         <Label Content="Title Bar" HorizontalAlignment="Left" Margin="4,10,0,0" VerticalAlignment="Top" FontSize="14"/>
@@ -34,10 +34,12 @@
         <CheckBox x:Name="IgnoreBetaVersions" Content="Ignore beta versions in the update check" HorizontalAlignment="Left" Margin="235,138,-2,0" VerticalAlignment="Top" Width="281"/>
         <CheckBox x:Name="FollowSystemColor" IsEnabled="False" Checked="FollowSystemColor_CheckedChanged" Unchecked="FollowSystemColor_CheckedChanged" Content="Use system accent color" HorizontalAlignment="Left" Margin="235,161,-2,0" VerticalAlignment="Top" Width="281"/>
         <CheckBox x:Name="FollowSystemMode" IsEnabled="False" Checked="FollowSystemMode_CheckedChanged" Unchecked="FollowSystemMode_CheckedChanged" Content="Follow system app mode" HorizontalAlignment="Left" Margin="235,184,-2,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="AlwaysCloseToTray" Content="Always close to the system tray" HorizontalAlignment="Left" Margin="235,207,-2,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="StartWithWindows" Checked="StartWithWindows_CheckedChanged" Unchecked="StartWithWindows_CheckedChanged" Content="Start with Windows (minimized)" HorizontalAlignment="Left" Margin="235,230,-2,0" VerticalAlignment="Top" Width="281"/>
         <ComboBox x:Name="Themes" IsEnabled="False" SelectionChanged="Themes_SelectionChanged" HorizontalAlignment="Left" Margin="10,205,0,0" VerticalAlignment="Top" Width="193"/>
         <CheckBox x:Name="ToggleDarkMode" IsEnabled="False" Checked="ToggleDarkMode_CheckedChanged" Unchecked="ToggleDarkMode_CheckedChanged" Content="Dark Mode" HorizontalAlignment="Left" Margin="10,239,0,0" VerticalAlignment="Top" Width="193"/>
 
-        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="430,235,0,0" VerticalAlignment="Top" Width="75"/>
-        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="350,235,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="430,280,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="350,280,0,0" VerticalAlignment="Top" Width="75"/>
     </Grid>
 </Controls:MetroWindow>

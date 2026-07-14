@@ -81,7 +81,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="AlwaysCloseToTray" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="LastParsedAutoHash" Type="System.String" Scope="User">
       <Value Profile="(Default)" />

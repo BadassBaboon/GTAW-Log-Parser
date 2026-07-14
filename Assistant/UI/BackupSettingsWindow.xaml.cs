@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -48,9 +48,6 @@ namespace Assistant.UI
             _isLoading = false;
         }
 
-        /// <summary>
-        /// Saves the backup settings
-        /// </summary>
         private void SaveSettings()
         {
             Properties.Settings.Default.BackupPath = BackupPath.Text;
@@ -59,8 +56,6 @@ namespace Assistant.UI
             Properties.Settings.Default.EnableIntervalBackup = EnableIntervalBackup.IsChecked == true;
             if (Interval.Value != null) Properties.Settings.Default.IntervalTime = (int)Interval.Value;
             Properties.Settings.Default.RemoveTimestampsFromBackup = RemoveTimestamps.IsChecked == true;
-            Properties.Settings.Default.AlwaysCloseToTray = AlwaysCloseToTray.IsChecked == true;
-            Properties.Settings.Default.StartWithWindows = StartWithWindows.IsChecked == true;
             Properties.Settings.Default.SuppressNotifications = SuppressNotifications.IsChecked == true;
             Properties.Settings.Default.WarnOnSameHash = WarnWithHash.IsChecked == true;
 
@@ -80,8 +75,6 @@ namespace Assistant.UI
             EnableIntervalBackup.IsChecked = Properties.Settings.Default.EnableIntervalBackup;
             Interval.Value = Properties.Settings.Default.IntervalTime;
             RemoveTimestamps.IsChecked = Properties.Settings.Default.RemoveTimestampsFromBackup;
-            AlwaysCloseToTray.IsChecked = Properties.Settings.Default.AlwaysCloseToTray;
-            StartWithWindows.IsChecked = Properties.Settings.Default.StartWithWindows;
             SuppressNotifications.IsChecked = Properties.Settings.Default.SuppressNotifications;
             WarnWithHash.IsChecked = Properties.Settings.Default.WarnOnSameHash;
 
@@ -99,8 +92,6 @@ namespace Assistant.UI
             Properties.Settings.Default.EnableIntervalBackup = false;
             Properties.Settings.Default.IntervalTime = 10;
             Properties.Settings.Default.RemoveTimestampsFromBackup = false;
-            Properties.Settings.Default.AlwaysCloseToTray = false;
-            Properties.Settings.Default.StartWithWindows = false;
             Properties.Settings.Default.SuppressNotifications = false;
             Properties.Settings.Default.WarnOnSameHash = false;
 
@@ -211,14 +202,10 @@ namespace Assistant.UI
         {
             EnableIntervalBackup.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
             RemoveTimestamps.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
-            AlwaysCloseToTray.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
-            StartWithWindows.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
             SuppressNotifications.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
             WarnWithHash.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
 
             if (BackUpChatLogAutomatically.IsChecked == true) return;
-            AlwaysCloseToTray.IsChecked = false;
-            StartWithWindows.IsChecked = false;
             RemoveTimestamps.IsChecked = false;
             EnableIntervalBackup.IsChecked = false;
             SuppressNotifications.IsChecked = false;
@@ -249,17 +236,6 @@ namespace Assistant.UI
 
             IntervalLabel2.Content = string.Format(Strings.IntervalRecommended, Interval.Value > 1 ? Strings.MinutePlural : Strings.MinuteSingular);
             EnableIntervalBackup.Content = string.Format(Strings.IntervalHint, Interval.Value, Interval.Value > 1 ? Strings.MinutePlural : Strings.MinuteSingular);
-        }
-
-        /// <summary>
-        /// Displays a warning about the Start With Windows functionality
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void StartWithWindows_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            if (StartWithWindows.IsChecked == true && !StartupController.IsAddedToStartup() && !Properties.Settings.Default.DisableWarningPopups)
-                MessageBox.Show(Strings.AutoStartWarning, Strings.Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         /// <summary>
@@ -298,9 +274,6 @@ namespace Assistant.UI
 
                 return;
             }
-
-            if (StartWithWindows.IsChecked == true && !StartupController.IsAddedToStartup() || !StartWithWindows.IsChecked == true && StartupController.IsAddedToStartup())
-                StartupController.ToggleStartup(StartWithWindows.IsChecked == true);
 
             SaveSettings();
             _mainWindow.GotKeyboardFocus -= GainFocus;

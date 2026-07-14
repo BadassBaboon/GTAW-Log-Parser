@@ -41,9 +41,6 @@ namespace Assistant.UI
             LoadSettings();
         }
 
-        /// <summary>
-        /// Saves the program settings
-        /// </summary>
         private void SaveSettings()
         {
             Properties.Settings.Default.DisableForumsButton = DisableForumsButton.IsChecked == true;
@@ -59,6 +56,8 @@ namespace Assistant.UI
             Properties.Settings.Default.IgnoreBetaVersions = IgnoreBetaVersions.IsChecked == true;
             Properties.Settings.Default.FollowSystemColor = FollowSystemColor.IsChecked == true;
             Properties.Settings.Default.FollowSystemMode = FollowSystemMode.IsChecked == true;
+            Properties.Settings.Default.AlwaysCloseToTray = AlwaysCloseToTray.IsChecked == true;
+            Properties.Settings.Default.StartWithWindows = StartWithWindows.IsChecked == true;
 
             StyleController.DarkMode = ToggleDarkMode.IsChecked == true;
             string selectedStyle = Themes.SelectedItem?.ToString() ?? "Default (GTA World)";
@@ -88,6 +87,9 @@ namespace Assistant.UI
             FollowSystemMode.IsChecked = Properties.Settings.Default.FollowSystemMode;
             FollowSystemColor.IsEnabled = AppController.CanFollowSystemColor;
             FollowSystemMode.IsEnabled = AppController.CanFollowSystemMode;
+
+            AlwaysCloseToTray.IsChecked = Properties.Settings.Default.AlwaysCloseToTray;
+            StartWithWindows.IsChecked = Properties.Settings.Default.StartWithWindows;
 
             ToggleDarkMode.IsChecked = StyleController.DarkMode;
             ToggleDarkMode.IsEnabled = !Properties.Settings.Default.FollowSystemMode;
@@ -132,6 +134,8 @@ namespace Assistant.UI
             Properties.Settings.Default.IgnoreBetaVersions = true;
             Properties.Settings.Default.FollowSystemColor = false;
             Properties.Settings.Default.FollowSystemMode = AppController.CanFollowSystemMode;
+            Properties.Settings.Default.AlwaysCloseToTray = true;
+            Properties.Settings.Default.StartWithWindows = false;
 
             StyleController.DarkMode = AppController.CanFollowSystemMode && StyleController.GetAppMode();
             StyleController.Style = "Default";
@@ -283,6 +287,12 @@ namespace Assistant.UI
             Close();
         }
 
+        private void StartWithWindows_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            if (StartWithWindows.IsChecked == true && !StartupController.IsAddedToStartup() && !Properties.Settings.Default.DisableWarningPopups)
+                MessageBox.Show(Strings.AutoStartWarning, Strings.Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
         /// <summary>
         /// Saves the settings before the program settings window closes
         /// </summary>
@@ -290,6 +300,9 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void ProgramSettings_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            if (StartWithWindows.IsChecked == true && !StartupController.IsAddedToStartup() || !StartWithWindows.IsChecked == true && StartupController.IsAddedToStartup())
+                StartupController.ToggleStartup(StartWithWindows.IsChecked == true);
+
             SaveSettings();
             _mainWindow.GotKeyboardFocus -= GainFocus;
         }

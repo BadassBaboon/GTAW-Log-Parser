@@ -711,20 +711,26 @@ namespace Assistant.UI
         {
             if (!isRestarting)
             {
+                // If AlwaysCloseToTray is enabled, we always minimize to system tray when closed.
+                if (Properties.Settings.Default.AlwaysCloseToTray)
+                {
+                    e.Cancel = true;
+                    Hide();
+                    _trayIcon.Visible = true;
+                    return;
+                }
+
+                // If not AlwaysCloseToTray, but BackupChatLogAutomatically is enabled,
+                // ask the user if they want to minimize to tray instead.
                 if (Properties.Settings.Default.BackupChatLogAutomatically && _trayIcon.Visible == false)
                 {
-                    MessageBoxResult result = MessageBoxResult.Yes;
-                    if (!Properties.Settings.Default.AlwaysCloseToTray)
-                        result = MessageBox.Show(Strings.MinimizeInsteadOfClose, Strings.Warning, MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+                    MessageBoxResult result = MessageBox.Show(Strings.MinimizeInsteadOfClose, Strings.Warning, MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
 
-                    // ReSharper disable once ConvertIfStatementToSwitchStatement
                     if (result == MessageBoxResult.Yes)
                     {
                         e.Cancel = true;
-
                         Hide();
                         _trayIcon.Visible = true;
-
                         return;
                     }
 
