@@ -1302,8 +1302,6 @@ namespace Assistant.UI
                           "  Extremely fast, lowest latency. Great for standard accent conversion.\n\n" +
                           "• llama-3.3-70b-versatile:\n" +
                           "  High quality and versatile. Best balance of reasoning and vocabulary.\n\n" +
-                          "• mixtral-8x7b-32768:\n" +
-                          "  High daily request limits. Great context size and quality for creative styling.\n\n" +
                           "• qwen/qwen3.6-27b:\n" +
                           "  Alibaba's advanced 27B reasoning/text model. Great balance of quality and speed.\n\n" +
                           "• qwen/qwen3-32b:\n" +

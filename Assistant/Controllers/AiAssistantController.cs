@@ -403,6 +403,20 @@ namespace Assistant.Controllers
                                     SaveSettings();
 
                                     string cleanedResult = content.Trim();
+
+                                    // Strip reasoning/thinking tags (e.g. <think>...</think>) from Qwen/DeepSeek reasoning models
+                                    cleanedResult = System.Text.RegularExpressions.Regex.Replace(
+                                        cleanedResult,
+                                        @"<think>[\s\S]*?</think>",
+                                        string.Empty).Trim();
+
+                                    // Fallback if there is an unclosed <think> tag
+                                    if (cleanedResult.Contains("<think>"))
+                                    {
+                                        int idx = cleanedResult.IndexOf("<think>");
+                                        cleanedResult = cleanedResult.Substring(0, idx).Trim();
+                                    }
+
                                     // Remove em-dashes
                                     cleanedResult = cleanedResult.Replace("—", " ").Replace("--", " ");
 
