@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Assistant.UI;
 using System.Windows;
@@ -80,7 +80,11 @@ namespace Assistant
             // Check if settings already exist
             // for a previous assembly version
             if (!Settings.Default.HasPickedLanguage)
+            {
                 Settings.Default.Upgrade();
+                Settings.Default.FollowSystemColor = false;
+                Settings.Default.Save();
+            }
 
             // Initialize the controllers and
             // display the server picker on the

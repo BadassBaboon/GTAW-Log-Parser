@@ -118,7 +118,7 @@ namespace Assistant.Controllers
             Application.Current?.Dispatcher?.Invoke(() =>
             {
                 ApplyThemeSyncMode();
-
+                bool followMode = Settings.Default.FollowSystemMode && AppController.CanFollowSystemMode;
                 bool followColor = Settings.Default.FollowSystemColor && AppController.CanFollowSystemColor;
                 ApplyGtaWorldThemeOverrides(Style == "Default" && !followColor);
 
@@ -130,12 +130,21 @@ namespace Assistant.Controllers
 
                 try
                 {
-                    ThemeManager.Current.ChangeTheme(Application.Current, $"{baseColor}.{accent}");
+                    if (followColor)
+                    {
+                        if (!followMode)
+                        {
+                            ThemeManager.Current.ChangeThemeBaseColor(Application.Current, baseColor);
+                        }
+                    }
+                    else
+                    {
+                        ThemeManager.Current.ChangeTheme(Application.Current, $"{baseColor}.{accent}");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "ChangeTheme failed for {BaseColor}.{Accent}", baseColor, accent);
-                    ThemeManager.Current.ChangeTheme(Application.Current, $"{baseColor}.{(DarkMode ? DefaultDarkAccent : DefaultLightAccent)}");
+                    Serilog.Log.Error(ex, "Failed to update theme.");
                 }
             });
         }
