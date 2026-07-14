@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [6.0.0] - 2026-07-14
+
+Fork modernized and updated to support global AI Assistant text replacement and customizable accent profiles.
+
+### Added
+- Integrated AI Assistant controller and Groq API client supporting active model selection (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`, `qwen/qwen3.6-27b`, `openai/gpt-oss-120b`).
+- Global keyboard hook simulation using hardware-level scan codes mapped via dynamic `MapVirtualKey` Win32 APIs, making hotkeys compatible with FiveM, RageMP, Discord, and system text areas.
+- Custom speech accent profile manager to add, edit, and delete contraction patterns, contraction rules, and vocabulary guidelines.
+- Relocated **Always close to system tray** and **Start with Windows** preferences to the main Program Settings panel with optimized category grouping and DPI-aware Borders.
+
+### Changed
+- Promoted translation shortcut from `Ctrl+Y` (redo collision) to `Ctrl+U`.
+- Upgraded the default Tony Soprano accent profile parameters and added post-processing filters to completely strip em-dashes.
+- Optimized hotkey response times to be instantaneous using active clipboard polling (every 2ms, max 50ms) instead of fixed thread sleeps.
+- Changed default setting of `AlwaysCloseToTray` to `True` (enabled by default) and decoupled it from the automatic backup settings.
+- Repository owner/fork owner updated to `BadassBaboon`.
 
 ## [5.0.0] - 2026-05-16
 

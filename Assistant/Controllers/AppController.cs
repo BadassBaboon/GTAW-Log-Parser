@@ -8,7 +8,7 @@ namespace Assistant.Controllers
 {
     public static class AppController
     {
-        public const string AssemblyVersion = "5.0.0";
+        public const string AssemblyVersion = "6.0.0";
         public static readonly string Version = $"v{AssemblyVersion}";
         public static bool IsBetaVersion => false;
         public static bool CanFollowSystemColor = false;
@@ -18,7 +18,7 @@ namespace Assistant.Controllers
         public const string MutexName = "GTAWChatLogAssistant";
         public static readonly string[] ProcessNames = { "GTA5", "GTA5_Enhanced" };
         public const string ProductHeader = "GTAW-Log-Parser";
-        public const string GitHubOwner = "blancodagoat";
+        public const string GitHubOwner = "BadassBaboon";
         public const string GitHubRepo = "GTAW-Log-Parser";
 
         public static string ResourceDirectory => ChatLogScanner.ResourceDirectory;

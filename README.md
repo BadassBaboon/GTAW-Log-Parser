@@ -6,7 +6,7 @@ This program converts the chat logs generated while playing on GTA World into re
 
 ## Getting Started
 
-No installation is required. Download the latest [release](https://github.com/blancodagoat/GTAW-Log-Parser/releases) and run the executable.
+No installation is required. Download the latest [release](https://github.com/BadassBaboon/GTAW-Log-Parser/releases) and run the executable.
 
 Two flavours are published for each app:
 
@@ -49,7 +49,7 @@ The solution uses SDK-style csproj. No special MSBuild flags are required.
 
 ## Publishing release binaries
 
-The `.github/workflows/release.yml` workflow does this automatically on tag push (`git tag v5.0.0 && git push --tags`). To reproduce locally:
+The `.github/workflows/release.yml` workflow does this automatically on tag push (`git tag v6.0.0 && git push --tags`). To reproduce locally:
 
 ```bash
 # Framework-dependent (small)
@@ -72,7 +72,7 @@ Neither is wired up by default — both produce trust-warning-free downloads but
 
 ## Contributing
 
-1. Fork the project (<https://github.com/blancodagoat/GTAW-Log-Parser>)
+1. Fork the project (<https://github.com/BadassBaboon/GTAW-Log-Parser>)
 2. Create a branch (`git checkout -b feature/your-feature`)
 3. Commit (`git commit -am "Add feature_name"`)
 4. Push (`git push origin feature/your-feature`)
