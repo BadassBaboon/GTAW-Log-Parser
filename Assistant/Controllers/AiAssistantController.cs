@@ -47,7 +47,7 @@ namespace Assistant.Controllers
         public string? ShortcutKey { get; set; }
 
         public string ShortcutAccent { get; set; } = "Ctrl+T";
-        public string ShortcutTranslate { get; set; } = "Ctrl+Y";
+        public string ShortcutTranslate { get; set; } = "Ctrl+U";
         public string ShortcutCorrect { get; set; } = "Ctrl+H";
         public bool SoundEnabled { get; set; } = true;
         public bool BindTildeEnabled { get; set; } = false;
@@ -96,6 +96,11 @@ namespace Assistant.Controllers
                             SaveSettings();
                         }
 #pragma warning restore CS0618
+                        if (Settings.ShortcutTranslate == "Ctrl+Y")
+                        {
+                            Settings.ShortcutTranslate = "Ctrl+U";
+                            SaveSettings();
+                        }
                         EnsureDefaultProfiles();
                         ResetQuotasIfNeeded();
                         return;

@@ -129,7 +129,7 @@
 
                 <Label Content="Keyboard Shortcuts:" HorizontalAlignment="Left" Margin="300,85,0,0" VerticalAlignment="Top" Width="180"/>
                 <Button x:Name="RecordAccentHotkeyBtn" Click="RecordAccentHotkeyBtn_Click" Content="Accent Shortcut: Ctrl+T" HorizontalAlignment="Left" Margin="300,108,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
-                <Button x:Name="RecordTranslateHotkeyBtn" Click="RecordTranslateHotkeyBtn_Click" Content="Translate Shortcut: Ctrl+Y" HorizontalAlignment="Left" Margin="300,138,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
+                <Button x:Name="RecordTranslateHotkeyBtn" Click="RecordTranslateHotkeyBtn_Click" Content="Translate Shortcut: Ctrl+U" HorizontalAlignment="Left" Margin="300,138,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
                 <Button x:Name="RecordCorrectHotkeyBtn" Click="RecordCorrectHotkeyBtn_Click" Content="Correct Shortcut: Ctrl+H" HorizontalAlignment="Left" Margin="300,168,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="300,200,0,0" VerticalAlignment="Top">
