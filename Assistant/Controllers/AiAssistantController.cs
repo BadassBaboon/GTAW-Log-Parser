@@ -52,7 +52,7 @@ namespace Assistant.Controllers
         public bool SoundEnabled { get; set; } = true;
         public bool BindTildeEnabled { get; set; } = false;
         public string LengthConstraint { get; set; } = "Similar"; // NoConstraint, Similar, Concise
-        public bool PhoneticEnabled { get; set; } = true;
+        public bool PhoneticEnabled { get; set; } = false;
         public double Temperature { get; set; } = 0.6;
     }
 
@@ -120,19 +120,35 @@ namespace Assistant.Controllers
                 Settings.CustomProfiles = new List<CustomAccentProfile>();
             }
 
-            if (!Settings.CustomProfiles.Any(p => 
+            var sopranoProfile = Settings.CustomProfiles.FirstOrDefault(p => 
                 p.TargetAccent != null && 
-                p.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0))
+                p.TargetAccent.IndexOf("Tony Soprano", StringComparison.OrdinalIgnoreCase) >= 0);
+
+            if (sopranoProfile == null)
             {
                 Settings.CustomProfiles.Add(new CustomAccentProfile
                 {
                     TargetAccent = "Tony Soprano",
                     CustomDirectives = "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
-                                       "Use phonetic spelling and slang: 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'ova' (over), 'Chrishtufah' (Christopher). " +
+                                       "NEVER write 'ovah' or 'ova' for 'over'—Tony Soprano pronounces 'over' normally, not like a Boston accent. " +
+                                       "Avoid direct words like 'buddies' or 'friend'; use euphemisms instead (e.g. 'our friend from that thing', 'a friend of ours', 'our friend who celebrates Hanukkah'). " +
+                                       "Use light phonetic spellings for ending 'g' on 'ing' words ('talkin', 'goin') and words like 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'Chrishtufah' (Christopher). " +
                                        "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
                                        "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
                                        "Use vocabulary terms: 'prick', 'broad' (woman), 'moolinyan/melanzana/ditsoon' (derogatory)."
                 });
+                SaveSettings();
+            }
+            else if (sopranoProfile.CustomDirectives != null && sopranoProfile.CustomDirectives.Contains("'ova' (over)"))
+            {
+                // Upgrade to the improved directives
+                sopranoProfile.CustomDirectives = "NEVER use the word 'capisce'. Speak authoritatively with direct order-like phrasing. " +
+                                                   "NEVER write 'ovah' or 'ova' for 'over'—Tony Soprano pronounces 'over' normally, not like a Boston accent. " +
+                                                   "Avoid direct words like 'buddies' or 'friend'; use euphemisms instead (e.g. 'our friend from that thing', 'a friend of ours', 'our friend who celebrates Hanukkah'). " +
+                                                   "Use light phonetic spellings for ending 'g' on 'ing' words ('talkin', 'goin') and words like 'fuhchrissake' (for Christ's sake), 'fache' (face), 'shaw' (saw), 'dat' (that), 'pash' (pass), 'Chrishtufah' (Christopher). " +
+                                                   "Use signature phrases: 'the whole fuckin' thing', 'end of story', 'end of subject', 'poor you' (sarcastic), 'Jesus Christ...' (sigh), 'all due respect', 'you know what I'm sayin'?', 'this is givin' me agita' (heartburn/worry). " +
+                                                   "For surprise/disbelief, use 'the fuck?', 'get the fuck out!', or 'the fuck outta here!'. " +
+                                                   "Use vocabulary terms: 'prick', 'broad' (woman), 'moolinyan/melanzana/ditsoon' (derogatory).";
                 SaveSettings();
             }
         }
