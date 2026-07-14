@@ -38,6 +38,9 @@ namespace Assistant.Utilities
         [DllImport("user32.dll", SetLastError = true)]
         private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
         // VirtKey Constants
         private const int VK_OEM_3 = 0xC0; // ~ or ` key
         private const int VK_T = 0x54;
@@ -46,6 +49,16 @@ namespace Assistant.Utilities
         private const int VK_SHIFT = 0x10;
         private const int VK_LWIN = 0x5B;
         private const int VK_RWIN = 0x5C;
+
+        private const ushort VK_LCONTROL = 0xA2;
+        private const ushort VK_RCONTROL = 0xA3;
+        private const ushort VK_LSHIFT = 0xA0;
+        private const ushort VK_RSHIFT = 0xA1;
+        private const ushort VK_LMENU = 0xA4; // Left Alt
+        private const ushort VK_RMENU = 0xA5; // Right Alt
+
+        private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
+        private const uint KEYEVENTF_SCANCODE = 0x0008;
 
         [StructLayout(LayoutKind.Sequential)]
         struct KEYBDINPUT
@@ -249,16 +262,56 @@ namespace Assistant.Utilities
             SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
         }
 
+        private static bool IsExtendedKey(ushort vkCode)
+        {
+            return vkCode == 0x21 || // PageUp
+                   vkCode == 0x22 || // PageDown
+                   vkCode == 0x23 || // End
+                   vkCode == 0x24 || // Home
+                   vkCode == 0x25 || // Left
+                   vkCode == 0x26 || // Up
+                   vkCode == 0x27 || // Right
+                   vkCode == 0x28 || // Down
+                   vkCode == 0x2D || // Insert
+                   vkCode == 0x2E || // Delete
+                   vkCode == 0xA3 || // RControl
+                   vkCode == 0xA5 || // RMenu
+                   vkCode == 0x5B || // LWin
+                   vkCode == 0x5C;   // RWin
+        }
+
         /// <summary>
         /// Sends multiple key events in a single atomic SendInput call.
-        /// Events from a single SendInput call are guaranteed by the OS to not
-        /// be interleaved with any other input events (user or programmatic).
+        /// Events are resolved to scan codes using MapVirtualKey to ensure they are
+        /// accepted by hardware-level input handlers (e.g. VSCode, MS Word, and games).
         /// </summary>
         private static void SendKeys(params (ushort vk, bool down)[] keys)
         {
             INPUT[] inputs = new INPUT[keys.Length];
             for (int i = 0; i < keys.Length; i++)
             {
+                ushort vkCode = keys[i].vk;
+                // Map generic modifiers to specific left versions for scan code lookup
+                if (vkCode == VK_CONTROL) vkCode = VK_LCONTROL;
+                else if (vkCode == VK_MENU) vkCode = VK_LMENU;
+                else if (vkCode == VK_SHIFT) vkCode = VK_LSHIFT;
+
+                ushort scanCode = (ushort)MapVirtualKey(vkCode, 0); // MAPVK_VK_TO_VSC is 0
+                uint flags = 0;
+                if (scanCode != 0)
+                {
+                    flags |= KEYEVENTF_SCANCODE;
+                    if (IsExtendedKey(vkCode))
+                    {
+                        flags |= KEYEVENTF_EXTENDEDKEY;
+                    }
+                }
+
+                if (!keys[i].down)
+                {
+                    flags |= KEYEVENTF_KEYUP;
+                }
+
                 inputs[i] = new INPUT
                 {
                     type = INPUT_KEYBOARD,
@@ -266,9 +319,9 @@ namespace Assistant.Utilities
                     {
                         ki = new KEYBDINPUT
                         {
-                            wVk = keys[i].vk,
-                            wScan = 0,
-                            dwFlags = keys[i].down ? 0 : KEYEVENTF_KEYUP,
+                            wVk = scanCode != 0 ? (ushort)0 : vkCode,
+                            wScan = scanCode,
+                            dwFlags = flags,
                             time = 0,
                             dwExtraInfo = IntPtr.Zero
                         }
@@ -281,74 +334,46 @@ namespace Assistant.Utilities
         public static void SimulateCopy()
         {
             SendKeys(
-                (VK_CONTROL, true),
+                (VK_LCONTROL, true),
                 (0x43, true),   // C down
                 (0x43, false),  // C up
-                (VK_CONTROL, false)
+                (VK_LCONTROL, false)
             );
         }
 
         public static void SimulateSelectAll()
         {
             SendKeys(
-                (VK_CONTROL, true),
+                (VK_LCONTROL, true),
                 (0x41, true),   // A down
                 (0x41, false),  // A up
-                (VK_CONTROL, false)
-            );
-        }
-
-        public static void SimulateSelectAllAndCopy()
-        {
-            // Ctrl+A then Ctrl+C in one atomic batch
-            SendKeys(
-                (VK_CONTROL, true),
-                (0x41, true),   // A down
-                (0x41, false),  // A up
-                (0x43, true),   // C down
-                (0x43, false),  // C up
-                (VK_CONTROL, false)
-            );
-        }
-
-        /// <summary>
-        /// Sends Ctrl+A (Select All) immediately followed by Ctrl+V (Paste)
-        /// as a single atomic SendInput call. This guarantees no other input
-        /// events can slip between the selection and the paste.
-        /// </summary>
-        public static void SimulateSelectAllAndPaste()
-        {
-            SendKeys(
-                (VK_CONTROL, true),
-                (0x41, true),   // A down  (select all)
-                (0x41, false),  // A up
-                (0x56, true),   // V down  (paste)
-                (0x56, false),  // V up
-                (VK_CONTROL, false)
+                (VK_LCONTROL, false)
             );
         }
 
         public static void SimulatePaste()
         {
             SendKeys(
-                (VK_CONTROL, true),
+                (VK_LCONTROL, true),
                 (0x56, true),   // V down
                 (0x56, false),  // V up
-                (VK_CONTROL, false)
+                (VK_LCONTROL, false)
             );
         }
 
         /// <summary>
-        /// Sends key-up events for all common modifier keys (Ctrl, Shift, Alt, Win)
+        /// Sends key-up events for all Left/Right modifier keys (Ctrl, Shift, Alt, Win)
         /// to clear any stale "held down" state left over from the user's hotkey press.
-        /// Must be called at the start of any simulated keystroke sequence.
         /// </summary>
         public static void ReleaseAllModifiers()
         {
             SendKeys(
-                (VK_CONTROL, false),
-                (VK_SHIFT, false),
-                (VK_MENU, false),   // Alt
+                (VK_LCONTROL, false),
+                (VK_RCONTROL, false),
+                (VK_LSHIFT, false),
+                (VK_RSHIFT, false),
+                (VK_LMENU, false),
+                (VK_RMENU, false),
                 (VK_LWIN, false),
                 (VK_RWIN, false)
             );

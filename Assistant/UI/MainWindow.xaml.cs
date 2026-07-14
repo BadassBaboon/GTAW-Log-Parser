@@ -987,12 +987,12 @@ namespace Assistant.UI
             {
                 try
                 {
-                    // Wait for the user to physically release the hotkey combo,
-                    // then force-release all modifier keys so subsequent simulated
-                    // keystrokes are not contaminated by stale Ctrl/Shift/Alt state.
-                    Thread.Sleep(100);
-                    KeyboardHookManager.ReleaseAllModifiers();
+                    Log.Debug("AI Shortcut triggered. Mode: {Mode}", mode);
+
+                    // Wait briefly for the user to lift key, then force-release modifiers.
                     Thread.Sleep(50);
+                    KeyboardHookManager.ReleaseAllModifiers();
+                    Thread.Sleep(20);
 
                     string oldClipboard = string.Empty;
                     Dispatcher.Invoke(() =>
@@ -1002,29 +1002,54 @@ namespace Assistant.UI
 
                     Dispatcher.Invoke(() => { try { Clipboard.Clear(); } catch { } });
 
+                    Log.Debug("Simulating initial Copy to check for highlighted text...");
                     KeyboardHookManager.SimulateCopy();
-                    Thread.Sleep(150);
 
+                    // Poll clipboard: check every 10ms, up to a maximum of 250ms (25 attempts).
+                    // This ensures instantaneous response under normal load (succeeds in 10ms),
+                    // but remains fully robust under heavy game load / low FPS where copy takes longer.
                     string capturedText = string.Empty;
-                    Dispatcher.Invoke(() =>
+                    for (int i = 0; i < 25; i++)
                     {
-                        try { capturedText = Clipboard.GetText(); } catch { }
-                    });
-
-                    bool wasHighlightedInitially = !string.IsNullOrWhiteSpace(capturedText);
-
-                    if (!wasHighlightedInitially)
-                    {
-                        KeyboardHookManager.SimulateSelectAllAndCopy();
-                        Thread.Sleep(150);
+                        Thread.Sleep(10);
                         Dispatcher.Invoke(() =>
                         {
                             try { capturedText = Clipboard.GetText(); } catch { }
                         });
+                        if (!string.IsNullOrWhiteSpace(capturedText))
+                            break;
+                    }
+
+                    bool wasHighlightedInitially = !string.IsNullOrWhiteSpace(capturedText);
+                    Log.Debug("Initial highlight detection complete. Highlighted: {Highlighted}, TextLength: {Length}", wasHighlightedInitially, capturedText.Length);
+
+                    if (!wasHighlightedInitially)
+                    {
+                        Log.Debug("No text was highlighted. Simulating Select All...");
+                        KeyboardHookManager.SimulateSelectAll();
+                        Thread.Sleep(60); // Safe delay (approx. 2 frames at 30 FPS) for target app layout update
+
+                        Dispatcher.Invoke(() => { try { Clipboard.Clear(); } catch { } });
+                        Log.Debug("Simulating Copy of selected text...");
+                        KeyboardHookManager.SimulateCopy();
+
+                        // Poll clipboard for up to 250ms
+                        for (int i = 0; i < 25; i++)
+                        {
+                            Thread.Sleep(10);
+                            Dispatcher.Invoke(() =>
+                            {
+                                try { capturedText = Clipboard.GetText(); } catch { }
+                            });
+                            if (!string.IsNullOrWhiteSpace(capturedText))
+                                break;
+                        }
+                        Log.Debug("Select All fallback copy complete. TextLength: {Length}", capturedText.Length);
                     }
 
                     if (string.IsNullOrWhiteSpace(capturedText))
                     {
+                        Log.Warning("No text captured after select all attempt. Restoring clipboard and aborting.");
                         Dispatcher.Invoke(() =>
                         {
                             try { Clipboard.SetText(oldClipboard); } catch { }
@@ -1034,7 +1059,9 @@ namespace Assistant.UI
                     }
 
                     // Process text via Groq using the specific mode triggered by the shortcut
+                    Log.Debug("Processing text via Groq...");
                     string result = await AiAssistantController.ProcessTextAsync(capturedText, mode);
+                    Log.Debug("Groq processing completed. Result length: {Length}", result.Length);
 
                     Dispatcher.Invoke(() =>
                     {
@@ -1043,22 +1070,21 @@ namespace Assistant.UI
 
                     if (!wasHighlightedInitially)
                     {
-                        // Atomic Ctrl+A → Ctrl+V in a single SendInput call
-                        // so no events can slip between select-all and paste.
-                        KeyboardHookManager.SimulateSelectAllAndPaste();
+                        Log.Debug("Simulating Select All before pasting rewritten text...");
+                        KeyboardHookManager.SimulateSelectAll();
+                        Thread.Sleep(60); // Safe delay for target app layout update
                     }
-                    else
-                    {
-                        // Text was already highlighted; paste replaces the selection.
-                        KeyboardHookManager.SimulatePaste();
-                    }
-                    Thread.Sleep(150);
+
+                    Log.Debug("Simulating Paste...");
+                    KeyboardHookManager.SimulatePaste();
+                    Thread.Sleep(100); // Safe delay for target app to read clipboard and complete paste
 
                     Dispatcher.Invoke(() =>
                     {
                         try { Clipboard.SetText(oldClipboard); } catch { }
                     });
 
+                    Log.Debug("AI Shortcut processing completed successfully.");
                     PlaySound(true);
                 }
                 catch (Exception ex)
