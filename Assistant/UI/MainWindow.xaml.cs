@@ -11,6 +11,7 @@ using Assistant.Localization;
 using Assistant.Utilities;
 using GTAWParser.Shared;
 using Serilog;
+using System.Windows.Media;
 using System.Windows.Controls;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -906,7 +907,6 @@ namespace Assistant.UI
 
             // Sync controls
             BindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
-            AiBindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
             AiSoundEnabled.IsChecked = AiAssistantController.Settings.SoundEnabled;
             AiPhoneticEnabled.IsChecked = AiAssistantController.Settings.PhoneticEnabled;
             AiTemperature.Value = AiAssistantController.Settings.Temperature;
@@ -950,7 +950,9 @@ namespace Assistant.UI
             RecordAccentHotkeyBtn.Content = $"Accent Shortcut: {AiAssistantController.Settings.ShortcutAccent}";
             RecordTranslateHotkeyBtn.Content = $"Translate Shortcut: {AiAssistantController.Settings.ShortcutTranslate}";
             RecordCorrectHotkeyBtn.Content = $"Correct Shortcut: {AiAssistantController.Settings.ShortcutCorrect}";
-            UpdateModelInfo();
+
+            // Default to Log Parser view on startup
+            SwitchToTab(true);
         }
 
         private void PlaySound(bool success)
@@ -1136,25 +1138,6 @@ namespace Assistant.UI
             AiAssistantController.SaveSettings();
 
             KeyboardHookManager.BindTildeToT = isChecked;
-
-            if (AiBindTilde != null && AiBindTilde.IsChecked != isChecked)
-            {
-                AiBindTilde.IsChecked = isChecked;
-            }
-        }
-
-        private void AiBindTilde_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            bool isChecked = AiBindTilde.IsChecked == true;
-            AiAssistantController.Settings.BindTildeEnabled = isChecked;
-            AiAssistantController.SaveSettings();
-
-            KeyboardHookManager.BindTildeToT = isChecked;
-
-            if (BindTilde != null && BindTilde.IsChecked != isChecked)
-            {
-                BindTilde.IsChecked = isChecked;
-            }
         }
 
         private void AiSoundEnabled_CheckedChanged(object sender, RoutedEventArgs e)
@@ -1248,7 +1231,6 @@ namespace Assistant.UI
                 string model = item.Content.ToString() ?? string.Empty;
                 AiAssistantController.Settings.ActiveModel = model;
                 AiAssistantController.SaveSettings();
-                UpdateModelInfo();
             }
         }
 
@@ -1260,38 +1242,63 @@ namespace Assistant.UI
             {
                 AiAssistantController.Settings.ActiveModel = model;
                 AiAssistantController.SaveSettings();
-                UpdateModelInfo();
             }
         }
 
-        private void UpdateModelInfo()
+        private void ModelInfoHelpBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (ModelInfoText == null) return;
+            string info = "Available Groq Models:\n\n" +
+                          "• llama-3.1-8b-instant:\n" +
+                          "  Extremely fast, lowest latency. Great for standard accent conversion.\n\n" +
+                          "• llama-3.3-70b-versatile:\n" +
+                          "  High quality and versatile. Best balance of reasoning and vocabulary.\n\n" +
+                          "• deepseek-r1-distill-llama-70b:\n" +
+                          "  Excellent reasoning model distilled from DeepSeek R1. Recommended for complex personas.\n\n" +
+                          "• deepseek-r1-distill-qwen-32b:\n" +
+                          "  Great creative writing and reasoning quality. Fast speed.\n\n" +
+                          "• gemma2-9b-it:\n" +
+                          "  Google's efficient 9B model. Fast speed, good daily limit.";
+            MessageBox.Show(this, info, "Model Information", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
 
-            string model = AiModel.Text.Trim();
-            string info;
-            switch (model)
+        private void TabLogParserBtn_Click(object sender, RoutedEventArgs e)
+        {
+            SwitchToTab(true);
+        }
+
+        private void TabAiAssistantBtn_Click(object sender, RoutedEventArgs e)
+        {
+            SwitchToTab(false);
+        }
+
+        private void SwitchToTab(bool isLogParser)
+        {
+            if (isLogParser)
             {
-                case "llama-3.1-8b-instant":
-                    info = "llama-3.1-8b-instant:\nQuality: Good\nSpeed: Extremely Fast\nDaily Limit: Very High (~14k req/day)\nRecommendation: Default / Best for most users.";
-                    break;
-                case "llama-3.3-70b-versatile":
-                    info = "llama-3.3-70b-versatile:\nQuality: Excellent\nSpeed: Fast\nDaily Limit: Medium (~1,000 req/day)\nRecommendation: High Quality option.";
-                    break;
-                case "qwen3-32b":
-                    info = "qwen3-32b:\nQuality: Very Good\nSpeed: Fast\nDaily Limit: High\nRecommendation: Great for creative style.";
-                    break;
-                case "deepseek-r1-distill":
-                    info = "deepseek-r1-distill:\nQuality: Excellent Reasoning\nSpeed: Fast\nDaily Limit: Medium-High\nRecommendation: Good for complex personas.";
-                    break;
-                case "gpt-oss-120b":
-                    info = "gpt-oss-120b:\nQuality: Good\nSpeed: Fast\nDaily Limit: High\nRecommendation: Fun variety.";
-                    break;
-                default:
-                    info = "Custom Model:\nEnsure this model is supported on Groq. Limits and speeds depend on the specific model.";
-                    break;
+                LogParserGrid.Visibility = Visibility.Visible;
+                AiAssistantGrid.Visibility = Visibility.Collapsed;
+                
+                TabLogParserBtn.SetResourceReference(BackgroundProperty, "MahApps.Brushes.Accent");
+                TabLogParserBtn.SetResourceReference(ForegroundProperty, "MahApps.Brushes.IdealForeground");
+                TabLogParserBtn.FontWeight = FontWeights.Bold;
+
+                TabAiAssistantBtn.Background = Brushes.Transparent;
+                TabAiAssistantBtn.SetResourceReference(ForegroundProperty, "MahApps.Brushes.Text");
+                TabAiAssistantBtn.FontWeight = FontWeights.Normal;
             }
-            ModelInfoText.Text = info;
+            else
+            {
+                LogParserGrid.Visibility = Visibility.Collapsed;
+                AiAssistantGrid.Visibility = Visibility.Visible;
+
+                TabAiAssistantBtn.SetResourceReference(BackgroundProperty, "MahApps.Brushes.Accent");
+                TabAiAssistantBtn.SetResourceReference(ForegroundProperty, "MahApps.Brushes.IdealForeground");
+                TabAiAssistantBtn.FontWeight = FontWeights.Bold;
+
+                TabLogParserBtn.Background = Brushes.Transparent;
+                TabLogParserBtn.SetResourceReference(ForegroundProperty, "MahApps.Brushes.Text");
+                TabLogParserBtn.FontWeight = FontWeights.Normal;
+            }
         }
 
         private void RecordAccentHotkeyBtn_Click(object sender, RoutedEventArgs e)
