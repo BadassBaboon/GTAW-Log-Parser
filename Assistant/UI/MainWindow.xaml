@@ -11,7 +11,7 @@
                       WindowStartupLocation="CenterScreen"
                       Closing="Main_Closing"
                       GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
-                      Title="GTA World Chat Log Assistant" Height="310" Width="640" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="GTA World Chat Log Assistant" Height="330" Width="640" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
     <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands>
