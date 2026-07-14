@@ -119,8 +119,8 @@ namespace Assistant.Controllers
             {
                 ApplyThemeSyncMode();
 
-                // Apply or remove GTA World theme overrides dynamically
-                ApplyGtaWorldThemeOverrides(Style == "Default");
+                bool followColor = Settings.Default.FollowSystemColor && AppController.CanFollowSystemColor;
+                ApplyGtaWorldThemeOverrides(Style == "Default" && !followColor);
 
                 string accent = Style == "Default"
                     ? (DarkMode ? DefaultDarkAccent : DefaultLightAccent)

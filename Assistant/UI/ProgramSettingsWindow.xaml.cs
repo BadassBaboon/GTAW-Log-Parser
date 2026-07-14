@@ -130,7 +130,7 @@ namespace Assistant.UI
             Properties.Settings.Default.DisableWarningPopups = false;
             Properties.Settings.Default.DisableErrorPopups = false;
             Properties.Settings.Default.IgnoreBetaVersions = true;
-            Properties.Settings.Default.FollowSystemColor = AppController.CanFollowSystemColor;
+            Properties.Settings.Default.FollowSystemColor = false;
             Properties.Settings.Default.FollowSystemMode = AppController.CanFollowSystemMode;
 
             StyleController.DarkMode = AppController.CanFollowSystemMode && StyleController.GetAppMode();
