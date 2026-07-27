@@ -919,7 +919,7 @@ namespace Assistant.UI
             AiTemperature.Value = AiAssistantController.Settings.Temperature;
             AiTemperatureLabel.Content = AiAssistantController.Settings.Temperature.ToString("0.0");
 
-            RecordAccentHotkeyBtn.Content = $"Accent & Action Enricher: {AiAssistantController.Settings.ShortcutAccent}";
+            UpdateAccentHotkeyButtonLabel();
             RecordTranslateHotkeyBtn.Content = $"Translate Shortcut: {AiAssistantController.Settings.ShortcutTranslate}";
             RecordCorrectHotkeyBtn.Content = $"Correct Shortcut: {AiAssistantController.Settings.ShortcutCorrect}";
 
@@ -958,7 +958,7 @@ namespace Assistant.UI
             }
 
             AiModel.Text = AiAssistantController.Settings.ActiveModel;
-            RecordAccentHotkeyBtn.Content = $"Accent Shortcut: {AiAssistantController.Settings.ShortcutAccent}";
+            UpdateAccentHotkeyButtonLabel();
             RecordTranslateHotkeyBtn.Content = $"Translate Shortcut: {AiAssistantController.Settings.ShortcutTranslate}";
             RecordCorrectHotkeyBtn.Content = $"Correct Shortcut: {AiAssistantController.Settings.ShortcutCorrect}";
 
@@ -1159,7 +1159,9 @@ namespace Assistant.UI
                 if (e.Key == Key.Escape)
                 {
                     string oldKey = GetShortcutStringForMode(_recordingHotkeyMode);
-                    string labelPrefix = _recordingHotkeyMode == "Accent" ? "Accent & Action Enricher" : $"{_recordingHotkeyMode} Shortcut";
+                    string labelPrefix = _recordingHotkeyMode == "Accent" 
+                        ? (AiAssistantController.Settings.ActionEnricherEnabled ? "Accent & Action Enricher Shortcut" : "Accent Shortcut")
+                        : $"{_recordingHotkeyMode} Shortcut";
                     GetButtonForMode(_recordingHotkeyMode).Content = $"{labelPrefix}: {oldKey}";
                     _recordingHotkeyMode = null;
                     return;
@@ -1182,7 +1184,9 @@ namespace Assistant.UI
                 string hotkey = string.Join("+", parts);
                 SaveShortcutForMode(_recordingHotkeyMode, hotkey);
 
-                string finalLabelPrefix = _recordingHotkeyMode == "Accent" ? "Accent & Action Enricher" : $"{_recordingHotkeyMode} Shortcut";
+                string finalLabelPrefix = _recordingHotkeyMode == "Accent"
+                    ? (AiAssistantController.Settings.ActionEnricherEnabled ? "Accent & Action Enricher Shortcut" : "Accent Shortcut")
+                    : $"{_recordingHotkeyMode} Shortcut";
                 GetButtonForMode(_recordingHotkeyMode).Content = $"{finalLabelPrefix}: {hotkey}";
                 _recordingHotkeyMode = null;
             }
@@ -1209,10 +1213,20 @@ namespace Assistant.UI
             AiAssistantController.SaveSettings();
         }
 
+        private void UpdateAccentHotkeyButtonLabel()
+        {
+            if (RecordAccentHotkeyBtn == null || AiAssistantController.Settings == null) return;
+            string prefix = AiAssistantController.Settings.ActionEnricherEnabled
+                ? "Accent & Action Enricher Shortcut"
+                : "Accent Shortcut";
+            RecordAccentHotkeyBtn.Content = $"{prefix}: {AiAssistantController.Settings.ShortcutAccent}";
+        }
+
         private void AiActionEnricherEnabled_CheckedChanged(object sender, RoutedEventArgs e)
         {
             AiAssistantController.Settings.ActionEnricherEnabled = AiActionEnricherEnabled.IsChecked == true;
             AiAssistantController.SaveSettings();
+            UpdateAccentHotkeyButtonLabel();
         }
 
         private void AiTemperature_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -1320,7 +1334,7 @@ namespace Assistant.UI
                           "• Temperature Slider:\n" +
                           "  Controls model output variance. Lower values (e.g. 0.2) produce highly predictable, faithful responses. " +
                           "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.\n\n" +
-                          "• Phonetic Spelling & Slang:\n" +
+                          "• Phonetic Spelling:\n" +
                           "  Toggles character-specific spelling rules. When enabled, the model writes phonetically (dropping ending 'g' on 'ing' words, using sound spellings like 'dat' or 'ova', etc.). " +
                           "When disabled, it maintains standard English spelling rules while still respecting custom profile directives, syntax, and vocabulary.\n\n" +
                           "• Action Enricher:\n" +

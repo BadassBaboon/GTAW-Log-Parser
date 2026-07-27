@@ -53,7 +53,7 @@ namespace Assistant.Controllers
         public bool BindTildeEnabled { get; set; } = false;
         public string LengthConstraint { get; set; } = "Similar"; // NoConstraint, Similar, Concise
         public bool PhoneticEnabled { get; set; } = false;
-        public bool ActionEnricherEnabled { get; set; } = true;
+        public bool ActionEnricherEnabled { get; set; } = false;
         public double Temperature { get; set; } = 0.6;
         public bool MigratedToCtrlU { get; set; } = false;
     }
