@@ -915,8 +915,13 @@ namespace Assistant.UI
             BindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
             AiSoundEnabled.IsChecked = AiAssistantController.Settings.SoundEnabled;
             AiPhoneticEnabled.IsChecked = AiAssistantController.Settings.PhoneticEnabled;
+            AiActionEnricherEnabled.IsChecked = AiAssistantController.Settings.ActionEnricherEnabled;
             AiTemperature.Value = AiAssistantController.Settings.Temperature;
             AiTemperatureLabel.Content = AiAssistantController.Settings.Temperature.ToString("0.0");
+
+            RecordAccentHotkeyBtn.Content = $"Accent & Action Enricher: {AiAssistantController.Settings.ShortcutAccent}";
+            RecordTranslateHotkeyBtn.Content = $"Translate Shortcut: {AiAssistantController.Settings.ShortcutTranslate}";
+            RecordCorrectHotkeyBtn.Content = $"Correct Shortcut: {AiAssistantController.Settings.ShortcutCorrect}";
 
             switch (AiAssistantController.Settings.LengthConstraint)
             {
@@ -1154,7 +1159,8 @@ namespace Assistant.UI
                 if (e.Key == Key.Escape)
                 {
                     string oldKey = GetShortcutStringForMode(_recordingHotkeyMode);
-                    GetButtonForMode(_recordingHotkeyMode).Content = $"{_recordingHotkeyMode} Shortcut: {oldKey}";
+                    string labelPrefix = _recordingHotkeyMode == "Accent" ? "Accent & Action Enricher" : $"{_recordingHotkeyMode} Shortcut";
+                    GetButtonForMode(_recordingHotkeyMode).Content = $"{labelPrefix}: {oldKey}";
                     _recordingHotkeyMode = null;
                     return;
                 }
@@ -1176,7 +1182,8 @@ namespace Assistant.UI
                 string hotkey = string.Join("+", parts);
                 SaveShortcutForMode(_recordingHotkeyMode, hotkey);
 
-                GetButtonForMode(_recordingHotkeyMode).Content = $"{_recordingHotkeyMode} Shortcut: {hotkey}";
+                string finalLabelPrefix = _recordingHotkeyMode == "Accent" ? "Accent & Action Enricher" : $"{_recordingHotkeyMode} Shortcut";
+                GetButtonForMode(_recordingHotkeyMode).Content = $"{finalLabelPrefix}: {hotkey}";
                 _recordingHotkeyMode = null;
             }
         }
@@ -1199,6 +1206,12 @@ namespace Assistant.UI
         private void AiPhoneticEnabled_CheckedChanged(object sender, RoutedEventArgs e)
         {
             AiAssistantController.Settings.PhoneticEnabled = AiPhoneticEnabled.IsChecked == true;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiActionEnricherEnabled_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            AiAssistantController.Settings.ActionEnricherEnabled = AiActionEnricherEnabled.IsChecked == true;
             AiAssistantController.SaveSettings();
         }
 
@@ -1309,7 +1322,10 @@ namespace Assistant.UI
                           "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.\n\n" +
                           "• Phonetic Spelling & Slang:\n" +
                           "  Toggles character-specific spelling rules. When enabled, the model writes phonetically (dropping ending 'g' on 'ing' words, using sound spellings like 'dat' or 'ova', etc.). " +
-                          "When disabled, it maintains standard English spelling rules while still respecting custom profile directives, syntax, and vocabulary.";
+                          "When disabled, it maintains standard English spelling rules while still respecting custom profile directives, syntax, and vocabulary.\n\n" +
+                          "• Action Enricher:\n" +
+                          "  Automatically detects roleplay action commands (/me, /do, /melow, /dolow, /melong, /dolong, /ame, /ado). " +
+                          "When enabled, triggering the shortcut enriches the action text into atmospheric, vivid, and detailed roleplay descriptions, keeping standard English spelling and preserving command prefixes.";
             MessageBox.Show(this, info, "Model & Parameter Information", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

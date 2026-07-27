@@ -53,6 +53,7 @@ namespace Assistant.Controllers
         public bool BindTildeEnabled { get; set; } = false;
         public string LengthConstraint { get; set; } = "Similar"; // NoConstraint, Similar, Concise
         public bool PhoneticEnabled { get; set; } = false;
+        public bool ActionEnricherEnabled { get; set; } = true;
         public double Temperature { get; set; } = 0.6;
         public bool MigratedToCtrlU { get; set; } = false;
     }
@@ -212,28 +213,77 @@ namespace Assistant.Controllers
             return availableKeys.FirstOrDefault();
         }
 
+        private static readonly string[] ActionPrefixes = new[]
+        {
+            "/me", "/do", "/dolow", "/melow", "/melong", "/dolong", "/ame", "/ado"
+        };
+
+        public static bool IsActionCommand(string text, out string prefix, out string payload)
+        {
+            prefix = "";
+            payload = "";
+            if (string.IsNullOrWhiteSpace(text)) return false;
+
+            var match = Regex.Match(text.Trim(), @"^/([a-zA-Z0-9_]+)\s+(.*)", RegexOptions.Singleline);
+            if (match.Success)
+            {
+                string cmd = "/" + match.Groups[1].Value.ToLower();
+                if (ActionPrefixes.Contains(cmd))
+                {
+                    prefix = "/" + match.Groups[1].Value + " ";
+                    payload = match.Groups[2].Value;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static async Task<string> ProcessTextAsync(string text, string? overrideMode = null)
         {
             if (string.IsNullOrWhiteSpace(text))
                 return text;
 
-            // 1. Check for slash command prefix (e.g. /me, /do, /s, /w, /b)
             string commandPrefix = "";
             string textToProcess = text;
-
-            // Matches ^/command_name followed by whitespace
-            var match = Regex.Match(text, @"^/([a-zA-Z0-9_]+)\s+(.*)", RegexOptions.Singleline);
-            if (match.Success)
-            {
-                commandPrefix = "/" + match.Groups[1].Value + " ";
-                textToProcess = match.Groups[2].Value;
-            }
-
-            // 2. Build system prompt based on mode and length constraints
             string systemPrompt = "";
             string activeMode = overrideMode ?? Settings.Mode;
 
-            if (activeMode == "Accent")
+            // Check if this is a roleplay action command (/me, /do, /melow, etc.) and Action Enricher is enabled
+            if (Settings.ActionEnricherEnabled && IsActionCommand(text, out string actPrefix, out string actPayload))
+            {
+                commandPrefix = actPrefix;
+                textToProcess = actPayload;
+
+                string constraintRules = "";
+                if (Settings.LengthConstraint == "Similar")
+                {
+                    constraintRules = "Maintain similar action length. ";
+                }
+                else if (Settings.LengthConstraint == "Concise")
+                {
+                    constraintRules = "Keep action description short and punchy. ";
+                }
+
+                systemPrompt = "Enrich the roleplay action description to make it vivid, atmospheric, detailed, and expressive.\n" +
+                               "RULES:\n" +
+                               "1. Preserve the underlying action, intent, and scene context.\n" +
+                               "2. Use standard English spelling and grammar (do NOT apply accent phonetics or slang to action descriptions).\n" +
+                               "3. Return ONLY the enriched action description.\n" +
+                               "4. Do not include conversational preambles, explanations, or quotes.\n" +
+                               "5. DO NOT use em-dashes (— or --).\n" +
+                               constraintRules;
+            }
+            else
+            {
+                // Matches ^/command_name followed by whitespace
+                var match = Regex.Match(text, @"^/([a-zA-Z0-9_]+)\s+(.*)", RegexOptions.Singleline);
+                if (match.Success)
+                {
+                    commandPrefix = "/" + match.Groups[1].Value + " ";
+                    textToProcess = match.Groups[2].Value;
+                }
+
+                if (activeMode == "Accent")
             {
                 string constraintRules = "";
                 if (Settings.LengthConstraint == "Similar")
@@ -323,6 +373,7 @@ namespace Assistant.Controllers
                                $"If there are no errors, return the text exactly as-is. " +
                                constraintRules +
                                $"Do not explain.";
+            }
             }
 
             // 3. Request Loop with Key Rotation
@@ -464,6 +515,152 @@ namespace Assistant.Controllers
             }
 
             throw new Exception("Translation failed after trying all available Groq API keys.");
+        }
+
+        public static async Task<CustomAccentProfile> GenerateProfileFromBackstoryAsync(string backstory)
+        {
+            if (string.IsNullOrWhiteSpace(backstory))
+            {
+                throw new ArgumentException("Backstory text cannot be empty.", nameof(backstory));
+            }
+
+            string systemPrompt = "You are an expert linguistic character analyst and roleplay persona creator.\n" +
+                               $"Given a character's backstory, origin, age, personality, and background details, construct a tailored accent/speech profile.\n" +
+                               $"RULES:\n" +
+                               $"Output EXACTLY two sections formatted as follows:\n\n" +
+                               $"NAME: [Concise Accent or Persona Name, e.g. South Boston Mobster]\n" +
+                               $"DIRECTIVES: [Detailed bullet points specifying speech habits, local slang words, phrasing, tone, contractions, phonetic rules (like dropping ending 'g's or sound replacements), and any banned words or caricature cliches to avoid]\n\n" +
+                               $"Do not include any conversational preamble or extra text outside of NAME: and DIRECTIVES:.";
+
+            int retryCount = 0;
+            int maxRetries = Settings.ApiKeys.Count(k => k.IsActive && !string.IsNullOrWhiteSpace(k.ApiKey));
+            if (maxRetries == 0)
+            {
+                throw new InvalidOperationException("No active Groq API keys configured. Please add one in the AI Assistant settings.");
+            }
+
+            while (retryCount < maxRetries)
+            {
+                var keyInfo = GetNextApiKey();
+                if (keyInfo == null)
+                {
+                    foreach (var k in Settings.ApiKeys)
+                        k.IsRateLimited = false;
+                    keyInfo = GetNextApiKey();
+                    if (keyInfo == null)
+                    {
+                        throw new InvalidOperationException("All configured API keys are currently rate-limited or unavailable.");
+                    }
+                }
+
+                try
+                {
+                    string modelToUse = !string.IsNullOrEmpty(Settings.ActiveModel) && Settings.ActiveModel.Contains("8b")
+                        ? "llama-3.3-70b-versatile"
+                        : Settings.ActiveModel;
+
+                    var requestBody = new
+                    {
+                        model = modelToUse,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = backstory }
+                        },
+                        temperature = 0.5,
+                        max_tokens = 1024
+                    };
+
+                    string jsonBody = JsonSerializer.Serialize(requestBody);
+
+                    using (var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions"))
+                    {
+                        request.Headers.Add("Authorization", $"Bearer {keyInfo.ApiKey}");
+                        request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+                        var response = await _httpClient.SendAsync(request);
+
+                        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            string responseJson = await response.Content.ReadAsStringAsync();
+                            using (var doc = JsonDocument.Parse(responseJson))
+                            {
+                                var content = doc.RootElement
+                                    .GetProperty("choices")[0]
+                                    .GetProperty("message")
+                                    .GetProperty("content")
+                                    .GetString();
+
+                                if (content != null)
+                                {
+                                    keyInfo.RequestCount++;
+                                    keyInfo.LastUsedDate = DateTime.Today;
+                                    SaveSettings();
+
+                                    string cleanedResult = content.Trim();
+
+                                    // Strip reasoning/thinking tags if present
+                                    cleanedResult = System.Text.RegularExpressions.Regex.Replace(
+                                        cleanedResult,
+                                        @"<think>[\s\S]*?</think>",
+                                        string.Empty).Trim();
+
+                                    if (cleanedResult.Contains("<think>"))
+                                    {
+                                        int idx = cleanedResult.IndexOf("<think>");
+                                        cleanedResult = cleanedResult.Substring(0, idx).Trim();
+                                    }
+
+                                    // Parse NAME: and DIRECTIVES:
+                                    string name = "Custom Generated Profile";
+                                    string directives = cleanedResult;
+
+                                    var nameMatch = Regex.Match(cleanedResult, @"NAME:\s*(.+)", RegexOptions.IgnoreCase);
+                                    var dirMatch = Regex.Match(cleanedResult, @"DIRECTIVES:\s*([\s\S]+)", RegexOptions.IgnoreCase);
+
+                                    if (nameMatch.Success)
+                                    {
+                                        name = nameMatch.Groups[1].Value.Split('\n')[0].Trim();
+                                    }
+                                    if (dirMatch.Success)
+                                    {
+                                        directives = dirMatch.Groups[1].Value.Trim();
+                                    }
+
+                                    return new CustomAccentProfile
+                                    {
+                                        TargetAccent = name,
+                                        CustomDirectives = directives
+                                    };
+                                }
+                            }
+                        }
+                        else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        {
+                            keyInfo.IsRateLimited = true;
+                            SaveSettings();
+                        }
+                        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        {
+                            keyInfo.IsActive = false;
+                            SaveSettings();
+                        }
+                        else
+                        {
+                            string errContent = await response.Content.ReadAsStringAsync();
+                            throw new HttpRequestException($"Groq API responded with status {response.StatusCode}: {errContent}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Serilog.Log.Warning(ex, $"Failed profile generation request using key {keyInfo.DisplayKey}. Rotating key.");
+                }
+
+                retryCount++;
+            }
+
+            throw new Exception("Profile generation failed after trying all available Groq API keys.");
         }
     }
 }

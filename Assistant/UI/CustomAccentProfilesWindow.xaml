@@ -38,13 +38,21 @@
                 <ListBox x:Name="ProfilesList" Grid.Row="1" SelectionChanged="ProfilesList_SelectionChanged" DisplayMemberPath="TargetAccent" BorderThickness="1" BorderBrush="#CCCCCC" Margin="0,0,0,10"/>
 
                 <Grid Grid.Row="2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="NewProfileBtn" Grid.Column="0" Content="New" Click="NewProfileBtn_Click" Height="26"/>
-                    <Button x:Name="DeleteProfileBtn" Grid.Column="2" Content="Delete" Click="DeleteProfileBtn_Click" Height="26" Background="#E53935" Foreground="White" BorderThickness="0"/>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="6"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Button x:Name="AiGenerateBtn" Grid.Row="0" Content="AI Profile Generator" Click="AiGenerateBtn_Click" Height="26" FontWeight="SemiBold"/>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="NewProfileBtn" Grid.Column="0" Content="New" Click="NewProfileBtn_Click" Height="26"/>
+                        <Button x:Name="DeleteProfileBtn" Grid.Column="2" Content="Delete" Click="DeleteProfileBtn_Click" Height="26" Background="#E53935" Foreground="White" BorderThickness="0"/>
+                    </Grid>
                 </Grid>
             </Grid>
 

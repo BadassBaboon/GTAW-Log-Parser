@@ -14,6 +14,7 @@ namespace Assistant
     /// </summary>
     public partial class App
     {
+        private static Mutex? _appMutex;
         private static bool startMinimized;
         private static bool isRestarted;
 
@@ -69,7 +70,7 @@ namespace Assistant
 
             // Make sure only one instance is running
             // if the application is not currently restarting
-            Mutex mutex = new Mutex(true, AppController.MutexName, out bool isUnique);
+            _appMutex = new Mutex(true, @"Global\" + AppController.MutexName, out bool isUnique);
             if (!isUnique && !isRestarted)
             {
                 MessageBox.Show(Localization.Strings.OtherInstanceRunning, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -106,7 +107,7 @@ namespace Assistant
 
             // Don't let the garbage
             // collector touch the Mutex
-            GC.KeepAlive(mutex);
+            GC.KeepAlive(_appMutex);
         }
 
         /// <summary>

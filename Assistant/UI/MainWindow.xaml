@@ -124,20 +124,21 @@
                 <Label Content="Settings:" HorizontalAlignment="Left" Margin="300,10,0,0" VerticalAlignment="Top" Width="150"/>
                 <CheckBox x:Name="AiSoundEnabled" Checked="AiSoundEnabled_CheckedChanged" Unchecked="AiSoundEnabled_CheckedChanged" Content="Notification sound" HorizontalAlignment="Left" Margin="300,33,0,0" VerticalAlignment="Top" Width="280"/>
                 <CheckBox x:Name="AiPhoneticEnabled" Checked="AiPhoneticEnabled_CheckedChanged" Unchecked="AiPhoneticEnabled_CheckedChanged" Content="Phonetic spelling &amp; slang" HorizontalAlignment="Left" Margin="300,55,0,0" VerticalAlignment="Top" Width="280"/>
+                <CheckBox x:Name="AiActionEnricherEnabled" Checked="AiActionEnricherEnabled_CheckedChanged" Unchecked="AiActionEnricherEnabled_CheckedChanged" Content="Action Enricher (enrich /me, /do, etc.)" HorizontalAlignment="Left" Margin="300,77,0,0" VerticalAlignment="Top" Width="280"/>
 
-                <Label Content="Keyboard Shortcuts:" HorizontalAlignment="Left" Margin="300,85,0,0" VerticalAlignment="Top" Width="180"/>
-                <Button x:Name="RecordAccentHotkeyBtn" Click="RecordAccentHotkeyBtn_Click" Content="Accent Shortcut: Ctrl+T" HorizontalAlignment="Left" Margin="300,108,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
-                <Button x:Name="RecordTranslateHotkeyBtn" Click="RecordTranslateHotkeyBtn_Click" Content="Translate Shortcut: Ctrl+U" HorizontalAlignment="Left" Margin="300,138,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
-                <Button x:Name="RecordCorrectHotkeyBtn" Click="RecordCorrectHotkeyBtn_Click" Content="Correct Shortcut: Ctrl+H" HorizontalAlignment="Left" Margin="300,168,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
+                <Label Content="Keyboard Shortcuts:" HorizontalAlignment="Left" Margin="300,103,0,0" VerticalAlignment="Top" Width="180"/>
+                <Button x:Name="RecordAccentHotkeyBtn" Click="RecordAccentHotkeyBtn_Click" Content="Accent &amp; Action Enricher: Ctrl+T" HorizontalAlignment="Left" Margin="300,124,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
+                <Button x:Name="RecordTranslateHotkeyBtn" Click="RecordTranslateHotkeyBtn_Click" Content="Translate Shortcut: Ctrl+U" HorizontalAlignment="Left" Margin="300,152,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
+                <Button x:Name="RecordCorrectHotkeyBtn" Click="RecordCorrectHotkeyBtn_Click" Content="Correct Shortcut: Ctrl+H" HorizontalAlignment="Left" Margin="300,180,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="300,200,0,0" VerticalAlignment="Top">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="300,210,0,0" VerticalAlignment="Top">
                     <Label Content="Temperature:" Width="82" Padding="0,0,0,0" VerticalContentAlignment="Center"/>
                     <Slider x:Name="AiTemperature" ValueChanged="AiTemperature_ValueChanged" Minimum="0" Maximum="1" TickFrequency="0.1" IsSnapToTickEnabled="True" Width="140" VerticalAlignment="Center"/>
                     <Label x:Name="AiTemperatureLabel" Content="0.6" Width="30" Padding="4,0,0,0" VerticalContentAlignment="Center"/>
                 </StackPanel>
 
-                <Button x:Name="ManageKeysBtn" Click="ManageKeysBtn_Click" Content="Manage API Keys" HorizontalAlignment="Left" Margin="300,238,0,0" VerticalAlignment="Top" Width="148" Height="26"/>
-                <Button x:Name="ManageProfilesBtn" Click="ManageProfilesBtn_Click" Content="Accent Profiles" HorizontalAlignment="Left" Margin="457,238,0,0" VerticalAlignment="Top" Width="148" Height="26"/>
+                <Button x:Name="ManageKeysBtn" Click="ManageKeysBtn_Click" Content="Manage API Keys" HorizontalAlignment="Left" Margin="300,245,0,0" VerticalAlignment="Top" Width="148" Height="26"/>
+                <Button x:Name="ManageProfilesBtn" Click="ManageProfilesBtn_Click" Content="Accent Profiles" HorizontalAlignment="Left" Margin="457,245,0,0" VerticalAlignment="Top" Width="148" Height="26"/>
             </Grid>
 
             <!-- Bottom Left Tab Navigation Buttons (Shared across both grids) -->

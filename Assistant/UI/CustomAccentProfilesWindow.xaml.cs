@@ -47,6 +47,27 @@ namespace Assistant.UI
             }
         }
 
+        private void AiGenerateBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var genWindow = new GenerateProfileWindow();
+            genWindow.Owner = this;
+            if (genWindow.ShowDialog() == true && genWindow.GeneratedProfile != null)
+            {
+                var newProfile = genWindow.GeneratedProfile;
+
+                if (AiAssistantController.Settings.CustomProfiles == null)
+                {
+                    AiAssistantController.Settings.CustomProfiles = new System.Collections.Generic.List<CustomAccentProfile>();
+                }
+
+                AiAssistantController.Settings.CustomProfiles.Add(newProfile);
+                AiAssistantController.SaveSettings();
+
+                _profiles.Add(newProfile);
+                ProfilesList.SelectedItem = newProfile;
+            }
+        }
+
         private void NewProfileBtn_Click(object sender, RoutedEventArgs e)
         {
             var newProfile = new CustomAccentProfile
