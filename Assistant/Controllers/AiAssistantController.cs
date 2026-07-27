@@ -293,6 +293,7 @@ namespace Assistant.Controllers
                                "4. Do not include conversational preambles, explanations, or quotes.\n" +
                                "5. DO NOT use em-dashes (— or --).\n" +
                                "7. Always end the action description with proper sentence-ending punctuation (a period '.', '?', or '!').\n" +
+                               "8. CRITICAL ANTI-HALLUCINATION RULE: DO NOT invent unstated physical details, injuries, bloodstains, damage, clothing conditions (e.g., 'tattered', 'blood-stained', 'worn'), specific objects, or unstated facts not present in the original input. Only refine the phrasing, vocabulary, structure, and atmospheric delivery of the EXACT facts and items provided.\n" +
                                constraintRules;
             }
             else
