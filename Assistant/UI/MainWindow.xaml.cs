@@ -992,6 +992,49 @@ namespace Assistant.UI
             }
         }
 
+        private static string SafeGetClipboardText()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    return Clipboard.GetText();
+                }
+                catch (System.Runtime.InteropServices.COMException)
+                {
+                    Thread.Sleep(5);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "Failed to get clipboard text.");
+                    return string.Empty;
+                }
+            }
+            return string.Empty;
+        }
+
+        private static void SafeSetClipboardText(string text)
+        {
+            if (text == null) return;
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    Clipboard.SetText(text);
+                    return;
+                }
+                catch (System.Runtime.InteropServices.COMException)
+                {
+                    Thread.Sleep(5);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "Failed to set clipboard text.");
+                    return;
+                }
+            }
+        }
+
         private void OnAiModeShortcutTriggered(string mode)
         {
             Thread thread = new Thread(async () =>
@@ -1007,7 +1050,7 @@ namespace Assistant.UI
                     string oldClipboard = string.Empty;
                     Dispatcher.Invoke(() =>
                     {
-                        try { oldClipboard = Clipboard.GetText(); } catch { }
+                        oldClipboard = SafeGetClipboardText();
                     });
 
                     Dispatcher.Invoke(() => { try { Clipboard.Clear(); } catch { } });
@@ -1024,7 +1067,7 @@ namespace Assistant.UI
                         Thread.Sleep(2);
                         Dispatcher.Invoke(() =>
                         {
-                            try { capturedText = Clipboard.GetText(); } catch { }
+                            capturedText = SafeGetClipboardText();
                         });
                         if (!string.IsNullOrWhiteSpace(capturedText))
                             break;
@@ -1049,7 +1092,7 @@ namespace Assistant.UI
                             Thread.Sleep(2);
                             Dispatcher.Invoke(() =>
                             {
-                                try { capturedText = Clipboard.GetText(); } catch { }
+                                capturedText = SafeGetClipboardText();
                             });
                             if (!string.IsNullOrWhiteSpace(capturedText))
                                 break;
@@ -1062,7 +1105,7 @@ namespace Assistant.UI
                         Log.Warning("No text captured after select all attempt. Restoring clipboard and aborting.");
                         Dispatcher.Invoke(() =>
                         {
-                            try { Clipboard.SetText(oldClipboard); } catch { }
+                            SafeSetClipboardText(oldClipboard);
                         });
                         PlaySound(false);
                         return;
@@ -1075,7 +1118,7 @@ namespace Assistant.UI
 
                     Dispatcher.Invoke(() =>
                     {
-                        try { Clipboard.SetText(result); } catch { }
+                        SafeSetClipboardText(result);
                     });
 
                     if (!wasHighlightedInitially)
@@ -1091,7 +1134,7 @@ namespace Assistant.UI
 
                     Dispatcher.Invoke(() =>
                     {
-                        try { Clipboard.SetText(oldClipboard); } catch { }
+                        SafeSetClipboardText(oldClipboard);
                     });
 
                     Log.Debug("AI Shortcut processing completed successfully.");
