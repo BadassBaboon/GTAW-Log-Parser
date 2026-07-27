@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.0] - 2026-07-28
+
+### Added
+- AI Accent Profile Generator window allowing players to paste character lore/backstory and generate custom accent directives using the `llama-3.3-70b-versatile` reasoning model.
+- Automated Action Enricher supporting GTA World roleplay action commands (`/me`, `/my`, `/do`, `/dolow`, `/mylow`, `/melow`, `/melong`, `/mylong`, `/dolong`, `/ame`, `/amy`, `/ado`).
+- Roleplay question detection rule protecting `/do` questions from being answered or generating fabricated inventory responses.
+- Anti-hallucination prompt instructions to prevent fabricating unstated physical condition details, clothing conditions, injuries, or non-existent items.
+- Dynamic shortcut button labeling that updates between `Accent Shortcut` and `Accent & Action Enricher Shortcut` based on Action Enricher state.
+
+### Fixed
+- Fixed single instance mutex initialization in `App.xaml.cs` using a system-wide `Global\` namespace Mutex to prevent duplicate process instances.
+- Fixed uncapitalized formatting for `/me` and `/my` action lines to align with GTA World chat formatting (`* Firstname Lastname <action>`).
+- Enforced output sentence-ending punctuation (`.`, `?`, `!`) and output length constraint compliance on action enrichment.
+- Added COMException retry loop to clipboard operations in `MainWindow.xaml.cs` to prevent text capture failures when the clipboard is locked by external processes.
+- Compacted settings panel layout in `MainWindow.xaml` to align bottom action buttons (`Manage API Keys`, `Accent Profiles`) with navigation tabs at Y = 238.
+
+### Changed
+- Action Enricher setting set to disabled (`False`) by default.
+- Renamed "Phonetic spelling & slang" checkbox to "Phonetic Spelling" and reorganized settings checkboxes side-by-side.
+
 ## [6.0.0] - 2026-07-14
 
 Fork modernized and updated to support global AI Assistant text replacement and customizable accent profiles.
