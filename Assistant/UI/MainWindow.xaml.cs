@@ -1324,8 +1324,8 @@ namespace Assistant.UI
                           "  Toggles character-specific spelling rules. When enabled, the model writes phonetically (dropping ending 'g' on 'ing' words, using sound spellings like 'dat' or 'ova', etc.). " +
                           "When disabled, it maintains standard English spelling rules while still respecting custom profile directives, syntax, and vocabulary.\n\n" +
                           "• Action Enricher:\n" +
-                          "  Automatically detects roleplay action commands (/me, /do, /melow, /dolow, /melong, /dolong, /ame, /ado). " +
-                          "When enabled, triggering the shortcut enriches the action text into atmospheric, vivid, and detailed roleplay descriptions, keeping standard English spelling and preserving command prefixes.";
+                          "  Automatically detects roleplay action commands (/me, /my, /do, /melow, /mylow, /dolow, /melong, /mylong, /dolong, /ame, /amy, /ado). " +
+                          "When enabled, triggering the shortcut enriches the action text into atmospheric, vivid, and detailed roleplay descriptions, maintaining uncapitalized phrasing for /me and /my actions to seamlessly fit character chat lines.";
             MessageBox.Show(this, info, "Model & Parameter Information", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

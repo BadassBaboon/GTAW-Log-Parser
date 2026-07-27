@@ -215,7 +215,8 @@ namespace Assistant.Controllers
 
         private static readonly string[] ActionPrefixes = new[]
         {
-            "/me", "/do", "/dolow", "/melow", "/melong", "/dolong", "/ame", "/ado"
+            "/me", "/do", "/dolow", "/melow", "/melong", "/dolong", "/ame", "/ado",
+            "/my", "/mylow", "/mylong", "/amy"
         };
 
         public static bool IsActionCommand(string text, out string prefix, out string payload)
@@ -257,20 +258,33 @@ namespace Assistant.Controllers
                 string constraintRules = "";
                 if (Settings.LengthConstraint == "Similar")
                 {
-                    constraintRules = "Maintain similar action length. ";
+                    constraintRules = "6. CRITICAL: Maintain a similar action length and word count to the original text. Do not over-expand simple short actions into long multi-sentence paragraphs.\n";
                 }
                 else if (Settings.LengthConstraint == "Concise")
                 {
-                    constraintRules = "Keep action description short and punchy. ";
+                    constraintRules = "6. CRITICAL: Keep the enriched action description short, concise, and punchy.\n";
+                }
+
+                string cmdLower = actPrefix.Trim().ToLower();
+                string prefixCasingInstruction = "";
+                if (cmdLower.StartsWith("/me") || cmdLower.StartsWith("/ame") || cmdLower.StartsWith("/melow") || cmdLower.StartsWith("/melong"))
+                {
+                    prefixCasingInstruction = "CRITICAL: The output will follow the character's name directly in GTA World chat (e.g. '* Firstname Lastname <action>'). The output MUST start with a lowercase letter and begin directly with a verb or action (e.g. 'side steps...', 'reaches under...'). DO NOT start with 'The figure', 'He', 'She', or any capitalized words.\n";
+                }
+                else if (cmdLower.StartsWith("/my") || cmdLower.StartsWith("/amy") || cmdLower.StartsWith("/mylow") || cmdLower.StartsWith("/mylong"))
+                {
+                    prefixCasingInstruction = "CRITICAL: The output will follow the character's name possessive directly in GTA World chat (e.g. '* Firstname Lastname's <body part/item action>'). The output MUST start with a lowercase letter and begin directly with the possessive noun/body part (e.g. 'wrist is deeply lacerated...', 'eyes widen...'). DO NOT start with 'The', 'His', 'Her', or any capitalized words.\n";
                 }
 
                 systemPrompt = "Enrich the roleplay action description to make it vivid, atmospheric, detailed, and expressive.\n" +
                                "RULES:\n" +
+                               prefixCasingInstruction +
                                "1. Preserve the underlying action, intent, and scene context.\n" +
                                "2. Use standard English spelling and grammar (do NOT apply accent phonetics or slang to action descriptions).\n" +
                                "3. Return ONLY the enriched action description.\n" +
                                "4. Do not include conversational preambles, explanations, or quotes.\n" +
                                "5. DO NOT use em-dashes (— or --).\n" +
+                               "7. Always end the action description with proper sentence-ending punctuation (a period '.', '?', or '!').\n" +
                                constraintRules;
             }
             else
@@ -481,6 +495,25 @@ namespace Assistant.Controllers
                                     if (string.IsNullOrWhiteSpace(cleanedResult))
                                     {
                                         return text;
+                                    }
+
+                                    // Enforce finishing period / punctuation for action commands
+                                    if (!string.IsNullOrWhiteSpace(commandPrefix))
+                                    {
+                                        if (cleanedResult.Length > 0 && !cleanedResult.EndsWith(".") && !cleanedResult.EndsWith("?") && !cleanedResult.EndsWith("!"))
+                                        {
+                                            cleanedResult += ".";
+                                        }
+                                    }
+
+                                    // For /me and /my variants, enforce lowercase first character
+                                    string lowerCmdPrefix = commandPrefix.Trim().ToLower();
+                                    if (lowerCmdPrefix.StartsWith("/me") || lowerCmdPrefix.StartsWith("/ame") || lowerCmdPrefix.StartsWith("/my") || lowerCmdPrefix.StartsWith("/amy"))
+                                    {
+                                        if (cleanedResult.Length > 0 && char.IsUpper(cleanedResult[0]))
+                                        {
+                                            cleanedResult = char.ToLower(cleanedResult[0]) + cleanedResult.Substring(1);
+                                        }
                                     }
 
                                     return commandPrefix + cleanedResult;
