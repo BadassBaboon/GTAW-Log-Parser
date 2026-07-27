@@ -276,9 +276,17 @@ namespace Assistant.Controllers
                     prefixCasingInstruction = "CRITICAL: The output will follow the character's name possessive directly in GTA World chat (e.g. '* Firstname Lastname's <body part/item action>'). The output MUST start with a lowercase letter and begin directly with the possessive noun/body part (e.g. 'wrist is deeply lacerated...', 'eyes widen...'). DO NOT start with 'The', 'His', 'Her', or any capitalized words.\n";
                 }
 
+                string rpQuestionInstruction = "";
+                bool isQuestion = actPayload.Trim().EndsWith("?") || Regex.IsMatch(actPayload.Trim(), @"^(what|is|does|would|can|where|how|who|which|are)\b", RegexOptions.IgnoreCase);
+                if (isQuestion)
+                {
+                    rpQuestionInstruction = "CRITICAL ROLEPLAY QUESTION RULE: The input is a roleplay question to another player (asking what is observed, what would be found, or if something is possible). DO NOT answer the question! DO NOT invent imaginary items, answers, or first-person responses! Instead, enrich and refine the ROLEPLAY QUESTION ITSELF so it remains a clear, atmospheric question ending with a question mark (?).\n";
+                }
+
                 systemPrompt = "Enrich the roleplay action description to make it vivid, atmospheric, detailed, and expressive.\n" +
                                "RULES:\n" +
                                prefixCasingInstruction +
+                               rpQuestionInstruction +
                                "1. Preserve the underlying action, intent, and scene context.\n" +
                                "2. Use standard English spelling and grammar (do NOT apply accent phonetics or slang to action descriptions).\n" +
                                "3. Return ONLY the enriched action description.\n" +
@@ -500,7 +508,14 @@ namespace Assistant.Controllers
                                     // Enforce finishing period / punctuation for action commands
                                     if (!string.IsNullOrWhiteSpace(commandPrefix))
                                     {
-                                        if (cleanedResult.Length > 0 && !cleanedResult.EndsWith(".") && !cleanedResult.EndsWith("?") && !cleanedResult.EndsWith("!"))
+                                        if (textToProcess.Trim().EndsWith("?") && !cleanedResult.EndsWith("?"))
+                                        {
+                                            if (cleanedResult.EndsWith("."))
+                                                cleanedResult = cleanedResult.Substring(0, cleanedResult.Length - 1) + "?";
+                                            else
+                                                cleanedResult += "?";
+                                        }
+                                        else if (cleanedResult.Length > 0 && !cleanedResult.EndsWith(".") && !cleanedResult.EndsWith("?") && !cleanedResult.EndsWith("!"))
                                         {
                                             cleanedResult += ".";
                                         }
