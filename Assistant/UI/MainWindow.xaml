@@ -11,7 +11,7 @@
                       WindowStartupLocation="CenterScreen"
                       Closing="Main_Closing"
                       GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
-                      Title="GTA World Chat Log Assistant" Height="335" Width="640" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="GTA World Chat Log Assistant" Height="344" Width="640" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="True" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
 
     <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands>
@@ -53,11 +53,12 @@
     </Controls:MetroWindow.RightWindowCommands>
 
     <DockPanel>
-        <Menu x:Name="MenuStrip" DockPanel.Dock="Top">
+        <Menu x:Name="MenuStrip" DockPanel.Dock="Top" Height="32" Padding="0" Margin="0">
             <MenuItem x:Name="CheckForUpdatesToolStripMenuItem" Header="Check For Updates" Click="CheckForUpdatesToolStripMenuItem_Click"/>
             <MenuItem x:Name="BackupSettingsToolStripMenuItem" Header="Automatic Backup Settings" Click="BackupSettingsToolStripMenuItem_Click"/>
             <MenuItem x:Name="FilterChatLogToolStripMenuItem" Header="Filter Chat Log" Click="FilterChatLogToolStripMenuItem_Click"/>
             <MenuItem x:Name="LiveTailToolStripMenuItem" Header="Live Tail" Click="LiveTailToolStripMenuItem_Click"/>
+            <MenuItem x:Name="FiveMToolsToolStripMenuItem" Header="FiveM Tools" Click="FiveMToolsToolStripMenuItem_Click"/>
             <MenuItem x:Name="LanguageToolStripMenuItem" Header="Change Server" Visibility="Collapsed"/>
             <MenuItem x:Name="AboutToolStripMenuItem" Header="About" Click="AboutToolStripMenuItem_Click"/>
             <MenuItem x:Name="ExitToolStripMenuItem" Header="Exit" Visibility="Hidden" Click="ExitToolStripMenuItem_Click"/>
@@ -79,7 +80,7 @@
                                        VerticalAlignment="Top"
                                        Visibility="Collapsed" Margin="210,145,0,0"/>
 
-                <Label x:Name="PathLabel" Content="RAGEMP Directory:" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,0,0,0" VerticalAlignment="Top"/>
+                <Label x:Name="PathLabel" Content="FiveM Directory:" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,0,0,0" VerticalAlignment="Top"/>
                 <TextBlock x:Name="Version" TextWrapping="NoWrap" Text="v1.0.0" TextAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="549,5,0,0" Height="26"/>
                 <TextBox x:Name="DirectoryPath" MouseLeftButtonUp="DirectoryPath_MouseLeftButtonUp" TextChanged="DirectoryPath_TextChanged" HorizontalAlignment="Left" Height="23" Margin="303,23,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="241" IsReadOnly="True" VerticalScrollBarVisibility="Disabled"/>
                 <Button x:Name="Browse" Click="Browse_Click" Content="Browse" HorizontalAlignment="Left" Margin="549,23,0,0" VerticalAlignment="Top" Width="75"/>

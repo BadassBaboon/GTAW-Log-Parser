@@ -1,0 +1,71 @@
+<Controls:MetroWindow x:Class="Assistant.UI.FiveMToolsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        Title="FiveM Tools &amp; Utilities" Height="410" Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Header -->
+        <TextBlock Grid.Row="0" Text="FiveM Tools &amp; Utilities" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource MahApps.Brushes.Accent}" Margin="0,0,0,10"/>
+
+        <!-- Main Tools Area -->
+        <GroupBox Grid.Row="1" Header="Automated FiveM ReShade Fix">
+            <StackPanel Margin="10">
+                <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" Margin="0,0,0,10">
+                    ReShade requires manual setup in FiveM. This automated utility moves your ReShade files into <Run FontWeight="Bold">FiveM.app\plugins</Run> and injects the official crash warning bypass key into <Run FontWeight="Bold">CitizenFX.ini</Run>.
+                </TextBlock>
+
+                <!-- Step 1 Button & Status -->
+                <Border BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10" Background="{DynamicResource MahApps.Brushes.Background}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Step 1: Move ReShade Files" FontWeight="Bold" FontSize="13"/>
+                            <TextBlock Text="Moves reshade-shaders, dxgi.dll, and .ini files to FiveM.app\plugins" FontSize="11" Foreground="Gray"/>
+                        </StackPanel>
+                        <Button x:Name="Step1MoveFilesBtn" Grid.Column="1" Content="1. Move Files" Width="120" Height="30" Click="Step1MoveFilesBtn_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- Instruction Banner -->
+                <TextBlock TextWrapping="Wrap" FontSize="11.5" Foreground="#FF007ACC" Margin="0,0,0,10" FontWeight="SemiBold">
+                    💡 After Step 1, launch FiveM once until you reach the main menu, close FiveM, then click Step 2 below.
+                </TextBlock>
+
+                <!-- Step 2 Button & Status -->
+                <Border BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10" Background="{DynamicResource MahApps.Brushes.Background}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Step 2: Scan Log &amp; Inject Bypass" FontWeight="Bold" FontSize="13"/>
+                            <TextBlock Text="Scans FiveM logs for ReShade5 ID and updates CitizenFX.ini [Addons]" FontSize="11" Foreground="Gray"/>
+                        </StackPanel>
+                        <Button x:Name="Step2ScanLogBtn" Grid.Column="1" Content="2. Apply Bypass" Width="120" Height="30" Click="Step2ScanLogBtn_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- Status Output Box -->
+                <TextBox x:Name="StatusLogTextBox" Height="65" TextWrapping="Wrap" IsReadOnly="True" VerticalScrollBarVisibility="Auto" Background="#1E1E1E" Foreground="#00FF66" FontFamily="Consolas" FontSize="11"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Bottom Action Bar -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="CloseBtn" Content="Close" Width="90" Height="28" Click="CloseBtn_Click"/>
+        </StackPanel>
+    </Grid>
+</Controls:MetroWindow>

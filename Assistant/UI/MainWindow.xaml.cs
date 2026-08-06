@@ -150,7 +150,20 @@ namespace Assistant.UI
                 SaveSettings();
             }
             else
-                DirectoryPath.Text = Properties.Settings.Default.DirectoryPath;
+            {
+                string currentSaved = Properties.Settings.Default.DirectoryPath;
+                if (string.IsNullOrWhiteSpace(currentSaved) || currentSaved.Contains("AppData", StringComparison.OrdinalIgnoreCase) || !File.Exists(Path.Combine(currentSaved, "FiveM.exe")))
+                {
+                    string newlyDetected = FiveMDetector.DetectFiveMDirectory();
+                    if (!string.IsNullOrEmpty(newlyDetected))
+                    {
+                        Properties.Settings.Default.DirectoryPath = newlyDetected;
+                        Properties.Settings.Default.Save();
+                        currentSaved = newlyDetected;
+                    }
+                }
+                DirectoryPath.Text = currentSaved;
+            }
         }
 
         /// <summary>
@@ -161,10 +174,10 @@ namespace Assistant.UI
         {
             try
             {
-                var keyValue = Registry.GetValue(@"HKEY_CURRENT_USER\Software\RAGE-MP", "rage_path", null);
-                if (keyValue != null)
+                string detected = FiveMDetector.DetectFiveMDirectory();
+                if (!string.IsNullOrEmpty(detected))
                 {
-                    DirectoryPath.Text = keyValue + @"\";
+                    DirectoryPath.Text = detected;
                     MessageBox.Show(string.Format(Strings.DirectoryFinder, DirectoryPath.Text), Strings.DirectoryFinderTitle, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
@@ -678,6 +691,19 @@ namespace Assistant.UI
             }
             liveTail.Show();
             liveTail.Activate();
+        }
+
+        private static FiveMToolsWindow? fiveMToolsWindow;
+        private void FiveMToolsToolStripMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (fiveMToolsWindow == null)
+            {
+                fiveMToolsWindow = new FiveMToolsWindow();
+                fiveMToolsWindow.Owner = this;
+                fiveMToolsWindow.Closed += (s, args) => fiveMToolsWindow = null;
+            }
+            fiveMToolsWindow.Show();
+            fiveMToolsWindow.Activate();
         }
 
         /// <summary>

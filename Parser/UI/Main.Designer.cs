@@ -1,4 +1,4 @@
-﻿namespace Parser.UI
+namespace Parser.UI
 {
     partial class Main
     {
@@ -42,6 +42,7 @@
             this.DirectoryBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.MenuStrip = new System.Windows.Forms.MenuStrip();
             this.ServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.FiveMToolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.AboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuStrip.SuspendLayout();
             this.SuspendLayout();
@@ -116,6 +117,7 @@
             // 
             this.MenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ServerToolStripMenuItem,
+            this.FiveMToolsToolStripMenuItem,
             this.AboutToolStripMenuItem});
             resources.ApplyResources(this.MenuStrip, "MenuStrip");
             this.MenuStrip.Name = "MenuStrip";
@@ -125,10 +127,17 @@
             this.ServerToolStripMenuItem.Name = "ServerToolStripMenuItem";
             resources.ApplyResources(this.ServerToolStripMenuItem, "ServerToolStripMenuItem");
             // 
+            // FiveMToolsToolStripMenuItem
+            // 
+            this.FiveMToolsToolStripMenuItem.Name = "FiveMToolsToolStripMenuItem";
+            this.FiveMToolsToolStripMenuItem.Text = "FiveM Tools";
+            this.FiveMToolsToolStripMenuItem.Click += new System.EventHandler(this.FiveMToolsToolStripMenuItem_Click);
+            // 
             // AboutToolStripMenuItem
             // 
             this.AboutToolStripMenuItem.Name = "AboutToolStripMenuItem";
-            resources.ApplyResources(this.AboutToolStripMenuItem, "AboutToolStripMenuItem");
+            this.AboutToolStripMenuItem.Size = new System.Drawing.Size(52, 20);
+            this.AboutToolStripMenuItem.Text = "About";
             this.AboutToolStripMenuItem.Click += new System.EventHandler(this.AboutToolStripMenuItem_Click);
             // 
             // Main
@@ -171,6 +180,7 @@
         private System.Windows.Forms.FolderBrowserDialog DirectoryBrowserDialog;
         private System.Windows.Forms.MenuStrip MenuStrip;
         private System.Windows.Forms.ToolStripMenuItem ServerToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem FiveMToolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem AboutToolStripMenuItem;
     }
 }

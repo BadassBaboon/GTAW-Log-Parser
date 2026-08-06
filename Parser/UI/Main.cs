@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Diagnostics;
 using GTAWParser.Shared;
@@ -85,6 +85,17 @@ namespace Parser.UI
         private void LoadSettings()
         {
             Version.Text = string.Format(Strings.VersionInfo, ProgramController.Version, ProgramController.IsBetaVersion ? Strings.BetaShort : string.Empty);
+            
+            if (string.IsNullOrWhiteSpace(Properties.Settings.Default.DirectoryPath) || !Directory.Exists(Properties.Settings.Default.DirectoryPath))
+            {
+                string detected = FiveMDetector.DetectFiveMDirectory();
+                if (!string.IsNullOrEmpty(detected))
+                {
+                    Properties.Settings.Default.DirectoryPath = detected;
+                    Properties.Settings.Default.Save();
+                }
+            }
+
             DirectoryPath.Text = Properties.Settings.Default.DirectoryPath;
             RemoveTimestamps.Checked = Properties.Settings.Default.RemoveTimestamps;
 
@@ -244,6 +255,21 @@ namespace Parser.UI
         private void AboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show(string.Format(Strings.About, ProgramController.Version, ProgramController.IsBetaVersion ? Strings.Beta : string.Empty, ProgramController.ResourceDirectory), Strings.Information, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void FiveMToolsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string currentPath = DirectoryPath.Text;
+            if (string.IsNullOrWhiteSpace(currentPath) || !Directory.Exists(currentPath))
+            {
+                currentPath = FiveMDetector.DetectFiveMDirectory();
+            }
+
+            MessageBox.Show(
+                $"FiveM Directory: {currentPath}\n\nPlease launch GTAWAssistant for the interactive FiveM ReShade Fix interface.",
+                "FiveM Tools",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
     }
 }

@@ -164,7 +164,7 @@ Would you like to continue?</value>
     <value>Please choose a valid backup location or turn automatic backup off.</value>
   </data>
   <data name="BadDirectoryPath" xml:space="preserve">
-    <value>Please pick a non-root directory for your RAGEMP directory location.</value>
+    <value>Please pick a non-root directory for your FiveM directory location.</value>
   </data>
   <data name="Beta" xml:space="preserve">
     <value>Beta</value>
@@ -219,15 +219,15 @@ Example: Boat, $500, John, John Doe or John_Doe</value>
     <value>An error occured while reading the selected file.</value>
   </data>
   <data name="DirectoryFinder" xml:space="preserve">
-    <value>Automatically found your RAGEMP directory at {0}
+    <value>Automatically found your FiveM directory at {0}
 
-Please browse for the correct path manually if this is incorrect or you have multiple RAGEMP installations.</value>
+Please browse for the correct path manually if this is incorrect or you have multiple FiveM installations.</value>
   </data>
   <data name="DirectoryFinderError" xml:space="preserve">
-    <value>An error occurred while trying to automatically find the location of your RAGEMP directory, please browse for it manually.</value>
+    <value>An error occurred while trying to automatically find the location of your FiveM directory, please browse for it manually.</value>
   </data>
   <data name="DirectoryFinderNotFound" xml:space="preserve">
-    <value>Couldn't detect the path to your RAGEMP directory, please browse for it manually.</value>
+    <value>Couldn't detect the path to your FiveM directory, please browse for it manually.</value>
   </data>
   <data name="DirectoryFinderTitle" xml:space="preserve">
     <value>Information (First Start)</value>
@@ -245,13 +245,13 @@ Please browse for the correct path manually if this is incorrect or you have mul
     <value>{0}. (recommended)</value>
   </data>
   <data name="InvalidDirectoryPath" xml:space="preserve">
-    <value>Invalid RAGEMP directory path.</value>
+    <value>Invalid FiveM directory path.</value>
   </data>
   <data name="InvalidDirectoryPathBackup" xml:space="preserve">
-    <value>Please choose a valid RAGEMP directory location before trying to enable automatic backup.</value>
+    <value>Please choose a valid FiveM directory location before trying to enable automatic backup.</value>
   </data>
   <data name="InvalidDirectoryPathFilter" xml:space="preserve">
-    <value>Please choose a valid RAGEMP directory location before trying to filter your chat log.</value>
+    <value>Please choose a valid FiveM directory location before trying to filter your chat log.</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>Language</value>
@@ -351,7 +351,7 @@ Would you like to delete these files?
 Installed Version: {0}</value>
   </data>
   <data name="SameHashWarning" xml:space="preserve">
-    <value>The same chat log has been backed up {0} or more times, which means that the RAGEMP client script responsible for logging your chat is broken.
+    <value>The same chat log has been backed up {0} or more times, which means that the FiveM client script responsible for logging your chat is broken.
 
 This happens when you lose internet connection or the server crashes. The only known way of fixing the issue is deleting the resource directories for the server you are playing on.
 

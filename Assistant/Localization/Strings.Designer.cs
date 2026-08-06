@@ -185,7 +185,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Please pick a non-root directory for your RAGEMP directory location..
+        ///   Looks up a localized string similar to Please pick a non-root directory for your FiveM directory location..
         /// </summary>
         internal static string BadDirectoryPath {
             get {
@@ -230,9 +230,9 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Automatically found your RAGEMP directory at {0}
+        ///   Looks up a localized string similar to Automatically found your FiveM directory at {0}
         ///
-        ///Please browse for the correct path manually if this is incorrect or you have multiple RAGEMP installations..
+        ///Please browse for the correct path manually if this is incorrect or you have multiple FiveM installations..
         /// </summary>
         internal static string DirectoryFinder {
             get {
@@ -241,7 +241,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An error occurred while trying to automatically find the location of your RAGEMP directory, please browse for it manually..
+        ///   Looks up a localized string similar to An error occurred while trying to automatically find the location of your FiveM directory, please browse for it manually..
         /// </summary>
         internal static string DirectoryFinderError {
             get {
@@ -250,7 +250,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Couldn&apos;t detect the path to your RAGEMP directory, please browse for it manually..
+        ///   Looks up a localized string similar to Couldn&apos;t detect the path to your FiveM directory, please browse for it manually..
         /// </summary>
         internal static string DirectoryFinderNotFound {
             get {
@@ -410,7 +410,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Invalid RAGEMP directory path..
+        ///   Looks up a localized string similar to Invalid FiveM directory path..
         /// </summary>
         internal static string InvalidDirectoryPath {
             get {
@@ -419,7 +419,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Please choose a valid RAGEMP directory location before trying to enable automatic backup..
+        ///   Looks up a localized string similar to Please choose a valid FiveM directory location before trying to enable automatic backup..
         /// </summary>
         internal static string InvalidDirectoryPathBackup {
             get {
@@ -428,7 +428,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Please choose a valid RAGEMP directory location before trying to filter your chat log..
+        ///   Looks up a localized string similar to Please choose a valid FiveM directory location before trying to filter your chat log..
         /// </summary>
         internal static string InvalidDirectoryPathFilter {
             get {
@@ -696,7 +696,7 @@ namespace Assistant.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The same chat log has been backed up {0} or more times, which means that the RAGEMP client script responsible for logging your chat is broken.
+        ///   Looks up a localized string similar to The same chat log has been backed up {0} or more times, which means that the FiveM client script responsible for logging your chat is broken.
         ///
         ///This happens when you lose internet connection or the server crashes. The only known way of fixing the issue is deleting the resource directories for the server you are playing on.
         ///
