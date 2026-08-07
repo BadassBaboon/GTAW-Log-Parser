@@ -1,9 +1,12 @@
 using System;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Media;
 using GTAWParser.Shared;
 using MahApps.Metro.Controls;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Assistant.UI
 {
@@ -13,10 +16,12 @@ namespace Assistant.UI
         private static readonly SolidColorBrush GreenBrush = new SolidColorBrush(Color.FromRgb(0, 255, 102));    // #00FF66
         private static readonly SolidColorBrush YellowBrush = new SolidColorBrush(Color.FromRgb(255, 204, 0));   // #FFCC00
 
+        private bool _isInitializing = true;
+
         public FiveMToolsWindow()
         {
             InitializeComponent();
-            CheckReShadeStatus();
+            LoadFiveMToolsData();
         }
 
         private string GetFiveMDirectory()
@@ -32,6 +37,35 @@ namespace Assistant.UI
                 }
             }
             return currentPath;
+        }
+
+        private void LoadFiveMToolsData()
+        {
+            _isInitializing = true;
+
+            string path = GetFiveMDirectory();
+            if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
+            {
+                // 1. Load Update Channel
+                string currentChannel = FiveMConfigManager.GetUpdateChannel(path);
+                foreach (ComboBoxItem item in UpdateChannelComboBox.Items)
+                {
+                    if (item.Content != null && item.Content.ToString()!.Equals(currentChannel, StringComparison.OrdinalIgnoreCase))
+                    {
+                        UpdateChannelComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+
+                // 2. Load GTA V Path
+                string gtaPath = FiveMConfigManager.GetGtaVPath(path);
+                GtaVPathTextBox.Text = gtaPath;
+            }
+
+            _isInitializing = false;
+
+            // 3. Check ReShade Status
+            CheckReShadeStatus();
         }
 
         private void CheckReShadeStatus()
@@ -96,6 +130,76 @@ namespace Assistant.UI
         {
             StatusMessageText.Text = message;
             StatusMessageText.Foreground = brush;
+        }
+
+        private void UpdateChannelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (UpdateChannelComboBox.SelectedItem is ComboBoxItem item && item.Content != null)
+            {
+                string channel = item.Content.ToString()!;
+                string path = GetFiveMDirectory();
+
+                if (!string.IsNullOrEmpty(path))
+                {
+                    bool success = FiveMConfigManager.SetUpdateChannel(path, channel, out string statusMsg);
+                    SetStatus(statusMsg, success ? GreenBrush : RedBrush);
+                }
+            }
+        }
+
+        private void BrowseGtaVPathBtn_Click(object sender, RoutedEventArgs e)
+        {
+            string path = GetFiveMDirectory();
+            using (FolderBrowserDialog dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Select GTA V Installation Folder (containing GTA5.exe)";
+                dialog.SelectedPath = GtaVPathTextBox.Text;
+
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    bool success = FiveMConfigManager.SetGtaVPath(path, dialog.SelectedPath, out string statusMsg);
+                    if (success)
+                    {
+                        GtaVPathTextBox.Text = dialog.SelectedPath;
+                        SetStatus(statusMsg, GreenBrush);
+                    }
+                    else
+                    {
+                        MessageBox.Show(this, statusMsg, "Invalid GTA V Folder", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        SetStatus($"⚠ {statusMsg}", RedBrush);
+                    }
+                }
+            }
+        }
+
+        private void ClearCitizenBtn_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult confirm = MessageBox.Show(this,
+                "Deleting the citizen folder will force FiveM to redownload clean system files on launch.\n\nAre you sure you want to clear the citizen folder?",
+                "Clear Citizen Folder", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm == MessageBoxResult.Yes)
+            {
+                string path = GetFiveMDirectory();
+                bool success = FiveMConfigManager.ClearCitizenFolder(path, out string statusMsg);
+                SetStatus(statusMsg, success ? GreenBrush : RedBrush);
+            }
+        }
+
+        private void ClearServerCacheBtn_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult confirm = MessageBox.Show(this,
+                "Deleting server cache files will force FiveM to redownload fresh assets when connecting to servers.\n\nAre you sure you want to clear the server cache?",
+                "Clear Server Cache", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm == MessageBoxResult.Yes)
+            {
+                string path = GetFiveMDirectory();
+                bool success = FiveMConfigManager.ClearServerCache(path, out string statusMsg);
+                SetStatus(statusMsg, success ? GreenBrush : RedBrush);
+            }
         }
 
         private void SetupReShadeBtn_Click(object sender, RoutedEventArgs e)

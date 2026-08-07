@@ -131,5 +131,102 @@ namespace Shared.Tests
                     Directory.Delete(tempDir, true);
             }
         }
+
+        [Fact]
+        public void FiveMConfigManager_GetAndSetUpdateChannel_UpdatesIniPreservingGameSection()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "FiveMTest_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                string fivemApp = Path.Combine(tempDir, "FiveM.app");
+                Directory.CreateDirectory(fivemApp);
+                string iniPath = Path.Combine(fivemApp, "CitizenFX.ini");
+
+                string initialIni = "[Game]\nIVPath=G:\\Grand Theft Auto V\nUpdateChannel=canary\n";
+                File.WriteAllText(iniPath, initialIni);
+
+                string channel = FiveMConfigManager.GetUpdateChannel(tempDir);
+                Assert.Equal("Latest (Unstable)", channel);
+
+                bool success = FiveMConfigManager.SetUpdateChannel(tempDir, "Release", out string msg);
+                Assert.True(success);
+
+                string updatedIni = File.ReadAllText(iniPath);
+                Assert.Contains("UpdateChannel=production", updatedIni);
+                Assert.Contains("IVPath=G:\\Grand Theft Auto V", updatedIni);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FiveMConfigManager_SetGtaVPath_ValidatesExecutablesAndUpdateIni()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "FiveMTest_" + Guid.NewGuid().ToString("N"));
+            string gtaDir = Path.Combine(Path.GetTempPath(), "GtaTest_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                Directory.CreateDirectory(gtaDir);
+                string fivemApp = Path.Combine(tempDir, "FiveM.app");
+                Directory.CreateDirectory(fivemApp);
+
+                // Validation fails without executable
+                bool failNoExe = FiveMConfigManager.SetGtaVPath(tempDir, gtaDir, out string failMsg);
+                Assert.False(failNoExe);
+
+                // Create GTA5.exe
+                File.WriteAllText(Path.Combine(gtaDir, "GTA5.exe"), "fake");
+
+                bool success = FiveMConfigManager.SetGtaVPath(tempDir, gtaDir, out string msg);
+                Assert.True(success);
+
+                string iniPath = Path.Combine(fivemApp, "CitizenFX.ini");
+                string iniContent = File.ReadAllText(iniPath);
+                Assert.Contains($"IVPath={gtaDir}", iniContent);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+                if (Directory.Exists(gtaDir))
+                    Directory.Delete(gtaDir, true);
+            }
+        }
+
+        [Fact]
+        public void FiveMConfigManager_ClearCitizenAndServerCache_DeletesTargetDirectories()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "FiveMTest_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                string fivemApp = Path.Combine(tempDir, "FiveM.app");
+                string citizenDir = Path.Combine(fivemApp, "citizen");
+                string serverCacheDir = Path.Combine(fivemApp, "data", "server-cache-priv");
+
+                Directory.CreateDirectory(citizenDir);
+                Directory.CreateDirectory(serverCacheDir);
+                File.WriteAllText(Path.Combine(citizenDir, "test.txt"), "dummy");
+                File.WriteAllText(Path.Combine(serverCacheDir, "cache.dat"), "dummy");
+
+                bool citSuccess = FiveMConfigManager.ClearCitizenFolder(tempDir, out string citMsg);
+                bool cacheSuccess = FiveMConfigManager.ClearServerCache(tempDir, out string cacheMsg);
+
+                Assert.True(citSuccess);
+                Assert.True(cacheSuccess);
+                Assert.False(Directory.Exists(citizenDir));
+                Assert.False(Directory.Exists(serverCacheDir));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
     }
 }
