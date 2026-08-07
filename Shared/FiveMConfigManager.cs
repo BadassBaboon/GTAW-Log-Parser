@@ -169,6 +169,12 @@ namespace GTAWParser.Shared
             statusMessage = string.Empty;
             try
             {
+                if (string.IsNullOrWhiteSpace(fivemDir) || !Directory.Exists(fivemDir))
+                {
+                    statusMessage = "FiveM installation directory is invalid or not found.";
+                    return false;
+                }
+
                 FiveMPaths paths = FiveMDetector.ResolveFiveMPaths(fivemDir);
                 string citizenDir = Path.Combine(paths.AppDataDirectory, "citizen");
 
@@ -201,6 +207,12 @@ namespace GTAWParser.Shared
             statusMessage = string.Empty;
             try
             {
+                if (string.IsNullOrWhiteSpace(fivemDir) || !Directory.Exists(fivemDir))
+                {
+                    statusMessage = "FiveM installation directory is invalid or not found.";
+                    return false;
+                }
+
                 FiveMPaths paths = FiveMDetector.ResolveFiveMPaths(fivemDir);
                 string serverCacheDir = Path.Combine(paths.AppDataDirectory, "data", "server-cache-priv");
 
@@ -255,6 +267,7 @@ namespace GTAWParser.Shared
                 else if (sectionIndex >= 0 && trimmed.StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     keyIndex = i;
+                    break;
                 }
                 else if (sectionIndex >= 0 && trimmed.StartsWith("[") && trimmed.EndsWith("]"))
                 {

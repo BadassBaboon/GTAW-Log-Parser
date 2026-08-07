@@ -229,6 +229,12 @@ namespace GTAWParser.Shared
 
             try
             {
+                if (string.IsNullOrWhiteSpace(fivemDir) || !Directory.Exists(fivemDir))
+                {
+                    statusMessage = "FiveM installation directory is invalid or not found.";
+                    return false;
+                }
+
                 if (string.IsNullOrWhiteSpace(ackLine))
                 {
                     ackLine = GenerateReShadeAckLine();

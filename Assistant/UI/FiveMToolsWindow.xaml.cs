@@ -73,7 +73,11 @@ namespace Assistant.UI
             string path = GetFiveMDirectory();
             if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
             {
-                SetStatus("⚠ FiveM installation directory could not be found.", RedBrush);
+                Step1Text.Text = "Unknown";
+                Step1Text.Foreground = RedBrush;
+                Step2Text.Text = "Unknown";
+                Step2Text.Foreground = RedBrush;
+
                 SetupReShadeBtn.IsEnabled = false;
                 SetupReShadeBtn.Content = "Setup & Enable ReShade";
                 return;
@@ -100,36 +104,67 @@ namespace Assistant.UI
                 hasIniKey = iniContent.Contains("ReShade5=", StringComparison.OrdinalIgnoreCase);
             }
 
+            // Update Step 1 Text
+            if (hasReShadeInPlugins)
+            {
+                Step1Text.Text = "✓ Relocated to Plugins";
+                Step1Text.Foreground = GreenBrush;
+            }
+            else if (hasReShadeInRoot)
+            {
+                Step1Text.Text = "In FiveM Root (Move Needed)";
+                Step1Text.Foreground = YellowBrush;
+            }
+            else
+            {
+                Step1Text.Text = "Install ReShade to FiveM.exe first";
+                Step1Text.Foreground = RedBrush;
+            }
+
+            // Update Step 2 Text
+            if (hasIniKey)
+            {
+                Step2Text.Text = "✓ Key Configured";
+                Step2Text.Foreground = GreenBrush;
+            }
+            else if (hasReShadeInRoot || hasReShadeInPlugins)
+            {
+                Step2Text.Text = "Pending Key Injection";
+                Step2Text.Foreground = YellowBrush;
+            }
+            else
+            {
+                Step2Text.Text = "Not Configured";
+                Step2Text.Foreground = RedBrush;
+            }
+
+            // Update Action Button
             if (hasReShadeInPlugins && hasIniKey)
             {
                 SetupReShadeBtn.IsEnabled = false;
                 SetupReShadeBtn.Content = "ReShade Enabled";
-                SetStatus("✓ ReShade is already enabled on your FiveM installation!", GreenBrush);
             }
-            else if (hasReShadeInRoot)
+            else if (hasReShadeInRoot || hasReShadeInPlugins)
             {
                 SetupReShadeBtn.IsEnabled = true;
                 SetupReShadeBtn.Content = "Setup & Enable ReShade";
-                SetStatus("ReShade installation detected in FiveM root. Click \"Setup & Enable ReShade\" above to automate setup.", YellowBrush);
-            }
-            else if (hasReShadeInPlugins)
-            {
-                SetupReShadeBtn.IsEnabled = true;
-                SetupReShadeBtn.Content = "Setup & Enable ReShade";
-                SetStatus("✓ ReShade files are in FiveM.app\\plugins. Click \"Setup & Enable ReShade\" to write the CitizenFX.ini configuration.", YellowBrush);
             }
             else
             {
                 SetupReShadeBtn.IsEnabled = false;
                 SetupReShadeBtn.Content = "Setup & Enable ReShade";
-                SetStatus("⚠ ReShade is not installed to FiveM.exe. Please run the ReShade installer, select FiveM.exe, and try again.", RedBrush);
             }
         }
 
-        private void SetStatus(string message, Brush brush)
+        private bool ValidateFiveMPath(out string path)
         {
-            StatusMessageText.Text = message;
-            StatusMessageText.Foreground = brush;
+            path = GetFiveMDirectory();
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                MessageBox.Show(this, "FiveM installation directory could not be found.", "FiveM Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            return true;
         }
 
         private void UpdateChannelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -139,19 +174,17 @@ namespace Assistant.UI
             if (UpdateChannelComboBox.SelectedItem is ComboBoxItem item && item.Content != null)
             {
                 string channel = item.Content.ToString()!;
-                string path = GetFiveMDirectory();
-
-                if (!string.IsNullOrEmpty(path))
+                if (ValidateFiveMPath(out string path))
                 {
-                    bool success = FiveMConfigManager.SetUpdateChannel(path, channel, out string statusMsg);
-                    SetStatus(statusMsg, success ? GreenBrush : RedBrush);
+                    FiveMConfigManager.SetUpdateChannel(path, channel, out _);
                 }
             }
         }
 
         private void BrowseGtaVPathBtn_Click(object sender, RoutedEventArgs e)
         {
-            string path = GetFiveMDirectory();
+            if (!ValidateFiveMPath(out string path)) return;
+
             using (FolderBrowserDialog dialog = new FolderBrowserDialog())
             {
                 dialog.Description = "Select GTA V Installation Folder (containing GTA5.exe)";
@@ -163,12 +196,10 @@ namespace Assistant.UI
                     if (success)
                     {
                         GtaVPathTextBox.Text = dialog.SelectedPath;
-                        SetStatus(statusMsg, GreenBrush);
                     }
                     else
                     {
                         MessageBox.Show(this, statusMsg, "Invalid GTA V Folder", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        SetStatus($"⚠ {statusMsg}", RedBrush);
                     }
                 }
             }
@@ -176,40 +207,37 @@ namespace Assistant.UI
 
         private void ClearCitizenBtn_Click(object sender, RoutedEventArgs e)
         {
+            if (!ValidateFiveMPath(out string path)) return;
+
             MessageBoxResult confirm = MessageBox.Show(this,
                 "Deleting the citizen folder will force FiveM to redownload clean system files on launch.\n\nAre you sure you want to clear the citizen folder?",
                 "Clear Citizen Folder", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (confirm == MessageBoxResult.Yes)
             {
-                string path = GetFiveMDirectory();
                 bool success = FiveMConfigManager.ClearCitizenFolder(path, out string statusMsg);
-                SetStatus(statusMsg, success ? GreenBrush : RedBrush);
+                MessageBox.Show(this, statusMsg, "Clear Citizen", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Error);
             }
         }
 
         private void ClearServerCacheBtn_Click(object sender, RoutedEventArgs e)
         {
+            if (!ValidateFiveMPath(out string path)) return;
+
             MessageBoxResult confirm = MessageBox.Show(this,
                 "Deleting server cache files will force FiveM to redownload fresh assets when connecting to servers.\n\nAre you sure you want to clear the server cache?",
                 "Clear Server Cache", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (confirm == MessageBoxResult.Yes)
             {
-                string path = GetFiveMDirectory();
                 bool success = FiveMConfigManager.ClearServerCache(path, out string statusMsg);
-                SetStatus(statusMsg, success ? GreenBrush : RedBrush);
+                MessageBox.Show(this, statusMsg, "Clear Server Cache", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Error);
             }
         }
 
         private void SetupReShadeBtn_Click(object sender, RoutedEventArgs e)
         {
-            string path = GetFiveMDirectory();
-            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
-            {
-                SetStatus("⚠ Valid FiveM installation directory could not be found.", RedBrush);
-                return;
-            }
+            if (!ValidateFiveMPath(out string path)) return;
 
             FiveMPaths resolved = FiveMDetector.ResolveFiveMPaths(path);
             string root = resolved.RootDirectory;
@@ -224,7 +252,7 @@ namespace Assistant.UI
                 bool moveSuccess = FiveMReShadeFixer.MoveReShadeFilesToPlugins(path, out int count, out string moveMsg);
                 if (!moveSuccess)
                 {
-                    SetStatus($"⚠ {moveMsg}", RedBrush);
+                    MessageBox.Show(this, moveMsg, "ReShade Setup Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
             }
@@ -234,13 +262,12 @@ namespace Assistant.UI
 
             if (iniSuccess)
             {
-                SetupReShadeBtn.IsEnabled = false;
-                SetupReShadeBtn.Content = "ReShade Enabled";
-                SetStatus("✓ ReShade is now fully enabled! Files relocated to plugins & key written to CitizenFX.ini.", GreenBrush);
+                CheckReShadeStatus();
+                MessageBox.Show(this, "✓ ReShade is now fully enabled on your FiveM installation!\n\nFiles relocated to plugins & hardware key written to CitizenFX.ini.", "ReShade Setup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                SetStatus($"⚠ Error writing CitizenFX.ini: {iniMsg}", RedBrush);
+                MessageBox.Show(this, $"Error writing CitizenFX.ini: {iniMsg}", "CitizenFX.ini Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
