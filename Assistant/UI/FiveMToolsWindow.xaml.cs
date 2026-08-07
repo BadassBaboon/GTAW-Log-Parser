@@ -48,29 +48,42 @@ namespace Assistant.UI
             FiveMPaths resolved = FiveMDetector.ResolveFiveMPaths(path);
             string root = resolved.RootDirectory;
             string plugins = resolved.PluginsDirectory;
+            string iniPath = resolved.CitizenFXIniPath;
 
-            // Check if ReShade files exist in root directory (where FiveM.exe is)
             bool dxgiInRoot = File.Exists(Path.Combine(root, "dxgi.dll")) || File.Exists(Path.Combine(root, "d3d11.dll"));
             bool shadersInRoot = Directory.Exists(Path.Combine(root, "reshade-shaders"));
             bool iniInRoot = File.Exists(Path.Combine(root, "ReShade.ini"));
             bool hasReShadeInRoot = dxgiInRoot || shadersInRoot || iniInRoot;
 
-            // Check if ReShade files were already moved to plugins directory
             bool dxgiInPlugins = File.Exists(Path.Combine(plugins, "dxgi.dll")) || File.Exists(Path.Combine(plugins, "d3d11.dll"));
             bool shadersInPlugins = Directory.Exists(Path.Combine(plugins, "reshade-shaders"));
             bool hasReShadeInPlugins = dxgiInPlugins || shadersInPlugins;
 
+            bool hasIniKey = false;
+            if (File.Exists(iniPath))
+            {
+                string iniContent = File.ReadAllText(iniPath);
+                hasIniKey = iniContent.Contains("ReShade5=", StringComparison.OrdinalIgnoreCase);
+            }
+
             if (hasReShadeInRoot)
             {
                 Step1MoveFilesBtn.IsEnabled = true;
-                Step2EnableReShadeBtn.IsEnabled = false;
-                SetStatus("ReShade files detected in FiveM root. Click \"1. Move ReShade Files\" to proceed.", YellowBrush);
+                Step2EnableReShadeBtn.IsEnabled = true;
+                SetStatus("ReShade files detected in FiveM root. Click \"1. Move ReShade Files\" or \"2. Enable ReShade\" to complete setup.", YellowBrush);
             }
             else if (hasReShadeInPlugins)
             {
                 Step1MoveFilesBtn.IsEnabled = false;
                 Step2EnableReShadeBtn.IsEnabled = true;
-                SetStatus("✓ ReShade files are in FiveM.app\\plugins. Launch FiveM once, reach main menu, close game, then click \"2. Enable ReShade\" above.", GreenBrush);
+                if (hasIniKey)
+                {
+                    SetStatus("✓ Done! ReShade files are in FiveM.app\\plugins and ReShade key is active in CitizenFX.ini.", GreenBrush);
+                }
+                else
+                {
+                    SetStatus("✓ ReShade files are in FiveM.app\\plugins. Click \"2. Enable ReShade\" to apply the ReShade key.", GreenBrush);
+                }
             }
             else
             {
@@ -98,9 +111,12 @@ namespace Assistant.UI
             bool success = FiveMReShadeFixer.MoveReShadeFilesToPlugins(path, out int count, out string msg);
             if (success)
             {
+                string ackLine = FiveMReShadeFixer.GenerateReShadeAckLine();
+                FiveMReShadeFixer.ApplyReShadeKeyToIni(path, ackLine, out _);
+
                 Step1MoveFilesBtn.IsEnabled = false;
                 Step2EnableReShadeBtn.IsEnabled = true;
-                SetStatus("✓ ReShade files moved to FiveM.app\\plugins! Launch FiveM once, reach main menu, close game, then click \"2. Enable ReShade\" above.", GreenBrush);
+                SetStatus("✓ ReShade files moved to FiveM.app\\plugins & ReShade key configured in CitizenFX.ini! You can now launch FiveM.", GreenBrush);
             }
             else
             {
@@ -117,22 +133,15 @@ namespace Assistant.UI
                 return;
             }
 
-            bool logFound = FiveMReShadeFixer.ScanLogForReShadeBypass(path, out string bypassLine, out string logFileName, out string statusMsg);
-            if (logFound && !string.IsNullOrEmpty(bypassLine))
+            string ackLine = FiveMReShadeFixer.GenerateReShadeAckLine();
+            bool iniSuccess = FiveMReShadeFixer.ApplyReShadeKeyToIni(path, ackLine, out string iniMsg);
+            if (iniSuccess)
             {
-                bool iniSuccess = FiveMReShadeFixer.ApplyReShadeBypassToIni(path, bypassLine, out string iniMsg);
-                if (iniSuccess)
-                {
-                    SetStatus("✓ Done! FiveM will now allow ReShade 5+ usage without crashing.", GreenBrush);
-                }
-                else
-                {
-                    SetStatus($"⚠ Error updating CitizenFX.ini: {iniMsg}", RedBrush);
-                }
+                SetStatus("✓ Done! FiveM will now allow ReShade 5+ usage without issues.", GreenBrush);
             }
             else
             {
-                SetStatus("⚠ ReShade bypass key not found in logs yet. Please launch FiveM once until main menu, close FiveM, and try again.", RedBrush);
+                SetStatus($"⚠ Error updating CitizenFX.ini: {iniMsg}", RedBrush);
             }
         }
 

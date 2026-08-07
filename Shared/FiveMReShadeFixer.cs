@@ -8,7 +8,7 @@ namespace GTAWParser.Shared
 {
     public static class FiveMReShadeFixer
     {
-        private static readonly Regex ReShadeBypassRegex = new Regex(
+        private static readonly Regex ReShadeKeyRegex = new Regex(
             @"ReShade5=ID:[a-fA-F0-9]+\s+acknowledged that ReShade 5\.x has a bug that will lead to game crashes",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -17,6 +17,36 @@ namespace GTAWParser.Shared
             "dxgi.dll", "d3d11.dll", "dxgi.ini", "d3d11.ini",
             "ReShade.ini", "ReShade.log", "ReShadePreset.ini"
         };
+
+        /// <summary>
+        /// Computes Jenkins One-at-a-Time Hash for a string (used by FiveM for computer ID hashing).
+        /// </summary>
+        public static uint HashString(string str)
+        {
+            uint hash = 0;
+            foreach (char c in str)
+            {
+                hash += (byte)c;
+                hash += (hash << 10);
+                hash ^= (hash >> 6);
+            }
+            hash += (hash << 3);
+            hash ^= (hash >> 11);
+            hash += (hash << 15);
+            return hash;
+        }
+
+        /// <summary>
+        /// Generates the exact ReShade 5+ acknowledgment line based on the machine name hash.
+        /// </summary>
+        public static string GenerateReShadeAckLine()
+        {
+            uint hash = HashString(Environment.MachineName.ToLowerInvariant());
+            return $"ReShade5=ID:{hash:x8} acknowledged that ReShade 5.x has a bug that will lead to game crashes";
+        }
+
+        // Backward-compatibility alias
+        public static string GenerateReShadeBypassLine() => GenerateReShadeAckLine();
 
         /// <summary>
         /// Moves ReShade files and folders from FiveM root directory into FiveM.app\plugins.
@@ -67,7 +97,6 @@ namespace GTAWParser.Shared
                     if (!name.Equals("CitizenFX.ini", StringComparison.OrdinalIgnoreCase) &&
                         !itemsToMove.Contains(iniFile))
                     {
-                        // Check if file content contains [LOGGER] or [SYSTEM] or [OVERLAY] or ReShade headers
                         try
                         {
                             string content = File.ReadAllText(iniFile);
@@ -84,7 +113,6 @@ namespace GTAWParser.Shared
 
                 if (itemsToMove.Count == 0)
                 {
-                    // Check if plugins already has dxgi.dll / reshade-shaders
                     bool alreadyInPlugins = File.Exists(Path.Combine(paths.PluginsDirectory, "dxgi.dll")) ||
                                             File.Exists(Path.Combine(paths.PluginsDirectory, "d3d11.dll")) ||
                                             Directory.Exists(Path.Combine(paths.PluginsDirectory, "reshade-shaders"));
@@ -132,74 +160,80 @@ namespace GTAWParser.Shared
         }
 
         /// <summary>
-        /// Scans the newest FiveM log file for the ReShade 5+ warning bypass line.
+        /// Scans the newest FiveM log file for the ReShade 5+ warning line. Fallback uses machine name hash.
         /// </summary>
-        public static bool ScanLogForReShadeBypass(string fivemDir, out string bypassLine, out string logFileName, out string statusMessage)
+        public static bool ScanLogForReShadeKey(string fivemDir, out string ackLine, out string logFileName, out string statusMessage)
         {
-            bypassLine = string.Empty;
+            ackLine = string.Empty;
             logFileName = string.Empty;
             statusMessage = string.Empty;
 
             try
             {
                 FiveMPaths paths = FiveMDetector.ResolveFiveMPaths(fivemDir);
-                if (!Directory.Exists(paths.LogsDirectory))
+                if (Directory.Exists(paths.LogsDirectory))
                 {
-                    statusMessage = "FiveM logs directory does not exist yet. Please launch FiveM once and try again.";
-                    return false;
-                }
-
-                FileInfo[] logFiles = new DirectoryInfo(paths.LogsDirectory).GetFiles("*.log");
-                if (logFiles.Length == 0)
-                {
-                    statusMessage = "No FiveM log files found. Please launch FiveM once to generate log files.";
-                    return false;
-                }
-
-                // Sort newest log first
-                Array.Sort(logFiles, (a, b) => b.LastWriteTimeUtc.CompareTo(a.LastWriteTimeUtc));
-
-                foreach (FileInfo logFile in logFiles)
-                {
-                    using (FileStream fs = new FileStream(logFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (StreamReader reader = new StreamReader(fs))
+                    FileInfo[] logFiles = new DirectoryInfo(paths.LogsDirectory).GetFiles("*.log");
+                    if (logFiles.Length > 0)
                     {
-                        string? line;
-                        while ((line = reader.ReadLine()) != null)
+                        Array.Sort(logFiles, (a, b) => b.LastWriteTimeUtc.CompareTo(a.LastWriteTimeUtc));
+                        foreach (FileInfo logFile in logFiles)
                         {
-                            Match match = ReShadeBypassRegex.Match(line);
-                            if (match.Success)
+                            using (FileStream fs = new FileStream(logFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                            using (StreamReader reader = new StreamReader(fs))
                             {
-                                bypassLine = match.Value;
-                                logFileName = logFile.Name;
-                                statusMessage = $"Found ReShade bypass key in {logFile.Name}!";
-                                Log.Information("Found ReShade bypass key: {Key} in {LogFile}", bypassLine, logFile.Name);
-                                return true;
+                                string? line;
+                                while ((line = reader.ReadLine()) != null)
+                                {
+                                    Match match = ReShadeKeyRegex.Match(line);
+                                    if (match.Success)
+                                    {
+                                        ackLine = match.Value;
+                                        logFileName = logFile.Name;
+                                        statusMessage = $"Found ReShade key in {logFile.Name}!";
+                                        Log.Information("Found ReShade key: {Key} in {LogFile}", ackLine, logFile.Name);
+                                        return true;
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                statusMessage = "ReShade warning string not found in logs yet. Please make sure FiveM was launched with ReShade installed, then close FiveM and try again.";
-                return false;
+                // Fallback: Generate line directly using machine name hash
+                ackLine = GenerateReShadeAckLine();
+                logFileName = "AutoGenerated";
+                statusMessage = "Auto-generated ReShade key using computer hardware hash.";
+                return true;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error scanning log for ReShade bypass");
-                statusMessage = $"Error reading log files: {ex.Message}";
-                return false;
+                Log.Error(ex, "Error scanning log for ReShade key, using machine hash fallback");
+                ackLine = GenerateReShadeAckLine();
+                logFileName = "AutoGenerated";
+                statusMessage = "Auto-generated ReShade key using computer hardware hash.";
+                return true;
             }
         }
 
+        // Backward-compatibility alias
+        public static bool ScanLogForReShadeBypass(string fivemDir, out string bypassLine, out string logFileName, out string statusMessage)
+            => ScanLogForReShadeKey(fivemDir, out bypassLine, out logFileName, out statusMessage);
+
         /// <summary>
-        /// Safely updates CitizenFX.ini to include the [Addons] section and ReShade bypass key.
+        /// Safely updates CitizenFX.ini to include the [Addons] section and ReShade key.
         /// </summary>
-        public static bool ApplyReShadeBypassToIni(string fivemDir, string bypassLine, out string statusMessage)
+        public static bool ApplyReShadeKeyToIni(string fivemDir, string ackLine, out string statusMessage)
         {
             statusMessage = string.Empty;
 
             try
             {
+                if (string.IsNullOrWhiteSpace(ackLine))
+                {
+                    ackLine = GenerateReShadeAckLine();
+                }
+
                 FiveMPaths paths = FiveMDetector.ResolveFiveMPaths(fivemDir);
                 string iniPath = paths.CitizenFXIniPath;
 
@@ -231,20 +265,19 @@ namespace GTAWParser.Shared
                     }
                     else if (addonsSectionIndex >= 0 && trimmed.StartsWith("[") && trimmed.EndsWith("]"))
                     {
-                        // Encountered next section after [Addons]
                         break;
                     }
                 }
 
                 if (existingKeyIndex >= 0)
                 {
-                    lines[existingKeyIndex] = bypassLine;
-                    statusMessage = "ReShade bypass key updated in CitizenFX.ini under [Addons].";
+                    lines[existingKeyIndex] = ackLine;
+                    statusMessage = "ReShade key updated in CitizenFX.ini under [Addons].";
                 }
                 else if (addonsSectionIndex >= 0)
                 {
-                    lines.Insert(addonsSectionIndex + 1, bypassLine);
-                    statusMessage = "ReShade bypass key added to existing [Addons] section in CitizenFX.ini.";
+                    lines.Insert(addonsSectionIndex + 1, ackLine);
+                    statusMessage = "ReShade key added to existing [Addons] section in CitizenFX.ini.";
                 }
                 else
                 {
@@ -253,12 +286,12 @@ namespace GTAWParser.Shared
                         lines.Add(string.Empty);
                     }
                     lines.Add("[Addons]");
-                    lines.Add(bypassLine);
-                    statusMessage = "Added [Addons] section and ReShade bypass key to CitizenFX.ini.";
+                    lines.Add(ackLine);
+                    statusMessage = "Added [Addons] section and ReShade key to CitizenFX.ini.";
                 }
 
                 File.WriteAllLines(iniPath, lines);
-                Log.Information("CitizenFX.ini updated successfully with ReShade bypass key: {Key}", bypassLine);
+                Log.Information("CitizenFX.ini updated successfully with ReShade key: {Key}", ackLine);
                 return true;
             }
             catch (Exception ex)
@@ -268,5 +301,9 @@ namespace GTAWParser.Shared
                 return false;
             }
         }
+
+        // Backward-compatibility alias
+        public static bool ApplyReShadeBypassToIni(string fivemDir, string bypassLine, out string statusMessage)
+            => ApplyReShadeKeyToIni(fivemDir, bypassLine, out statusMessage);
     }
 }

@@ -20,7 +20,7 @@
         <GroupBox Grid.Row="1" Header="ReShade Setup">
             <StackPanel Margin="10">
                 <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" Margin="0,0,0,12">
-                    Automates setting up ReShade in FiveM by moving files into <Run FontWeight="Bold">FiveM.app\plugins</Run> and injecting the crash warning bypass key into <Run FontWeight="Bold">CitizenFX.ini</Run>.
+                    Automates setting up ReShade in FiveM by moving files into <Run FontWeight="Bold">FiveM.app\plugins</Run> and configuring the ReShade acknowledgment key in <Run FontWeight="Bold">CitizenFX.ini</Run>.
                 </TextBlock>
 
                 <!-- Side-by-side Action Buttons -->
