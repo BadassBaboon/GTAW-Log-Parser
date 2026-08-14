@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.0] - 2026-08-15
+
+### Added
+- **FiveM Tools & Utilities Menu (`FiveMToolsWindow`)**:
+  - Dedicated tools window accessible from the main navigation for managing FiveM installation, configuration, and troubleshooting.
+  - **Automated ReShade Relocation & Hardware Key Injection**: Detects ReShade files in FiveM root (`dxgi.dll`, `d3d11.dll`, `reshade-shaders`, `ReShade.ini`), automatically relocates them to `FiveM.app\plugins`, and injects the Jenkins One-at-a-Time hardware hash key into `CitizenFX.ini` (`[Addons] ReShade5=...`) with real-time status indicators.
+  - **FiveM Settings Management**: Integrated UpdateChannel selector (`Release`, `Beta`, `Latest (Unstable)`) and GTA V directory browser/validator with `GTA5.exe` path verification.
+  - **Maintenance Utilities**: Quick-action tools to clear the `citizen` folder (forces fresh system file redownload) and clear server cache assets (`data\server-cache-priv`).
+  - **Deep Path Detection (`FiveMDetector`)**: Multi-tier detection probing local AppData, fixed/removable drives, active FiveM processes (`FiveM.exe`, `FiveM_ROSLauncher.exe`), and Windows Registry uninstall keys.
+- **AI Models & Parameter Guide Window (`AiModelInfoWindow`)**:
+  - Replaced native message dialog with a dedicated Metro UI window providing detailed speed benchmarks, daily rate limits, model descriptions, and parameter explanations for all supported GroqCloud models.
+- **Groq Model Additions**:
+  - Added support for `groq/compound` (multi-agent router) and `groq/compound-mini` (lightweight multi-model router).
+- **Concurrency Unit Testing**:
+  - Added unit test `Parse_ConcurrentWriteLock_ReadsSuccessfully` in `ChatLogParserTests` validating concurrent chat log reading while the game engine holds active write access.
+
+### Changed
+- **Groq Model Migration**:
+  - Migrated default and active AI models from decommissioned Llama 3 models (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`) to high-speed open-weight models: `openai/gpt-oss-20b` (Default, ~30–50ms latency) and `openai/gpt-oss-120b` (High Quality).
+  - Added automatic config migration in `AiAssistantController.LoadSettings()` to upgrade existing user configs seamlessly without manual intervention.
+  - Updated AI Accent Profile Generator to utilize `openai/gpt-oss-120b` for deep lore and persona analysis.
+
+### Fixed
+- **UI Thread Asynchronous Non-Blocking Updates**:
+  - Refactored update check in `MainWindow.xaml.cs` to fully asynchronous `async Task CheckForUpdatesAsync` without synchronous `.Result` calls or `ManualResetEvent` thread-blocking, eliminating WPF UI deadlock risks.
+- **Thread-Safe AI Settings & Quotas**:
+  - Added `_settingsLock` synchronization across `LoadSettings`, `SaveSettings`, `ResetQuotasIfNeeded`, and key quota increments in `AiAssistantController` to prevent race conditions and `IOException` file write collisions on rapid hotkey triggers.
+- **Concurrent File Sharing on Active Game Logs**:
+  - Refactored `ChatLogParser` and `ChatLogScanner` to read `.storage` files using `FileShare.ReadWrite`, preventing locking collisions while GTA World actively writes to the log.
+- **Socket Exhaustion Prevention**:
+  - Updated `AutoUpdater` to use a shared static singleton `HttpClient` rather than instantiating per-request instances.
+- **Null Safety & Observability**:
+  - Added null-safety checks in `FiveMDetector.ResolveFiveMPaths` and replaced silent empty catch blocks across detectors and fixers with structured `Log.Debug` observability.
+
 ## [6.1.0] - 2026-07-28
 
 ### Added
