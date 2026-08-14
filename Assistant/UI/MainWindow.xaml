@@ -117,7 +117,8 @@
                 <ComboBox x:Name="AiModel" IsEditable="True" SelectionChanged="AiModel_SelectionChanged" TextBoxBase.TextChanged="AiModel_TextChanged" HorizontalAlignment="Left" Margin="10,198,0,0" VerticalAlignment="Top" Width="235">
                     <ComboBoxItem Content="openai/gpt-oss-20b"/>
                     <ComboBoxItem Content="openai/gpt-oss-120b"/>
-                    <ComboBoxItem Content="qwen/qwen3.6-27b"/>
+                    <ComboBoxItem Content="groq/compound"/>
+                    <ComboBoxItem Content="groq/compound-mini"/>
                 </ComboBox>
                 <Button x:Name="ModelInfoHelpBtn" Click="ModelInfoHelpBtn_Click" Content="?" HorizontalAlignment="Left" Margin="248,198,0,0" VerticalAlignment="Top" Width="22" Height="25" FontWeight="Bold"/>
 

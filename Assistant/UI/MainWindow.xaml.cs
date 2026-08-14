@@ -1395,11 +1395,21 @@ namespace Assistant.UI
         {
             string info = "Available Groq Models:\n\n" +
                           "• openai/gpt-oss-20b (Recommended / Default):\n" +
-                          "  Ultra-fast, lowest latency open-source 20B model. Ideal for instant clipboard accent conversion and translations with low token overhead.\n\n" +
+                          "  • Speed & Latency: Ultra-fast (~30–50 ms)\n" +
+                          "  • Usage / Rate Limit: Highest allowance (~14,400 requests/day & 500k tokens/min on free tier)\n" +
+                          "  • Best For: Instant in-game clipboard text replacement, real-time accents, fast translations, and auto-correct.\n\n" +
                           "• openai/gpt-oss-120b:\n" +
-                          "  High quality and versatile open-source 120B model. Excellent reasoning, nuanced roleplay enrichment, and vocabulary.\n\n" +
-                          "• qwen/qwen3.6-27b:\n" +
-                          "  Powerful 27B reasoning model from Alibaba. Superior multilingual translation, complex lore generation, and deep instruction following.\n\n" +
+                          "  • Speed & Latency: High speed (~60–90 ms)\n" +
+                          "  • Usage / Rate Limit: Large allowance (~7,000 requests/day & 250k tokens/min on free tier)\n" +
+                          "  • Best For: Complex character lore analysis in the Profile Generator, nuanced roleplay enrichment, and rich vocabulary.\n\n" +
+                          "• groq/compound:\n" +
+                          "  • Speed & Latency: Moderate (~400–600 ms)\n" +
+                          "  • Usage / Rate Limit: Compound multi-agent routing\n" +
+                          "  • Best For: High accuracy reasoning by evaluating requests through multi-model verification.\n\n" +
+                          "• groq/compound-mini:\n" +
+                          "  • Speed & Latency: Fast compound router (~350–500 ms)\n" +
+                          "  • Usage / Rate Limit: Lightweight compound routing\n" +
+                          "  • Best For: Quick multi-model consensus with lower token consumption.\n\n" +
                           "• Temperature Slider:\n" +
                           "  Controls model output variance. Lower values (e.g. 0.2) produce highly predictable, faithful responses. " +
                           "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.\n\n" +
