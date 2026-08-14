@@ -1393,33 +1393,9 @@ namespace Assistant.UI
 
         private void ModelInfoHelpBtn_Click(object sender, RoutedEventArgs e)
         {
-            string info = "Available Groq Models:\n\n" +
-                          "• openai/gpt-oss-20b (Recommended / Default):\n" +
-                          "  • Speed & Latency: Ultra-fast (~30–50 ms)\n" +
-                          "  • Usage / Rate Limit: Highest allowance (~14,400 requests/day & 500k tokens/min on free tier)\n" +
-                          "  • Best For: Instant in-game clipboard text replacement, real-time accents, fast translations, and auto-correct.\n\n" +
-                          "• openai/gpt-oss-120b:\n" +
-                          "  • Speed & Latency: High speed (~60–90 ms)\n" +
-                          "  • Usage / Rate Limit: Large allowance (~7,000 requests/day & 250k tokens/min on free tier)\n" +
-                          "  • Best For: Complex character lore analysis in the Profile Generator, nuanced roleplay enrichment, and rich vocabulary.\n\n" +
-                          "• groq/compound:\n" +
-                          "  • Speed & Latency: Moderate (~400–600 ms)\n" +
-                          "  • Usage / Rate Limit: Compound multi-agent routing\n" +
-                          "  • Best For: High accuracy reasoning by evaluating requests through multi-model verification.\n\n" +
-                          "• groq/compound-mini:\n" +
-                          "  • Speed & Latency: Fast compound router (~350–500 ms)\n" +
-                          "  • Usage / Rate Limit: Lightweight compound routing\n" +
-                          "  • Best For: Quick multi-model consensus with lower token consumption.\n\n" +
-                          "• Temperature Slider:\n" +
-                          "  Controls model output variance. Lower values (e.g. 0.2) produce highly predictable, faithful responses. " +
-                          "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.\n\n" +
-                          "• Phonetic Spelling:\n" +
-                          "  Toggles character-specific spelling rules. When enabled, the model writes phonetically (dropping ending 'g' on 'ing' words, using sound spellings like 'dat' or 'ova', etc.). " +
-                          "When disabled, it maintains standard English spelling rules while still respecting custom profile directives, syntax, and vocabulary.\n\n" +
-                          "• Action Enricher:\n" +
-                          "  Automatically detects roleplay action commands (/me, /my, /do, /melow, /mylow, /dolow, /melong, /mylong, /dolong, /ame, /amy, /ado). " +
-                          "When enabled, triggering the shortcut enriches the action text into atmospheric, vivid, and detailed roleplay descriptions, maintaining uncapitalized phrasing for /me and /my actions to seamlessly fit character chat lines.";
-            MessageBox.Show(this, info, "Model & Parameter Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            var infoWindow = new AiModelInfoWindow();
+            infoWindow.Owner = this;
+            infoWindow.ShowDialog();
         }
 
         private void TabLogParserBtn_Click(object sender, RoutedEventArgs e)
