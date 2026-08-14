@@ -66,6 +66,7 @@ namespace Assistant.Controllers
         );
         private static readonly string ConfigFile = Path.Combine(ConfigDir, "ai_settings.json");
         private static readonly HttpClient _httpClient = new HttpClient();
+        private static readonly object _settingsLock = new object();
 
         public static AiAssistantSettings Settings { get; private set; } = new AiAssistantSettings();
 
@@ -76,68 +77,79 @@ namespace Assistant.Controllers
 
         public static void LoadSettings()
         {
-            try
+            lock (_settingsLock)
             {
-                if (!Directory.Exists(ConfigDir))
+                try
                 {
-                    Directory.CreateDirectory(ConfigDir);
-                }
-
-                if (File.Exists(ConfigFile))
-                {
-                    string json = File.ReadAllText(ConfigFile);
-                    var loaded = JsonSerializer.Deserialize<AiAssistantSettings>(json);
-                    if (loaded != null)
+                    if (!Directory.Exists(ConfigDir))
                     {
-                        Settings = loaded;
+                        Directory.CreateDirectory(ConfigDir);
+                    }
+
+                    if (File.Exists(ConfigFile))
+                    {
+                        string json = File.ReadAllText(ConfigFile);
+                        var loaded = JsonSerializer.Deserialize<AiAssistantSettings>(json);
+                        if (loaded != null)
+                        {
+                            Settings = loaded;
 #pragma warning disable CS0618
-                        if (!string.IsNullOrEmpty(Settings.ShortcutKey))
-                        {
-                            Settings.ShortcutAccent = Settings.ShortcutKey;
-                            Settings.ShortcutKey = null;
-                            SaveSettings();
-                        }
-#pragma warning restore CS0618
-                        if (!Settings.MigratedToCtrlU)
-                        {
-                            if (Settings.ShortcutTranslate == "Ctrl+Y")
+                            if (!string.IsNullOrEmpty(Settings.ShortcutKey))
                             {
-                                Settings.ShortcutTranslate = "Ctrl+U";
+                                Settings.ShortcutAccent = Settings.ShortcutKey;
+                                Settings.ShortcutKey = null;
+                                SaveSettingsLocked();
                             }
-                            Settings.MigratedToCtrlU = true;
-                            SaveSettings();
-                        }
+#pragma warning restore CS0618
+                            if (!Settings.MigratedToCtrlU)
+                            {
+                                if (Settings.ShortcutTranslate == "Ctrl+Y")
+                                {
+                                    Settings.ShortcutTranslate = "Ctrl+U";
+                                }
+                                Settings.MigratedToCtrlU = true;
+                                SaveSettingsLocked();
+                            }
 
-                        // Auto-migrate decommissioned Llama 3 models to recommended replacements
-                        if (string.Equals(Settings.ActiveModel, "llama-3.1-8b-instant", StringComparison.OrdinalIgnoreCase))
-                        {
-                            Settings.ActiveModel = "openai/gpt-oss-20b";
-                            SaveSettings();
-                        }
-                        else if (string.Equals(Settings.ActiveModel, "llama-3.3-70b-versatile", StringComparison.OrdinalIgnoreCase))
-                        {
-                            Settings.ActiveModel = "openai/gpt-oss-120b";
-                            SaveSettings();
-                        }
+                            // Auto-migrate decommissioned Llama 3 models to recommended replacements
+                            if (string.Equals(Settings.ActiveModel, "llama-3.1-8b-instant", StringComparison.OrdinalIgnoreCase))
+                            {
+                                Settings.ActiveModel = "openai/gpt-oss-20b";
+                                SaveSettingsLocked();
+                            }
+                            else if (string.Equals(Settings.ActiveModel, "llama-3.3-70b-versatile", StringComparison.OrdinalIgnoreCase))
+                            {
+                                Settings.ActiveModel = "openai/gpt-oss-120b";
+                                SaveSettingsLocked();
+                            }
 
-                        EnsureDefaultProfiles();
-                        ResetQuotasIfNeeded();
-                        return;
+                            EnsureDefaultProfilesLocked();
+                            ResetQuotasIfNeededLocked();
+                            return;
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Failed to load AI Assistant settings.");
-            }
+                catch (Exception ex)
+                {
+                    Serilog.Log.Error(ex, "Failed to load AI Assistant settings.");
+                }
 
-            // Create default settings if failed or not exist
-            Settings = new AiAssistantSettings();
-            EnsureDefaultProfiles();
-            SaveSettings();
+                // Create default settings if failed or not exist
+                Settings = new AiAssistantSettings();
+                EnsureDefaultProfilesLocked();
+                SaveSettingsLocked();
+            }
         }
 
-        private static void EnsureDefaultProfiles()
+        public static void EnsureDefaultProfiles()
+        {
+            lock (_settingsLock)
+            {
+                EnsureDefaultProfilesLocked();
+            }
+        }
+
+        private static void EnsureDefaultProfilesLocked()
         {
             if (Settings.CustomProfiles == null)
             {
@@ -163,17 +175,25 @@ namespace Assistant.Controllers
                     TargetAccent = "Tony Soprano",
                     CustomDirectives = latestSopranoDirectives
                 });
-                SaveSettings();
+                SaveSettingsLocked();
             }
             else if (sopranoProfile.CustomDirectives == null || !sopranoProfile.CustomDirectives.Contains("Vocabulary terms like 'prick'"))
             {
                 // Upgrade to the improved directives
                 sopranoProfile.CustomDirectives = latestSopranoDirectives;
-                SaveSettings();
+                SaveSettingsLocked();
             }
         }
 
         public static void SaveSettings()
+        {
+            lock (_settingsLock)
+            {
+                SaveSettingsLocked();
+            }
+        }
+
+        private static void SaveSettingsLocked()
         {
             try
             {
@@ -193,6 +213,14 @@ namespace Assistant.Controllers
 
         public static void ResetQuotasIfNeeded()
         {
+            lock (_settingsLock)
+            {
+                ResetQuotasIfNeededLocked();
+            }
+        }
+
+        private static void ResetQuotasIfNeededLocked()
+        {
             bool changed = false;
             DateTime today = DateTime.Today;
 
@@ -209,21 +237,24 @@ namespace Assistant.Controllers
 
             if (changed)
             {
-                SaveSettings();
+                SaveSettingsLocked();
             }
         }
 
         // Retrieves the next available API key. Performs rotation and quota checking.
         private static GroqApiKeyInfo? GetNextApiKey()
         {
-            ResetQuotasIfNeeded();
+            lock (_settingsLock)
+            {
+                ResetQuotasIfNeededLocked();
 
-            var availableKeys = Settings.ApiKeys
-                .Where(k => k.IsActive && !k.IsRateLimited && !string.IsNullOrWhiteSpace(k.ApiKey))
-                .OrderBy(k => k.RequestCount) // Pick the one with the fewest requests today
-                .ToList();
+                var availableKeys = Settings.ApiKeys
+                    .Where(k => k.IsActive && !k.IsRateLimited && !string.IsNullOrWhiteSpace(k.ApiKey))
+                    .OrderBy(k => k.RequestCount) // Pick the one with the fewest requests today
+                    .ToList();
 
-            return availableKeys.FirstOrDefault();
+                return availableKeys.FirstOrDefault();
+            }
         }
 
         private static readonly string[] ActionPrefixes = new[]
@@ -471,11 +502,11 @@ namespace Assistant.Controllers
                         request.Headers.Add("Authorization", $"Bearer {keyInfo.ApiKey}");
                         request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
-                        var response = await _httpClient.SendAsync(request);
+                        var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
                         if (response.StatusCode == System.Net.HttpStatusCode.OK)
                         {
-                            string responseJson = await response.Content.ReadAsStringAsync();
+                            string responseJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                             using (var doc = JsonDocument.Parse(responseJson))
                             {
                                 var content = doc.RootElement
@@ -486,9 +517,12 @@ namespace Assistant.Controllers
 
                                 if (content != null)
                                 {
-                                    keyInfo.RequestCount++;
-                                    keyInfo.LastUsedDate = DateTime.Today;
-                                    SaveSettings();
+                                    lock (_settingsLock)
+                                    {
+                                        keyInfo.RequestCount++;
+                                        keyInfo.LastUsedDate = DateTime.Today;
+                                        SaveSettingsLocked();
+                                    }
 
                                     string cleanedResult = content.Trim();
 
@@ -640,11 +674,11 @@ namespace Assistant.Controllers
                         request.Headers.Add("Authorization", $"Bearer {keyInfo.ApiKey}");
                         request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
-                        var response = await _httpClient.SendAsync(request);
+                        var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
                         if (response.StatusCode == System.Net.HttpStatusCode.OK)
                         {
-                            string responseJson = await response.Content.ReadAsStringAsync();
+                            string responseJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                             using (var doc = JsonDocument.Parse(responseJson))
                             {
                                 var content = doc.RootElement
@@ -655,9 +689,12 @@ namespace Assistant.Controllers
 
                                 if (content != null)
                                 {
-                                    keyInfo.RequestCount++;
-                                    keyInfo.LastUsedDate = DateTime.Today;
-                                    SaveSettings();
+                                    lock (_settingsLock)
+                                    {
+                                        keyInfo.RequestCount++;
+                                        keyInfo.LastUsedDate = DateTime.Today;
+                                        SaveSettingsLocked();
+                                    }
 
                                     string cleanedResult = content.Trim();
 

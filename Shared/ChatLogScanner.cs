@@ -45,8 +45,11 @@ namespace GTAWParser.Shared
                         continue;
 
                     string log;
-                    using (StreamReader sr = new StreamReader(storagePath))
+                    using (FileStream fs = new FileStream(storagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (StreamReader sr = new StreamReader(fs))
+                    {
                         log = sr.ReadToEnd();
+                    }
 
                     if (!ServerTag.IsMatch(log))
                         continue;

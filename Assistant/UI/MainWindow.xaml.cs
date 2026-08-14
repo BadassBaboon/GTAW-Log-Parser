@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Octokit;
 using System.IO;
 using System.Windows;
@@ -431,17 +432,11 @@ namespace Assistant.UI
             TryCheckingForUpdates(true);
         }
 
-        /// <summary>
-        /// Disables the controls on the main window
-        /// and checks for updates
-        /// </summary>
-        private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
-        private void TryCheckingForUpdates(bool manual = false)
+        private async void TryCheckingForUpdates(bool manual = false)
         {
             if (!_isUpdateCheckRunning)
             {
                 _isUpdateCheckRunning = true;
-                _resetEvent.Reset();
 
                 UpdateCheckProgress.Visibility = Visibility.Visible;
                 UpdateCheckProgress.IsActive = true;
@@ -450,8 +445,14 @@ namespace Assistant.UI
                     ToggleControls();
 
                 _isUpdateCheckManual = manual;
-                ThreadPool.QueueUserWorkItem(_ => CheckForUpdates(ref _isUpdateCheckManual));
-                ThreadPool.QueueUserWorkItem(_ => FinishUpdateCheck());
+                try
+                {
+                    await CheckForUpdatesAsync(manual).ConfigureAwait(true);
+                }
+                finally
+                {
+                    FinishUpdateCheck();
+                }
             }
             else if (manual && !_isUpdateCheckManual)
             {
@@ -466,8 +467,6 @@ namespace Assistant.UI
         /// </summary>
         private void FinishUpdateCheck()
         {
-            _resetEvent.WaitOne();
-            
             ToggleControls(true);
             StopUpdateIndicator();
             
@@ -544,15 +543,15 @@ namespace Assistant.UI
         }
 
         /// <summary>
-        /// Checks for updates
+        /// Checks for updates asynchronously
         /// </summary>
         /// <param name="manual"></param>
-        private void CheckForUpdates(ref bool manual)
+        private async Task CheckForUpdatesAsync(bool manual)
         {
             try
             {
                 string installedVersion = AppController.Version;
-                IReadOnlyList<Release> releases = _client.Repository.Release.GetAll(AppController.GitHubOwner, AppController.GitHubRepo).Result;
+                IReadOnlyList<Release> releases = await _client.Repository.Release.GetAll(AppController.GitHubOwner, AppController.GitHubRepo).ConfigureAwait(true);
 
                 string newVersion = string.Empty;
                 bool isNewVersionBeta = false;
@@ -561,9 +560,12 @@ namespace Assistant.UI
                 // Prereleases are a go
                 if (!Properties.Settings.Default.IgnoreBetaVersions)
                 {
-                    matchedRelease = releases[0];
-                    newVersion = matchedRelease.TagName;
-                    isNewVersionBeta = matchedRelease.Prerelease;
+                    matchedRelease = releases.Count > 0 ? releases[0] : null;
+                    if (matchedRelease != null)
+                    {
+                        newVersion = matchedRelease.TagName;
+                        isNewVersionBeta = matchedRelease.Prerelease;
+                    }
                 }
                 else
                 {
@@ -603,8 +605,6 @@ namespace Assistant.UI
                 if (manual)
                     DisplayUpdateMessage(string.Format(Strings.NoInternet, AppController.Version + (AppController.IsBetaVersion ? " Beta" : string.Empty)), Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            _resetEvent.Set();
         }
 
         /// <summary>

@@ -129,5 +129,21 @@ namespace GTAWParser.Shared.Tests
 
             Assert.Equal(input, result);
         }
+
+        [Fact]
+        public void Parse_ConcurrentWriteLock_ReadsSuccessfully()
+        {
+            string storagePath = Path.Combine(_resourceDir, ".storage");
+            string json = "{\"server_version\":\"GTA World v1.0.0\",\"chat_log\":\"[12:00:00] Concurrent message\\n\",\"rememberuser\":true}";
+            File.WriteAllText(storagePath, json);
+            ChatLogScanner.InitializeServerIp(_tempRoot);
+
+            // Simulate the game process keeping the file open with write access and ReadWrite sharing
+            using (FileStream activeGameLock = new FileStream(storagePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            {
+                string result = ChatLogParser.Parse(_tempRoot);
+                Assert.Contains("Concurrent message", result);
+            }
+        }
     }
 }

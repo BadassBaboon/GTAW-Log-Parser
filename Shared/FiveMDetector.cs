@@ -71,7 +71,10 @@ namespace GTAWParser.Shared
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "FiveM drive probe encountered an exception");
+                }
 
                 // 3. Running Process Probe (e.g. FiveM.exe, FiveM_ROSLauncher.exe)
                 foreach (string procName in new[] { "FiveM", "FiveM_ROSLauncher", "FiveM_GTAProcess" })
@@ -97,7 +100,10 @@ namespace GTAWParser.Shared
                             }
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        Log.Debug(ex, "FiveM process probe for {Proc} encountered an exception", procName);
+                    }
                 }
 
                 // 4. HKCU Uninstall key
@@ -196,9 +202,12 @@ namespace GTAWParser.Shared
                 }
             }
 
-            paths.PluginsDirectory = Path.Combine(paths.AppDataDirectory, "plugins");
-            paths.LogsDirectory = Path.Combine(paths.AppDataDirectory, "logs");
-            paths.CitizenFXIniPath = Path.Combine(paths.AppDataDirectory, "CitizenFX.ini");
+            if (!string.IsNullOrEmpty(paths.AppDataDirectory))
+            {
+                paths.PluginsDirectory = Path.Combine(paths.AppDataDirectory, "plugins");
+                paths.LogsDirectory = Path.Combine(paths.AppDataDirectory, "logs");
+                paths.CitizenFXIniPath = Path.Combine(paths.AppDataDirectory, "CitizenFX.ini");
+            }
 
             return paths;
         }

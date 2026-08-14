@@ -20,6 +20,7 @@ namespace Assistant.Controllers
         // for framework-dependent x64 builds.
         private const string AssetNameFdd = "GTAWAssistant-fdd-win-x64.exe";
         private const string AssetNameSelfContained = "GTAWAssistant-selfcontained-win-x64.exe";
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         /// <summary>
         /// Returns true on successful download + relaunch (the calling
@@ -52,8 +53,7 @@ namespace Assistant.Controllers
                 if (File.Exists(newExePath)) File.Delete(newExePath);
 
                 Log.Information("AutoUpdater: downloading {Url} to {Path}", asset.BrowserDownloadUrl, newExePath);
-                using (HttpClient http = new HttpClient())
-                using (Stream remote = await http.GetStreamAsync(asset.BrowserDownloadUrl).ConfigureAwait(false))
+                using (Stream remote = await _httpClient.GetStreamAsync(asset.BrowserDownloadUrl).ConfigureAwait(false))
                 using (FileStream local = File.Create(newExePath))
                 {
                     await remote.CopyToAsync(local).ConfigureAwait(false);

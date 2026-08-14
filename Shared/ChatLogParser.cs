@@ -26,7 +26,18 @@ namespace GTAWParser.Shared
             try
             {
                 string storagePath = Path.Combine(directoryPath, ChatLogScanner.LogLocation);
-                byte[] bytes = File.ReadAllBytes(storagePath);
+                byte[] bytes;
+                using (FileStream fs = new FileStream(storagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    bytes = new byte[fs.Length];
+                    int bytesRead = 0;
+                    while (bytesRead < bytes.Length)
+                    {
+                        int read = fs.Read(bytes, bytesRead, bytes.Length - bytesRead);
+                        if (read == 0) break;
+                        bytesRead += read;
+                    }
+                }
 
                 Utf8JsonReader reader = new Utf8JsonReader(bytes);
                 while (reader.Read())

@@ -107,7 +107,10 @@ namespace GTAWParser.Shared
                                 itemsToMove.Add(iniFile);
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            Log.Debug(ex, "Failed to read INI file {Ini} during ReShade probe", iniFile);
+                        }
                     }
                 }
 
