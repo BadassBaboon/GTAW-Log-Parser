@@ -39,7 +39,7 @@ namespace Assistant.Controllers
     {
         public List<GroqApiKeyInfo> ApiKeys { get; set; } = new List<GroqApiKeyInfo>();
         public List<CustomAccentProfile> CustomProfiles { get; set; } = new List<CustomAccentProfile>();
-        public string ActiveModel { get; set; } = "llama-3.1-8b-instant";
+        public string ActiveModel { get; set; } = "openai/gpt-oss-20b";
         public string Mode { get; set; } = "Accent"; // Accent, Translate, Correct
         public string TargetAccent { get; set; } = "Texan Accent";
         public string TargetLanguage { get; set; } = "Spanish";
@@ -107,6 +107,19 @@ namespace Assistant.Controllers
                             Settings.MigratedToCtrlU = true;
                             SaveSettings();
                         }
+
+                        // Auto-migrate decommissioned Llama 3 models to recommended replacements
+                        if (string.Equals(Settings.ActiveModel, "llama-3.1-8b-instant", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Settings.ActiveModel = "openai/gpt-oss-20b";
+                            SaveSettings();
+                        }
+                        else if (string.Equals(Settings.ActiveModel, "llama-3.3-70b-versatile", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Settings.ActiveModel = "openai/gpt-oss-120b";
+                            SaveSettings();
+                        }
+
                         EnsureDefaultProfiles();
                         ResetQuotasIfNeeded();
                         return;
@@ -604,8 +617,8 @@ namespace Assistant.Controllers
 
                 try
                 {
-                    string modelToUse = !string.IsNullOrEmpty(Settings.ActiveModel) && Settings.ActiveModel.Contains("8b")
-                        ? "llama-3.3-70b-versatile"
+                    string modelToUse = !string.IsNullOrEmpty(Settings.ActiveModel) && (Settings.ActiveModel.Contains("20b") || Settings.ActiveModel.Contains("8b"))
+                        ? "openai/gpt-oss-120b"
                         : Settings.ActiveModel;
 
                     var requestBody = new

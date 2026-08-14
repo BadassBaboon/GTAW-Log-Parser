@@ -1394,12 +1394,12 @@ namespace Assistant.UI
         private void ModelInfoHelpBtn_Click(object sender, RoutedEventArgs e)
         {
             string info = "Available Groq Models:\n\n" +
-                          "• llama-3.1-8b-instant:\n" +
-                          "  Extremely fast, lowest latency. Great for standard accent conversion.\n\n" +
-                          "• llama-3.3-70b-versatile:\n" +
-                          "  High quality and versatile. Best balance of reasoning and vocabulary.\n\n" +
+                          "• openai/gpt-oss-20b (Recommended / Default):\n" +
+                          "  Ultra-fast, lowest latency open-source 20B model. Ideal for instant clipboard accent conversion and translations with low token overhead.\n\n" +
                           "• openai/gpt-oss-120b:\n" +
-                          "  Huge open-source 120B parameter model. Good daily limits and quality.\n\n" +
+                          "  High quality and versatile open-source 120B model. Excellent reasoning, nuanced roleplay enrichment, and vocabulary.\n\n" +
+                          "• qwen/qwen3.6-27b:\n" +
+                          "  Powerful 27B reasoning model from Alibaba. Superior multilingual translation, complex lore generation, and deep instruction following.\n\n" +
                           "• Temperature Slider:\n" +
                           "  Controls model output variance. Lower values (e.g. 0.2) produce highly predictable, faithful responses. " +
                           "Higher values (e.g. 0.8) allow the model more creative liberty and phrasing variety.\n\n" +
