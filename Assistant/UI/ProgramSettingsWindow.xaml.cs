@@ -43,6 +43,8 @@ namespace Assistant.UI
 
         private void SaveSettings()
         {
+            Properties.Settings.Default.DisableShortcutButton = DisableShortcutButton.IsChecked == true;
+            Properties.Settings.Default.DisableDiscordButton = DisableDiscordButton.IsChecked == true;
             Properties.Settings.Default.DisableForumsButton = DisableForumsButton.IsChecked == true;
             Properties.Settings.Default.DisableFacebrowserButton = DisableFacebrowserButton.IsChecked == true;
             Properties.Settings.Default.DisableUCPButton = DisableUCPButton.IsChecked == true;
@@ -72,6 +74,8 @@ namespace Assistant.UI
         /// </summary>
         private void LoadSettings()
         {
+            DisableShortcutButton.IsChecked = Properties.Settings.Default.DisableShortcutButton;
+            DisableDiscordButton.IsChecked = Properties.Settings.Default.DisableDiscordButton;
             DisableForumsButton.IsChecked = Properties.Settings.Default.DisableForumsButton;
             DisableFacebrowserButton.IsChecked = Properties.Settings.Default.DisableFacebrowserButton;
             DisableUCPButton.IsChecked = Properties.Settings.Default.DisableUCPButton;
@@ -136,10 +140,12 @@ namespace Assistant.UI
         /// </summary>
         private static void ResetSettings()
         {
+            Properties.Settings.Default.DisableShortcutButton = false;
+            Properties.Settings.Default.DisableDiscordButton = false;
             Properties.Settings.Default.DisableForumsButton = true;
             Properties.Settings.Default.DisableFacebrowserButton = true;
             Properties.Settings.Default.DisableUCPButton = true;
-            Properties.Settings.Default.DisableReleasesButton= false;
+            Properties.Settings.Default.DisableReleasesButton = true;
             Properties.Settings.Default.DisableProjectButton = true;
             Properties.Settings.Default.UpdateCheckTimeout = 4;
 
@@ -171,6 +177,22 @@ namespace Assistant.UI
                 return;
 
             TimeoutLabel2.Content = string.Format(Strings.UpdateAbortTime, Timeout.Value > 1 ? Strings.SecondPlural : Strings.SecondSingular);
+        }
+
+        /// <summary>
+        /// Toggles the create desktop shortcut button on the title bar
+        /// </summary>
+        private void DisableShortcutButton_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            _mainWindow.CreateDesktopShortcut.Visibility = DisableShortcutButton.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        /// <summary>
+        /// Toggles the Discord button on the title bar
+        /// </summary>
+        private void DisableDiscordButton_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            _mainWindow.OpenDiscord.Visibility = DisableDiscordButton.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
         }
 
         /// <summary>

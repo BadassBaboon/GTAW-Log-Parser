@@ -265,7 +265,7 @@ namespace Assistant.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool DisableReleasesButton {
             get {
                 return ((bool)(this["DisableReleasesButton"]));
@@ -284,6 +284,30 @@ namespace Assistant.Properties {
             }
             set {
                 this["DisableProjectButton"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DisableDiscordButton {
+            get {
+                return ((bool)(this["DisableDiscordButton"]));
+            }
+            set {
+                this["DisableDiscordButton"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DisableShortcutButton {
+            get {
+                return ((bool)(this["DisableShortcutButton"]));
+            }
+            set {
+                this["DisableShortcutButton"] = value;
             }
         }
         

@@ -135,6 +135,8 @@ namespace Assistant.UI
         /// </summary>
         private void LoadSettings()
         {
+            CreateDesktopShortcut.Visibility = Properties.Settings.Default.DisableShortcutButton ? Visibility.Collapsed : Visibility.Visible;
+            OpenDiscord.Visibility = Properties.Settings.Default.DisableDiscordButton ? Visibility.Collapsed : Visibility.Visible;
             OpenForums.Visibility = Properties.Settings.Default.DisableForumsButton ? Visibility.Collapsed : Visibility.Visible;
             OpenFacebrowser.Visibility = Properties.Settings.Default.DisableFacebrowserButton ? Visibility.Collapsed : Visibility.Visible;
             OpenUCP.Visibility = Properties.Settings.Default.DisableUCPButton ? Visibility.Collapsed : Visibility.Visible;
