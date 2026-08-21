@@ -282,6 +282,19 @@ namespace Assistant.UI
             }
         }
 
+        private void ResetGraphicsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult confirm = MessageBox.Show(this,
+                "Deleting gta5_settings.xml will restore all FiveM graphic and display settings to original defaults on next launch.\n\nAre you sure you want to restore original graphic settings?",
+                "Restore FiveM Graphic Settings", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm == MessageBoxResult.Yes)
+            {
+                bool success = FiveMConfigManager.ResetGraphicsSettings(out string statusMsg);
+                MessageBox.Show(this, statusMsg, "Graphic Settings", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Error);
+            }
+        }
+
         private void ClearCitizenBtn_Click(object sender, RoutedEventArgs e)
         {
             if (!ValidateFiveMPath(out string path)) return;

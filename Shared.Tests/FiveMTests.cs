@@ -395,5 +395,40 @@ namespace Shared.Tests
                     Directory.Delete(tempDir, true);
             }
         }
+
+        [Fact]
+        public void FiveMConfigManager_ResetGraphicsSettings_DeletesFileSuccessfully()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "FiveMTest_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                string xmlPath = Path.Combine(tempDir, "gta5_settings.xml");
+                File.WriteAllText(xmlPath, "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Settings></Settings>");
+
+                Assert.True(File.Exists(xmlPath));
+
+                bool success = FiveMConfigManager.ResetGraphicsSettings(out string statusMsg, xmlPath);
+
+                Assert.True(success);
+                Assert.False(File.Exists(xmlPath));
+                Assert.Contains("Successfully reset FiveM graphic settings", statusMsg);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FiveMConfigManager_ResetGraphicsSettings_MissingFile_HandlesGracefully()
+        {
+            string nonExistentPath = Path.Combine(Path.GetTempPath(), "nonexistent_" + Guid.NewGuid().ToString("N"), "gta5_settings.xml");
+            bool success = FiveMConfigManager.ResetGraphicsSettings(out string statusMsg, nonExistentPath);
+
+            Assert.True(success);
+            Assert.Contains("does not exist or was already reset", statusMsg);
+        }
     }
 }

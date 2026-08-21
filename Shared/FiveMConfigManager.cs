@@ -354,6 +354,44 @@ namespace GTAWParser.Shared
             }
         }
 
+        /// <summary>
+        /// Gets the standard path to FiveM's gta5_settings.xml file under %APPDATA%\CitizenFX\gta5_settings.xml.
+        /// </summary>
+        public static string GetGta5SettingsXmlPath()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CitizenFX", "gta5_settings.xml");
+        }
+
+        /// <summary>
+        /// Deletes %APPDATA%\CitizenFX\gta5_settings.xml to restore FiveM graphic and display settings to original defaults.
+        /// </summary>
+        public static bool ResetGraphicsSettings(out string statusMessage, string? customPath = null)
+        {
+            statusMessage = string.Empty;
+            try
+            {
+                string xmlPath = customPath ?? GetGta5SettingsXmlPath();
+                if (File.Exists(xmlPath))
+                {
+                    File.Delete(xmlPath);
+                    statusMessage = "Successfully reset FiveM graphic settings. FiveM will generate a clean gta5_settings.xml on next launch.";
+                    Log.Information("Deleted FiveM graphic settings at {Path}", xmlPath);
+                    return true;
+                }
+                else
+                {
+                    statusMessage = "gta5_settings.xml does not exist or was already reset.";
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error deleting FiveM gta5_settings.xml");
+                statusMessage = $"Failed to reset graphic settings: {ex.Message}";
+                return false;
+            }
+        }
+
         private static void UpdateIniKey(string iniPath, string sectionName, string keyName, string newValue)
         {
             string? dir = Path.GetDirectoryName(iniPath);

@@ -4,7 +4,7 @@
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         Title="FiveM Tools &amp; Utilities"
         TitleCharacterCasing="Normal"
-        Height="570" Width="660"
+        Height="550" Width="660"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         BorderThickness="0"
@@ -82,14 +82,14 @@
 
                         <Controls:NumericUpDown x:Name="CustomFovNumericUpDown"
                                                 Minimum="0" Maximum="130" Value="60" Interval="1"
-                                                Height="26" Width="80"
+                                                Height="26" Width="75"
                                                 TextAlignment="Center" StringFormat="{}{0}°"
                                                 Visibility="Collapsed"
                                                 ValueChanged="CustomFovNumericUpDown_ValueChanged"/>
                     </StackPanel>
 
                     <!-- Hint -->
-                    <TextBlock Text="💡 Note: Changes to FiveM settings require restarting FiveM to take effect." FontSize="10.5" Foreground="Gray" Margin="0,4,0,0"/>
+                    <TextBlock Text="💡 Note: Changes to FiveM settings require restarting FiveM to take effect." FontSize="10.5" Foreground="Gray" Margin="0,2,0,0"/>
                 </StackPanel>
             </GroupBox>
 
@@ -99,7 +99,9 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
@@ -111,8 +113,8 @@
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="Clear Citizen System Folder" FontWeight="Bold" FontSize="12"/>
-                                <TextBlock Grid.Row="1" Text="Deletes FiveM.app\citizen folder to force FiveM to redownload fresh system files." FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,2,0,8"/>
+                                <TextBlock Grid.Row="0" Text="Clear Citizen Folder" FontWeight="Bold" FontSize="12"/>
+                                <TextBlock Grid.Row="1" Text="Deletes citizen folder to force FiveM to redownload fresh system files." FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,2,0,8"/>
                                 <Button x:Name="ClearCitizenBtn" Grid.Row="2" Content="Clear Citizen" Height="26" Click="ClearCitizenBtn_Click"/>
                             </Grid>
                         </Border>
@@ -126,8 +128,22 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0" Text="Clear Server Cache" FontWeight="Bold" FontSize="12"/>
-                                <TextBlock Grid.Row="1" Text="Deletes downloaded server assets so FiveM can redownload clean server files." FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,2,0,8"/>
+                                <TextBlock Grid.Row="1" Text="Deletes server assets so FiveM can redownload clean server files." FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,2,0,8"/>
                                 <Button x:Name="ClearServerCacheBtn" Grid.Row="2" Content="Clear Cache" Height="26" Click="ClearServerCacheBtn_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Restore Graphic Settings Card -->
+                        <Border Grid.Column="4" BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="1" CornerRadius="4" Padding="8" Background="{DynamicResource MahApps.Brushes.Background}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Restore Graphic Settings" FontWeight="Bold" FontSize="12"/>
+                                <TextBlock Grid.Row="1" Text="Deletes gta5_settings.xml to restore original graphic settings." FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,2,0,8"/>
+                                <Button x:Name="ResetGraphicsBtn" Grid.Row="2" Content="Restore Graphics" Height="26" Click="ResetGraphicsBtn_Click"/>
                             </Grid>
                         </Border>
                     </Grid>
