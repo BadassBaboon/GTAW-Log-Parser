@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FiveM Tools & Utilities Menu (`FiveMToolsWindow`)**:
   - Dedicated tools window accessible from the main navigation for managing FiveM installation, configuration, and troubleshooting.
   - **Automated ReShade Relocation & Hardware Key Injection**: Detects ReShade files in FiveM root (`dxgi.dll`, `d3d11.dll`, `reshade-shaders`, `ReShade.ini`), automatically relocates them to `FiveM.app\plugins`, and injects the Jenkins One-at-a-Time hardware hash key into `CitizenFX.ini` (`[Addons] ReShade5=...`) with real-time status indicators.
+  - **First-Person Driving Field of View (FOV) Adjuster**: Configures `cam_vehicleFirstPersonFOV` in `%APPDATA%\CitizenFX\fivem.cfg` with an interactive slider (0°–130°), quick presets for `60° (Recommended)` and `Game Default (-1)`, and robust non-destructive configuration file updating.
   - **FiveM Settings Management**: Integrated UpdateChannel selector (`Release`, `Beta`, `Latest (Unstable)`) and GTA V directory browser/validator with `GTA5.exe` path verification.
   - **Maintenance Utilities**: Quick-action tools to clear the `citizen` folder (forces fresh system file redownload) and clear server cache assets (`data\server-cache-priv`).
   - **Deep Path Detection (`FiveMDetector`)**: Multi-tier detection probing local AppData, fixed/removable drives, active FiveM processes (`FiveM.exe`, `FiveM_ROSLauncher.exe`), and Windows Registry uninstall keys.

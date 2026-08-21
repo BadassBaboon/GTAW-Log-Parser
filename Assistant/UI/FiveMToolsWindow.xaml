@@ -2,11 +2,19 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
-        Title="FiveM Tools &amp; Utilities" TitleCharacterCasing="Normal" Height="480" Width="640"
+        Title="FiveM Tools &amp; Utilities"
+        TitleCharacterCasing="Normal"
+        Height="570" Width="660"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        ShowInTaskbar="False">
-    <Grid Margin="12">
+        BorderThickness="0"
+        GlowBrush="Black"
+        ShowInTaskbar="False"
+        IsMinButtonEnabled="False"
+        IsMaxRestoreButtonEnabled="False"
+        ShowIconOnTitleBar="False"
+        Icon="../Resources/AppIcon.ico">
+    <Grid Margin="15,12,15,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -20,46 +28,86 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- GroupBox 1: FiveM Settings (Side-by-Side Layout) -->
-            <GroupBox Grid.Row="0" Header="FiveM Settings" Margin="0,0,0,8">
-                <Grid Margin="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="200"/>
-                        <ColumnDefinition Width="15"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <!-- GroupBox 1: FiveM Settings -->
+            <GroupBox Grid.Row="0" Header="FiveM Settings" Margin="0,0,0,10">
+                <StackPanel Margin="10,8">
 
-                    <!-- Left Column: Update Channel -->
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Update Channel:" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <ComboBox x:Name="UpdateChannelComboBox" Height="26" SelectionChanged="UpdateChannelComboBox_SelectionChanged">
-                            <ComboBoxItem Content="Release"/>
-                            <ComboBoxItem Content="Beta"/>
-                            <ComboBoxItem Content="Latest (Unstable)"/>
+                    <!-- Row 1: Update Channel & GTA V Folder (side-by-side) -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Update Channel -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Update Channel:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="UpdateChannelComboBox" Height="26" SelectionChanged="UpdateChannelComboBox_SelectionChanged">
+                                <ComboBoxItem Content="Release"/>
+                                <ComboBoxItem Content="Beta"/>
+                                <ComboBoxItem Content="Latest (Unstable)"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Right: GTA V Folder -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="GTA 5 Installation Folder:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="GtaVPathTextBox" Grid.Column="0" Height="26" VerticalAlignment="Center" Margin="0,0,6,0" IsReadOnly="True"/>
+                                <Button x:Name="BrowseGtaVPathBtn" Grid.Column="1" Content="Browse..." Width="70" Height="26" Click="BrowseGtaVPathBtn_Click"/>
+                            </Grid>
+                            <TextBlock Text="Folder containing GTA5.exe used by FiveM." FontSize="10.5" Foreground="Gray" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Separator -->
+                    <Border BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="0,1,0,0" Margin="0,0,0,10"/>
+
+                    <!-- Row 2: First-Person Driving FOV -->
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Label & Dropdown -->
+                        <TextBlock Grid.Column="0" Text="First-Person Driving FOV:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                        <ComboBox Grid.Column="1" x:Name="FovPresetComboBox" Height="26" Width="195"
+                                  SelectionChanged="FovPresetComboBox_SelectionChanged">
+                            <ComboBoxItem Content="60° (Recommended)" Tag="60"/>
+                            <ComboBoxItem Content="0° (FiveM Default)" Tag="0"/>
+                            <ComboBoxItem Content="-1 (Game Default)" Tag="-1"/>
+                            <ComboBoxItem Content="Custom..." Tag="custom"/>
                         </ComboBox>
-                        <TextBlock Text="💡 Requires restarting FiveM to apply." FontSize="10.5" Foreground="#FF007ACC" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                    </StackPanel>
 
-                    <!-- Right Column: GTA V Folder -->
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="GTA 5 Installation Folder:" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="GtaVPathTextBox" Grid.Column="0" Height="26" VerticalAlignment="Center" Margin="0,0,6,0" IsReadOnly="True"/>
-                            <Button x:Name="BrowseGtaVPathBtn" Grid.Column="1" Content="Browse..." Width="70" Height="26" Click="BrowseGtaVPathBtn_Click"/>
-                        </Grid>
-                        <TextBlock Text="Folder containing GTA5.exe used by FiveM." FontSize="10.5" Foreground="Gray" Margin="0,4,0,0"/>
-                    </StackPanel>
-                </Grid>
+                        <!-- Right: Custom Numeric Input & Save Button -->
+                        <Controls:NumericUpDown Grid.Column="3" x:Name="CustomFovNumericUpDown"
+                                                Minimum="0" Maximum="130" Value="60" Interval="1"
+                                                Height="26" Width="80" Margin="0,0,8,0"
+                                                TextAlignment="Center" StringFormat="{}{0}°"
+                                                Visibility="Collapsed"/>
+
+                        <Button Grid.Column="4" x:Name="SaveFovBtn" Content="Save" Width="65" Height="26" FontWeight="SemiBold" Click="SaveFovBtn_Click"/>
+                    </Grid>
+
+                    <!-- Hint -->
+                    <TextBlock Text="💡 Note: Changes to FiveM settings require restarting FiveM to take effect." FontSize="10.5" Foreground="Gray" Margin="0,4,0,0"/>
+                </StackPanel>
             </GroupBox>
 
             <!-- GroupBox 2: Maintenance & Cache Clearing -->
-            <GroupBox Grid.Row="1" Header="Maintenance &amp; Cache Clearing" Margin="0,0,0,8">
-                <StackPanel Margin="8">
-                    <Grid Margin="0,0,0,2">
+            <GroupBox Grid.Row="1" Header="Maintenance &amp; Cache Clearing" Margin="0,0,0,10">
+                <StackPanel Margin="10,8">
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="15"/>
@@ -98,7 +146,7 @@
             </GroupBox>
 
             <!-- GroupBox 3: ReShade Setup -->
-            <GroupBox Grid.Row="2" Header="ReShade Setup">
+            <GroupBox Grid.Row="2" Header="ReShade Setup" Margin="0,0,0,10">
                 <Grid Margin="10,8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -144,7 +192,7 @@
         </Grid>
 
         <!-- Bottom Action Bar -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
             <Button x:Name="CloseBtn" Content="Close" Width="90" Height="28" Click="CloseBtn_Click"/>
         </StackPanel>
     </Grid>

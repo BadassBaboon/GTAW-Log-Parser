@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,11 +61,41 @@ namespace Assistant.UI
                 // 2. Load GTA V Path
                 string gtaPath = FiveMConfigManager.GetGtaVPath(path);
                 GtaVPathTextBox.Text = gtaPath;
+
+                // 3. Load First-Person Driving FOV
+                float currentFov = FiveMConfigManager.GetVehicleFirstPersonFov();
+                if (currentFov < 0)
+                {
+                    FovPresetComboBox.SelectedIndex = 2; // -1 (Game Default)
+                    CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    int fovInt = (int)Math.Round(currentFov);
+                    if (fovInt == 60)
+                    {
+                        FovPresetComboBox.SelectedIndex = 0; // 60° (Recommended)
+                        CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
+                        CustomFovNumericUpDown.Value = 60;
+                    }
+                    else if (fovInt == 0)
+                    {
+                        FovPresetComboBox.SelectedIndex = 1; // 0° (FiveM Default)
+                        CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
+                        CustomFovNumericUpDown.Value = 0;
+                    }
+                    else
+                    {
+                        FovPresetComboBox.SelectedIndex = 3; // Custom...
+                        CustomFovNumericUpDown.Value = Math.Clamp(fovInt, 0, 130);
+                        CustomFovNumericUpDown.Visibility = Visibility.Visible;
+                    }
+                }
             }
 
             _isInitializing = false;
 
-            // 3. Check ReShade Status
+            // 4. Check ReShade Status
             CheckReShadeStatus();
         }
 
@@ -203,6 +234,61 @@ namespace Assistant.UI
                     }
                 }
             }
+        }
+
+        private void FovPresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (FovPresetComboBox.SelectedItem is ComboBoxItem item && item.Tag is string tagStr)
+            {
+                if (tagStr == "custom")
+                {
+                    CustomFovNumericUpDown.Visibility = Visibility.Visible;
+                    if (CustomFovNumericUpDown.Value == null || CustomFovNumericUpDown.Value < 0)
+                        CustomFovNumericUpDown.Value = 60;
+                }
+                else
+                {
+                    CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
+                    if (int.TryParse(tagStr, out int val) && val >= 0)
+                    {
+                        CustomFovNumericUpDown.Value = val;
+                    }
+                }
+            }
+        }
+
+        private void SaveFovBtn_Click(object sender, RoutedEventArgs e)
+        {
+            float fovVal;
+            if (FovPresetComboBox.SelectedItem is ComboBoxItem item && item.Tag is string tagStr)
+            {
+                if (tagStr == "-1")
+                {
+                    fovVal = -1.0f;
+                }
+                else if (tagStr == "custom")
+                {
+                    fovVal = (float)(CustomFovNumericUpDown.Value ?? 60.0);
+                    fovVal = Math.Clamp(fovVal, 0.0f, 130.0f);
+                }
+                else if (float.TryParse(tagStr, CultureInfo.InvariantCulture, out float presetFov))
+                {
+                    fovVal = presetFov;
+                }
+                else
+                {
+                    fovVal = 60.0f;
+                }
+            }
+            else
+            {
+                fovVal = 60.0f;
+            }
+
+            bool success = FiveMConfigManager.SetVehicleFirstPersonFov(fovVal, out string statusMsg);
+            MessageBox.Show(this, statusMsg, "Driving FOV", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Error);
         }
 
         private void ClearCitizenBtn_Click(object sender, RoutedEventArgs e)
