@@ -6,10 +6,12 @@ namespace GTAWParser.Shared.Tests
     public class VersionHelperTests
     {
         [Theory]
+        [InlineData("v6.2.0", "v6.1.0", true)]
+        [InlineData("v6.1.0", "v6.2.0", false)]
+        [InlineData("v6.2.0", "v6.2.0", false)]
         [InlineData("v6.1.0", "v6.0.0", true)]
         [InlineData("v6.0.0", "v6.1.0", false)]
-        [InlineData("v6.1.0", "v6.1.0", false)]
-        [InlineData("6.1.0", "6.0.0", true)]
+        [InlineData("6.2.0", "6.1.0", true)]
         [InlineData("v5.0.2", "v5.0.1", true)]
         [InlineData("v5.0.1", "v5.0.2", false)]
         [InlineData("v5.0.2-beta", "v5.0.1", true)]
