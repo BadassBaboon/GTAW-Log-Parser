@@ -337,6 +337,7 @@ namespace Assistant.UI
                     item.IsEnabled = enable;
                 }
 
+                OpenDiscord.IsEnabled = enable;
                 OpenProgramSettings.IsEnabled = enable;
                 OpenGithubProject.IsEnabled = enable;
                 OpenGithubReleases.IsEnabled = enable;
@@ -778,6 +779,14 @@ namespace Assistant.UI
             }
 
             programSettings.ShowDialog();
+        }
+
+        /// <summary>
+        /// Opens Baboon's Workshop Discord server in the default browser
+        /// </summary>
+        private void OpenDiscord_Click(object sender, RoutedEventArgs e)
+        {
+            OpenUrl("https://discord.gg/qRdVSkUW6n");
         }
 
         /// <summary>

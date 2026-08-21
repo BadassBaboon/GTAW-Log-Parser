@@ -180,6 +180,7 @@ namespace Assistant
         {
             StyleController.StopWatchers();
             BackupController.Quitting = true;
+            FiveMChatCaptureService.Stop();
             Logging.Shutdown();
 
             if (_appMutex != null)
