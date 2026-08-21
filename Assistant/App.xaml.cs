@@ -82,7 +82,9 @@ namespace Assistant
                 if (args.Any(arg => arg == $"{AppController.ParameterPrefix}minimized"))
                     startMinimized = true;
 
-                if (args.Any(arg => arg == $"{AppController.ParameterPrefix}quick-launch" || arg == $"{AppController.ParameterPrefix}launch-game"))
+                bool isQuickLaunch = args.Any(arg => arg == $"{AppController.ParameterPrefix}quick-launch" || arg == $"{AppController.ParameterPrefix}launch-game");
+
+                if (isQuickLaunch)
                 {
                     startMinimized = true;
                     FiveMDetector.LaunchFiveMAndConnect("fivem.gta.world");
@@ -93,6 +95,14 @@ namespace Assistant
                 _appMutex = new Mutex(true, @"Global\" + AppController.MutexName, out bool isUnique);
                 if (!isUnique && !isRestarted)
                 {
+                    if (isQuickLaunch)
+                    {
+                        // The app is already running in background/tray; we already launched FiveM, so just exit cleanly
+                        Serilog.Log.Information("Quick-launch triggered while another instance is running. Exiting duplicate instance cleanly without error dialog.");
+                        Current.Shutdown();
+                        return;
+                    }
+
                     Serilog.Log.Warning("Another instance is already running (Mutex not unique). Shutting down.");
                     MessageBox.Show(Localization.Strings.OtherInstanceRunning, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
                     Current.Shutdown();
