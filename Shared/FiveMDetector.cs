@@ -211,5 +211,48 @@ namespace GTAWParser.Shared
 
             return paths;
         }
+
+        /// <summary>
+        /// Launches FiveM and automatically connects to the specified server address (e.g. fivem.gta.world).
+        /// Prefers direct FiveM.exe execution with +connect argument, falling back to fivem:// protocol.
+        /// </summary>
+        public static bool LaunchFiveMAndConnect(string serverAddress = "fivem.gta.world", string? customFiveMDir = null)
+        {
+            try
+            {
+                string fivemDir = customFiveMDir ?? DetectFiveMDirectory();
+                string fivemExe = Path.Combine(fivemDir, "FiveM.exe");
+
+                if (File.Exists(fivemExe))
+                {
+                    ProcessStartInfo psi = new ProcessStartInfo
+                    {
+                        FileName = fivemExe,
+                        Arguments = $"+connect {serverAddress}",
+                        UseShellExecute = true,
+                        WorkingDirectory = fivemDir
+                    };
+                    Process.Start(psi);
+                    Log.Information("Launched FiveM directly from {Exe} with +connect {Server}", fivemExe, serverAddress);
+                    return true;
+                }
+                else
+                {
+                    ProcessStartInfo psi = new ProcessStartInfo
+                    {
+                        FileName = $"fivem://connect/{serverAddress}",
+                        UseShellExecute = true
+                    };
+                    Process.Start(psi);
+                    Log.Information("Launched FiveM via protocol URI fivem://connect/{Server}", serverAddress);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to launch FiveM and connect to {Server}", serverAddress);
+                return false;
+            }
+        }
     }
 }

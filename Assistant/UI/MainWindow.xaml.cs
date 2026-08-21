@@ -838,6 +838,19 @@ namespace Assistant.UI
             _trayIcon.ContextMenuStrip.Items.Add(@"Exit", null, ExitTrayToolStripMenuItem_Click);
         }
 
+        private void CreateDesktopShortcut_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult confirm = MessageBox.Show(this,
+                "Would you like to create a 1-click desktop shortcut for GTA World?\n\nLaunching this shortcut will automatically connect to GTA World on FiveM and run the Chat Log Assistant minimized in the background.",
+                "Create Desktop Shortcut", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm == MessageBoxResult.Yes)
+            {
+                bool success = StartupController.CreateDesktopShortcut(out string statusMsg);
+                MessageBox.Show(this, statusMsg, "Desktop Shortcut", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Error);
+            }
+        }
+
         /// <summary>
         /// Opens the program settings window
         /// </summary>

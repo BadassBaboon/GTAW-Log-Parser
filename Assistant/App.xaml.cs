@@ -68,6 +68,12 @@ namespace Assistant
             if (args.Any(arg => arg == $"{AppController.ParameterPrefix}minimized"))
                 startMinimized = true;
 
+            if (args.Any(arg => arg == $"{AppController.ParameterPrefix}quick-launch" || arg == $"{AppController.ParameterPrefix}launch-game"))
+            {
+                startMinimized = true;
+                FiveMDetector.LaunchFiveMAndConnect("fivem.gta.world");
+            }
+
             // Make sure only one instance is running
             // if the application is not currently restarting
             _appMutex = new Mutex(true, @"Global\" + AppController.MutexName, out bool isUnique);

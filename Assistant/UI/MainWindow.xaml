@@ -15,6 +15,11 @@
 
     <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands>
+            <Button x:Name="CreateDesktopShortcut"
+                    Click="CreateDesktopShortcut_Click"
+                    Content="{iconPacks:Material ApplicationPlus, Width=18, Height=18}"
+                    ToolTip="Create GTA World Desktop Shortcut" />
+
             <Button x:Name="OpenProgramSettings"
                     Click="OpenProgramSettings_Click"
                     Content="{iconPacks:Material Cog, Width=18, Height=18}"

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -207,6 +207,49 @@ namespace Assistant.Controllers
             {
                 Log.Error(ex, "GetParserShortcuts failed");
                 return new List<FileInfo>();
+            }
+        }
+
+        /// <summary>
+        /// Creates a 1-click "GTA World" desktop shortcut configured with --quick-launch and custom icon.
+        /// </summary>
+        public static bool CreateDesktopShortcut(out string statusMessage)
+        {
+            statusMessage = string.Empty;
+            try
+            {
+                string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                string shortcutPath = Path.Combine(desktop, "GTA World.lnk");
+
+                string iconPath = Path.Combine(AppController.StartupPath, "Resources", "ShortcutIcon.ico");
+                if (!File.Exists(iconPath))
+                {
+                    iconPath = Path.Combine(AppController.StartupPath, "ShortcutIcon.ico");
+                }
+                if (!File.Exists(iconPath))
+                {
+                    iconPath = AppController.ExecutablePath;
+                }
+
+                using (ShellLink shortcut = new ShellLink())
+                {
+                    shortcut.TargetPath = AppController.ExecutablePath;
+                    shortcut.Arguments = $"{AppController.ParameterPrefix}quick-launch";
+                    shortcut.WorkingDirectory = AppController.StartupPath;
+                    shortcut.Description = "Launch GTA World on FiveM with GTAW Log Parser Assistant";
+                    shortcut.IconLocation = iconPath;
+                    shortcut.Save(shortcutPath);
+                }
+
+                statusMessage = "Desktop shortcut 'GTA World' created successfully!";
+                Log.Information("Created GTA World desktop shortcut at {Path} pointing to {Target} with icon {Icon}", shortcutPath, AppController.ExecutablePath, iconPath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error creating GTA World desktop shortcut");
+                statusMessage = $"Failed to create desktop shortcut: {ex.Message}";
+                return false;
             }
         }
     }

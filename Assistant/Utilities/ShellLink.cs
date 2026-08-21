@@ -57,6 +57,28 @@ namespace Assistant.Utilities
             set => Link.SetWorkingDirectory(value);
         }
 
+        public string Description
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder(1024);
+                Link.GetDescription(sb, sb.Capacity);
+                return sb.ToString();
+            }
+            set => Link.SetDescription(value);
+        }
+
+        public string IconLocation
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder(MaxPath);
+                Link.GetIconLocation(sb, sb.Capacity, out _);
+                return sb.ToString();
+            }
+            set => Link.SetIconLocation(value, 0);
+        }
+
         public void Load(string path)
         {
             ((IPersistFile)Link).Load(path, 0);

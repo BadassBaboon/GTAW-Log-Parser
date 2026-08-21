@@ -430,5 +430,23 @@ namespace Shared.Tests
             Assert.True(success);
             Assert.Contains("does not exist or was already reset", statusMsg);
         }
+
+        [Fact]
+        public void FiveMDetector_LaunchFiveMAndConnect_WithCustomPath_AttemptsLaunch()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "FiveMTest_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                // Even without FiveM.exe present in temp directory, it falls back to fivem:// URI and returns true or handles gracefully
+                bool result = FiveMDetector.LaunchFiveMAndConnect("fivem.gta.world", tempDir);
+                Assert.True(result);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
     }
 }
