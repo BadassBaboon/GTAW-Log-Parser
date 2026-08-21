@@ -232,6 +232,35 @@ namespace Assistant.Controllers
                 }
                 if (!File.Exists(iconPath))
                 {
+                    try
+                    {
+                        string extractDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GTAW-Log-Parser");
+                        Directory.CreateDirectory(extractDir);
+                        string extractedPath = Path.Combine(extractDir, "ShortcutIcon.ico");
+                        if (!File.Exists(extractedPath))
+                        {
+                            Uri resUri = new Uri("pack://application:,,,/GTAWAssistant;component/Resources/ShortcutIcon.ico");
+                            var streamInfo = Application.GetResourceStream(resUri);
+                            if (streamInfo != null)
+                            {
+                                using (FileStream fs = File.Create(extractedPath))
+                                {
+                                    streamInfo.Stream.CopyTo(fs);
+                                }
+                            }
+                        }
+                        if (File.Exists(extractedPath))
+                        {
+                            iconPath = extractedPath;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Could not extract embedded ShortcutIcon.ico to LocalAppData");
+                    }
+                }
+                if (!File.Exists(iconPath))
+                {
                     iconPath = AppController.ExecutablePath;
                 }
 

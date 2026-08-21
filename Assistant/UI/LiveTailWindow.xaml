@@ -15,7 +15,7 @@
                       MinHeight="300" MinWidth="500"
                       IsMaxRestoreButtonEnabled="True" IsMinButtonEnabled="True"
                       TitleCharacterCasing="Normal" ShowIconOnTitleBar="False"
-                      Icon="../Resources/AppIcon.ico">
+                      Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <DockPanel Margin="10">
         <Grid DockPanel.Dock="Top" Margin="0,0,0,10">

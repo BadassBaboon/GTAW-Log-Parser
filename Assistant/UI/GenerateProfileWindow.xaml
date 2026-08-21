@@ -9,7 +9,7 @@
                       ResizeMode="NoResize"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="AI Profile Generator" Height="500" Width="560" ShowInTaskbar="False" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCharacterCasing="Normal" Icon="../Resources/AppIcon.ico">
+                      Title="AI Profile Generator" Height="500" Width="560" ShowInTaskbar="False" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCharacterCasing="Normal" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid Margin="15">
         <Grid.RowDefinitions>

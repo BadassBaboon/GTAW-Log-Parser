@@ -10,7 +10,7 @@
                       ResizeMode="NoResize"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Manage Groq API Keys" Height="360" Width="550" ShowInTaskbar="True" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCharacterCasing="Normal" Icon="../Resources/AppIcon.ico">
+                      Title="Manage Groq API Keys" Height="360" Width="550" ShowInTaskbar="True" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCharacterCasing="Normal" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid Margin="15">
         <Grid.RowDefinitions>

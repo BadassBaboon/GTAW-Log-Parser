@@ -10,7 +10,7 @@
                       ResizeMode="NoResize"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Manage Custom Accent Profiles" Height="380" Width="580" ShowInTaskbar="True" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCharacterCasing="Normal" Icon="../Resources/AppIcon.ico">
+                      Title="Manage Custom Accent Profiles" Height="380" Width="580" ShowInTaskbar="True" IsMinButtonEnabled="False" IsMaxRestoreButtonEnabled="False" ShowIconOnTitleBar="False" TitleCharacterCasing="Normal" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid Margin="15">
         <Grid.RowDefinitions>

@@ -12,7 +12,7 @@
                       Closing="ProgramSettings_Closing"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Program Settings" Height="380" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="Program Settings" Height="380" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid>
         <!-- Column Separator -->

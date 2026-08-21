@@ -12,7 +12,7 @@
                       Closing="BackupSettings_Closing"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Automatic Backup Settings" Height="305.994" Width="476" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="../Resources/AppIcon.ico">
+                      Title="Automatic Backup Settings" Height="305.994" Width="476" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid>
         <Label x:Name="BackupPathLabel" Content="Backup Path:" HorizontalAlignment="Left" Margin="5,10,0,0" VerticalAlignment="Top" Width="455"/>

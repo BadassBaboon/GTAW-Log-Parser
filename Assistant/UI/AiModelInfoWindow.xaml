@@ -13,7 +13,7 @@
                       IsMaxRestoreButtonEnabled="False"
                       ShowIconOnTitleBar="False"
                       TitleCharacterCasing="Normal"
-                      Icon="../Resources/AppIcon.ico">
+                      Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
