@@ -18,6 +18,9 @@ namespace Assistant
         private static bool startMinimized;
         private static bool isRestarted;
 
+        [System.Runtime.InteropServices.DllImport("shell32.dll", SetLastError = true)]
+        private static extern void SetCurrentProcessExplicitAppUserModelID([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string AppID);
+
         /// <summary>
         /// Initializes the "follow system eligibility"
         /// for the app mode and system accent color
@@ -25,6 +28,15 @@ namespace Assistant
         /// <param name="e"></param>
         protected override void OnStartup(StartupEventArgs e)
         {
+            try
+            {
+                SetCurrentProcessExplicitAppUserModelID("GTAW.ChatLogAssistant");
+            }
+            catch
+            {
+                // Ignored if not supported on older platforms
+            }
+
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
             {
                 if (args.ExceptionObject is Exception ex)
