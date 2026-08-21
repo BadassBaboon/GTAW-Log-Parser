@@ -25,6 +25,16 @@ namespace Assistant
         /// <param name="e"></param>
         protected override void OnStartup(StartupEventArgs e)
         {
+            AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+            {
+                if (args.ExceptionObject is Exception ex)
+                    Serilog.Log.Fatal(ex, "Unhandled AppDomain Exception");
+            };
+            DispatcherUnhandledException += (s, args) =>
+            {
+                Serilog.Log.Fatal(args.Exception, "Unhandled Dispatcher Exception");
+            };
+
             Logging.Initialize("Assistant");
 
             // Initialize the eligibility
@@ -58,62 +68,77 @@ namespace Assistant
         /// <param name="e"></param>
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            // Get the command line arguments and check
-            // if the current session is a restart or
-            // a minimized start
-            string[] args = Environment.GetCommandLineArgs();
-            if (args.Any(arg => arg == $"{AppController.ParameterPrefix}restart"))
-                isRestarted = true;
-
-            if (args.Any(arg => arg == $"{AppController.ParameterPrefix}minimized"))
-                startMinimized = true;
-
-            if (args.Any(arg => arg == $"{AppController.ParameterPrefix}quick-launch" || arg == $"{AppController.ParameterPrefix}launch-game"))
+            try
             {
-                startMinimized = true;
-                FiveMDetector.LaunchFiveMAndConnect("fivem.gta.world");
-            }
+                Serilog.Log.Information("Application_Startup triggered. Args: {Args}", string.Join(" ", Environment.GetCommandLineArgs()));
 
-            // Make sure only one instance is running
-            // if the application is not currently restarting
-            _appMutex = new Mutex(true, @"Global\" + AppController.MutexName, out bool isUnique);
-            if (!isUnique && !isRestarted)
+                // Get the command line arguments and check
+                // if the current session is a restart or
+                // a minimized start
+                string[] args = Environment.GetCommandLineArgs();
+                if (args.Any(arg => arg == $"{AppController.ParameterPrefix}restart"))
+                    isRestarted = true;
+
+                if (args.Any(arg => arg == $"{AppController.ParameterPrefix}minimized"))
+                    startMinimized = true;
+
+                if (args.Any(arg => arg == $"{AppController.ParameterPrefix}quick-launch" || arg == $"{AppController.ParameterPrefix}launch-game"))
+                {
+                    startMinimized = true;
+                    FiveMDetector.LaunchFiveMAndConnect("fivem.gta.world");
+                }
+
+                // Make sure only one instance is running
+                // if the application is not currently restarting
+                _appMutex = new Mutex(true, @"Global\" + AppController.MutexName, out bool isUnique);
+                if (!isUnique && !isRestarted)
+                {
+                    Serilog.Log.Warning("Another instance is already running (Mutex not unique). Shutting down.");
+                    MessageBox.Show(Localization.Strings.OtherInstanceRunning, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
+                    Current.Shutdown();
+                    return;
+                }
+
+                // Check if settings already exist
+                // for a previous assembly version
+                if (!Settings.Default.HasPickedLanguage)
+                {
+                    Settings.Default.Upgrade();
+                    Settings.Default.FollowSystemColor = false;
+                    Settings.Default.Save();
+                }
+
+                // Initialize the controllers and
+                // display the server picker on the
+                // first start, or the main window
+                // on subsequent starts
+                LocalizationController.InitializeLocale(Settings.Default.LanguageCode);
+                AppController.InitializeServerIp();
+
+                if (!Settings.Default.HasPickedLanguage)
+                {
+                    Settings.Default.LanguageCode = LocalizationController.GetCodeFromLanguage(LocalizationController.Language.English);
+                    Settings.Default.HasPickedLanguage = true;
+                    Settings.Default.Save();
+                }
+
+                Serilog.Log.Information("Creating MainWindow (startMinimized={StartMinimized})", startMinimized);
+                MainWindow mainWindow = new MainWindow(startMinimized);
+                if (!startMinimized)
+                {
+                    mainWindow.Show();
+                    Serilog.Log.Information("MainWindow.Show() called");
+                }
+
+                // Don't let the garbage
+                // collector touch the Mutex
+                GC.KeepAlive(_appMutex);
+            }
+            catch (Exception ex)
             {
-                MessageBox.Show(Localization.Strings.OtherInstanceRunning, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                Current.Shutdown();
-                return;
+                Serilog.Log.Fatal(ex, "Fatal exception during Application_Startup");
+                throw;
             }
-
-            // Check if settings already exist
-            // for a previous assembly version
-            if (!Settings.Default.HasPickedLanguage)
-            {
-                Settings.Default.Upgrade();
-                Settings.Default.FollowSystemColor = false;
-                Settings.Default.Save();
-            }
-
-            // Initialize the controllers and
-            // display the server picker on the
-            // first start, or the main window
-            // on subsequent starts
-            LocalizationController.InitializeLocale(Settings.Default.LanguageCode);
-            AppController.InitializeServerIp();
-
-            if (!Settings.Default.HasPickedLanguage)
-            {
-                Settings.Default.LanguageCode = LocalizationController.GetCodeFromLanguage(LocalizationController.Language.English);
-                Settings.Default.HasPickedLanguage = true;
-                Settings.Default.Save();
-            }
-
-            MainWindow mainWindow = new MainWindow(startMinimized);
-            if (!startMinimized)
-                mainWindow.Show();
-
-            // Don't let the garbage
-            // collector touch the Mutex
-            GC.KeepAlive(_appMutex);
         }
 
         /// <summary>

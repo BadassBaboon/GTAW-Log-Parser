@@ -149,6 +149,22 @@ namespace Assistant.UI
 
                 LookForMainDirectory();
                 SaveSettings();
+
+                Loaded += (s, e) =>
+                {
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        MessageBoxResult confirm = MessageBox.Show(this,
+                            "Welcome to GTA World Chat Log Assistant!\n\nWould you like to create a 1-click desktop shortcut for GTA World?\n\nLaunching this shortcut will automatically connect to GTA World on FiveM and run the Chat Log Assistant minimized in the background.",
+                            "GTA World Shortcut Setup", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                        if (confirm == MessageBoxResult.Yes)
+                        {
+                            bool success = StartupController.CreateDesktopShortcut(out string statusMsg);
+                            MessageBox.Show(this, statusMsg, "Desktop Shortcut", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Error);
+                        }
+                    }));
+                };
             }
             else
             {

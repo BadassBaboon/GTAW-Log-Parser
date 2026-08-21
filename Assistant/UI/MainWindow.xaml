@@ -17,7 +17,7 @@
         <Controls:WindowCommands>
             <Button x:Name="CreateDesktopShortcut"
                     Click="CreateDesktopShortcut_Click"
-                    Content="{iconPacks:Material ApplicationPlus, Width=18, Height=18}"
+                    Content="{iconPacks:Material OpenInApp, Width=18, Height=18}"
                     ToolTip="Create GTA World Desktop Shortcut" />
 
             <Button x:Name="OpenProgramSettings"

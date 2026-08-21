@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using GTAWParser.Shared;
 using Xunit;
 
@@ -438,7 +439,6 @@ namespace Shared.Tests
             try
             {
                 Directory.CreateDirectory(tempDir);
-                // Even without FiveM.exe present in temp directory, it falls back to fivem:// URI and returns true or handles gracefully
                 bool result = FiveMDetector.LaunchFiveMAndConnect("fivem.gta.world", tempDir);
                 Assert.True(result);
             }
@@ -447,6 +447,22 @@ namespace Shared.Tests
                 if (Directory.Exists(tempDir))
                     Directory.Delete(tempDir, true);
             }
+        }
+
+        [Fact]
+        public void VerifyPackIconMaterialKind_Values()
+        {
+            string[] names = Enum.GetNames(typeof(MahApps.Metro.IconPacks.PackIconMaterialKind));
+            
+            // Check available icon options:
+            Assert.Contains("RocketLaunch", names);
+            Assert.Contains("RocketLaunchOutline", names);
+            Assert.Contains("PlusBox", names);
+            Assert.Contains("PlusBoxOutline", names);
+            Assert.Contains("OpenInApp", names);
+            Assert.Contains("ApplicationExport", names);
+            Assert.Contains("ApplicationImport", names);
+            Assert.Contains("PlayBoxOutline", names);
         }
     }
 }
