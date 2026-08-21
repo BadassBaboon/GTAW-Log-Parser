@@ -32,22 +32,26 @@
             <GroupBox Grid.Row="0" Header="FiveM Settings" Margin="0,0,0,10">
                 <StackPanel Margin="10,8">
 
-                    <!-- Row 1: Update Channel & GTA V Folder (side-by-side) -->
+                    <!-- Row 1: FiveM Directory & GTA V Folder (side-by-side) -->
                     <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="15"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left: Update Channel -->
+                        <!-- Left: FiveM Directory -->
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="Update Channel:" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox x:Name="UpdateChannelComboBox" Height="26" SelectionChanged="UpdateChannelComboBox_SelectionChanged">
-                                <ComboBoxItem Content="Release"/>
-                                <ComboBoxItem Content="Beta"/>
-                                <ComboBoxItem Content="Latest (Unstable)"/>
-                            </ComboBox>
+                            <TextBlock Text="FiveM Directory:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="FiveMPathTextBox" Grid.Column="0" Height="26" VerticalAlignment="Center" Margin="0,0,6,0" IsReadOnly="True"/>
+                                <Button x:Name="BrowseFiveMPathBtn" Grid.Column="1" Content="Browse..." Width="70" Height="26" Click="BrowseFiveMPathBtn_Click"/>
+                            </Grid>
+                            <TextBlock Text="Folder containing FiveM.exe (auto-detected)." FontSize="10.5" Foreground="Gray" Margin="0,4,0,0"/>
                         </StackPanel>
 
                         <!-- Right: GTA V Folder -->
@@ -68,7 +72,7 @@
                     <!-- Separator -->
                     <Border BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="0,1,0,0" Margin="0,0,0,10"/>
 
-                    <!-- Row 2: First-Person Driving FOV -->
+                    <!-- Row 2: First-Person Driving FOV (left) & Update Channel (right) -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                         <TextBlock Text="First-Person Driving FOV:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
@@ -86,6 +90,14 @@
                                                 TextAlignment="Center" StringFormat="{}{0}°"
                                                 Visibility="Collapsed"
                                                 ValueChanged="CustomFovNumericUpDown_ValueChanged"/>
+
+                        <TextBlock Text="Update Channel:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="20,0,10,0"/>
+                        <ComboBox x:Name="UpdateChannelComboBox" Height="26" Width="140"
+                                  SelectionChanged="UpdateChannelComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Release"/>
+                            <ComboBoxItem Content="Beta"/>
+                            <ComboBoxItem Content="Latest (Unstable)"/>
+                        </ComboBox>
                     </StackPanel>
 
                     <!-- Hint -->

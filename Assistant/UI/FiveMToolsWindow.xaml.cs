@@ -45,6 +45,7 @@ namespace Assistant.UI
             _isInitializing = true;
 
             string path = GetFiveMDirectory();
+            FiveMPathTextBox.Text = path;
             if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
             {
                 // 1. Load Update Channel
@@ -232,6 +233,41 @@ namespace Assistant.UI
                     {
                         MessageBox.Show(this, statusMsg, "Invalid GTA V Folder", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
+                }
+            }
+        }
+
+        private void BrowseFiveMPathBtn_Click(object sender, RoutedEventArgs e)
+        {
+            using (FolderBrowserDialog dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Select FiveM Installation Folder (containing FiveM.exe)";
+                string current = Properties.Settings.Default.DirectoryPath;
+                if (!string.IsNullOrWhiteSpace(current) && Directory.Exists(current))
+                    dialog.SelectedPath = current;
+
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    string selected = dialog.SelectedPath;
+
+                    // Validate: look for FiveM.exe or FiveM Application Data
+                    bool hasFiveMExe = File.Exists(Path.Combine(selected, "FiveM.exe"));
+                    bool hasFiveMAppData = Directory.Exists(Path.Combine(selected, "FiveM.app"));
+
+                    if (!hasFiveMExe && !hasFiveMAppData)
+                    {
+                        MessageBox.Show(this,
+                            "The selected folder does not appear to be a valid FiveM installation.\n\nLook for the folder containing FiveM.exe (usually in your FiveM installation directory).",
+                            "Invalid FiveM Folder", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    Properties.Settings.Default.DirectoryPath = selected;
+                    Properties.Settings.Default.Save();
+                    FiveMPathTextBox.Text = selected;
+
+                    // Reload all settings since the FiveM path changed
+                    LoadFiveMToolsData();
                 }
             }
         }
