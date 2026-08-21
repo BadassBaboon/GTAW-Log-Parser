@@ -5,42 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.2.0] - 2026-08-15
+## [6.2.0] - 2026-08-22
 
 ### Added
-- **FiveM Tools & Utilities Menu (`FiveMToolsWindow`)**:
-  - Dedicated tools window accessible from the main navigation for managing FiveM installation, configuration, and troubleshooting.
-  - **Automated ReShade Relocation & Hardware Key Injection**: Detects ReShade files in FiveM root (`dxgi.dll`, `d3d11.dll`, `reshade-shaders`, `ReShade.ini`), automatically relocates them to `FiveM.app\plugins`, and injects the Jenkins One-at-a-Time hardware hash key into `CitizenFX.ini` (`[Addons] ReShade5=...`) with real-time status indicators.
-  - **First-Person Driving Field of View (FOV) Adjuster**: Configures `cam_vehicleFirstPersonFOV` in `%APPDATA%\CitizenFX\fivem.cfg` with instant auto-saving, presets (`60° (Recommended)`, `0° (FiveM Default)`, `-1 (Game Default)`), and custom degree input.
-  - **Restore FiveM Graphic Settings**: Quick-action tool to safely delete `%APPDATA%\CitizenFX\gta5_settings.xml`, resetting all corrupted or misconfigured GTA 5 graphic/display settings to original clean defaults upon next launch.
-  - **1-Click GTA World Desktop Shortcut**: Dedicated title bar button (`ApplicationPlus` icon) creating a `"GTA World"` desktop shortcut with custom icon (`ShortcutIcon.ico`). Launching the shortcut runs the Assistant minimized and auto-connects FiveM directly to `fivem.gta.world` (`--quick-launch`).
-  - **FiveM Settings Management**: Integrated UpdateChannel selector (`Release`, `Beta`, `Latest (Unstable)`) and GTA V directory browser/validator with `GTA5.exe` path verification.
-  - **Maintenance Utilities**: Quick-action tools to clear the `citizen` folder (forces fresh system file redownload) and clear server cache assets (`data\server-cache-priv`).
-  - **Deep Path Detection (`FiveMDetector`)**: Multi-tier detection probing local AppData, fixed/removable drives, active FiveM processes (`FiveM.exe`, `FiveM_ROSLauncher.exe`), and Windows Registry uninstall keys.
-- **AI Models & Parameter Guide Window (`AiModelInfoWindow`)**:
-  - Replaced native message dialog with a dedicated Metro UI window providing detailed speed benchmarks, daily rate limits, model descriptions, and parameter explanations for all supported GroqCloud models.
+- **FiveM Chromium DevTools Protocol Chat Capture Engine (`FiveMChatCaptureService`)**:
+  - Connects to FiveM's local CEF debugger at `http://127.0.0.1:13172/json` and isolates the GTAW chat frame (`https://cfx-nui-client/web/index.html`).
+  - Reads `.chat__messages > li` DOM elements and extracts timestamps from attributes and pseudo-elements.
+  - Deduplicates chat lines across 500 ms polling ticks using sliding-window matching (`FindOverlap`).
+  - Appends new lines to `%LOCALAPPDATA%\GTAW-Log-Parser-FiveM\current-session.txt` with `FileShare.ReadWrite` for concurrent reads by Assistant, Parser Mini, and Live Tail.
+  - Automatically reconnects without process restarts when FiveM restarts or when the HUD reloads.
+- **Verified In-App Self-Updater with Rollback (`UpdateController`, `VersionHelper`)**:
+  - Queries GitHub Releases via `Octokit`, downloads target binaries to temporary storage, and checks SHA-256 hashes when present.
+  - Backs up active executables to `%LOCALAPPDATA%\GTAW-Log-Parser-FiveM\Rollback\` before applying updates.
+  - Executes an atomic `.cmd` swap script that monitors the process PID, waits for process exit, overwrites binaries, and restarts the application.
+  - Added `Check for Updates` and `Revert to Previous` buttons with rollback status indicators in `ProgramSettingsWindow`.
+  - Added `VersionHelper` supporting semantic version parsing and comparison for release and prerelease tags.
+- **FiveM Configuration and Maintenance Tools (`FiveMToolsWindow`)**:
+  - Added FiveM installation directory selector and GTA V folder configurator with `GTA5.exe` path validation.
+  - Added First-Person Driving FOV adjuster for `cam_vehicleFirstPersonFOV` in `%APPDATA%\CitizenFX\fivem.cfg` with presets (`60° (Recommended)`, `0° (FiveM Default)`, `-1 (Game Default)`) and custom degree inputs.
+  - Added ReShade detection, file relocation to `FiveM.app\plugins`, and Jenkins One-at-a-Time hardware hash key injection for `[Addons] ReShade5` in `CitizenFX.ini`.
+  - Added cache clearing tools for `data\server-cache-priv` and the `citizen` system directory.
+  - Added graphic configuration reset tool that removes corrupted `%APPDATA%\CitizenFX\gta5_settings.xml` files.
+- **Desktop Shortcut and Community Links**:
+  - Added title bar shortcut creation button generating a `"GTA World"` desktop shortcut with `ShortcutIcon.ico` and the `--quick-launch` argument (starts minimized and connects to `fivem.gta.world`).
+  - Added title bar Discord button with an embedded vector icon linking to `https://discord.gg/qRdVSkUW6n` (Baboon's Workshop).
+  - Added title bar icon toggle checkboxes in `ProgramSettingsWindow` for the shortcut creator and Discord buttons.
+- **AI Models Guide Window (`AiModelInfoWindow`)**:
+  - Added a dedicated Metro UI window displaying speed benchmarks, daily rate limits, model descriptions, and parameter explanations for all supported GroqCloud models.
 - **Groq Model Additions**:
   - Added support for `groq/compound` (multi-agent router) and `groq/compound-mini` (lightweight multi-model router).
-- **Concurrency Unit Testing**:
-  - Added unit test `Parse_ConcurrentWriteLock_ReadsSuccessfully` in `ChatLogParserTests` validating concurrent chat log reading while the game engine holds active write access.
+- **Live Tail and Filtering**:
+  - `LiveTailWindow` subscribes directly to `FiveMChatCaptureService.LineReceived` events for event-driven log streaming.
+  - `ChatLogFilterWindow` strips timestamps prior to matching regex rules (OOC, IC, Emote, Action, PM, Radio, Ads, and custom name filters) against the active session log.
 
 ### Changed
 - **Groq Model Migration**:
-  - Migrated default and active AI models from decommissioned Llama 3 models (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`) to high-speed open-weight models: `openai/gpt-oss-20b` (Default, ~30–50ms latency) and `openai/gpt-oss-120b` (High Quality).
-  - Added automatic config migration in `AiAssistantController.LoadSettings()` to upgrade existing user configs seamlessly without manual intervention.
-  - Updated AI Accent Profile Generator to utilize `openai/gpt-oss-120b` for deep lore and persona analysis.
+  - Migrated default and active AI models from decommissioned Llama 3 models to `openai/gpt-oss-20b` (Default, ~30–50 ms latency) and `openai/gpt-oss-120b` (High Quality).
+  - Added automatic config migration in `AiAssistantController.LoadSettings()` to update existing user configurations without manual intervention.
+  - Updated AI Accent Profile Generator to use `openai/gpt-oss-120b` for character lore analysis.
+- Moved the `Check for updates automatically` toggle from `MainWindow` to `ProgramSettingsWindow` under the Updates group.
+- Set the title bar releases download icon (`DisableReleasesButton`) to hidden by default in `Settings.settings`.
+- Reorganized `ProgramSettingsWindow` into a balanced two-column layout with 22 px line spacing.
 
 ### Fixed
-- **UI Thread Asynchronous Non-Blocking Updates**:
-  - Refactored update check in `MainWindow.xaml.cs` to fully asynchronous `async Task CheckForUpdatesAsync` without synchronous `.Result` calls or `ManualResetEvent` thread-blocking, eliminating WPF UI deadlock risks.
-- **Thread-Safe AI Settings & Quotas**:
-  - Added `_settingsLock` synchronization across `LoadSettings`, `SaveSettings`, `ResetQuotasIfNeeded`, and key quota increments in `AiAssistantController` to prevent race conditions and `IOException` file write collisions on rapid hotkey triggers.
-- **Concurrent File Sharing on Active Game Logs**:
-  - Refactored `ChatLogParser` and `ChatLogScanner` to read `.storage` files using `FileShare.ReadWrite`, preventing locking collisions while GTA World actively writes to the log.
-- **Socket Exhaustion Prevention**:
-  - Updated `AutoUpdater` to use a shared static singleton `HttpClient` rather than instantiating per-request instances.
-- **Null Safety & Observability**:
-  - Added null-safety checks in `FiveMDetector.ResolveFiveMPaths` and replaced silent empty catch blocks across detectors and fixers with structured `Log.Debug` observability.
+- **Thread-Safe AI Settings and Quotas**:
+  - Added `_settingsLock` synchronization across `LoadSettings`, `SaveSettings`, `ResetQuotasIfNeeded`, and key quota increments in `AiAssistantController` to prevent race conditions and `IOException` collisions on rapid hotkey triggers.
+- **Null Safety and Observability**:
+  - Added null-safety checks in `FiveMDetector.ResolveFiveMPaths` and replaced silent catch blocks across detectors and fixers with structured `Log.Debug` logging.
+
+### Removed
+- Removed all RageMP log file paths, directory selectors, `.storage` file scanners, and RageMP process detection logic.
+- Removed legacy `AutoUpdater.cs` in favor of `UpdateController.cs`.
 
 ## [6.1.0] - 2026-07-28
 
