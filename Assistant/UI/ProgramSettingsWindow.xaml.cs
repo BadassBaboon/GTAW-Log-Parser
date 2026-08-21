@@ -97,6 +97,19 @@ namespace Assistant.UI
 
             Themes.IsEnabled = !Properties.Settings.Default.FollowSystemColor;
             UpdateThemeSwitcher();
+            UpdateRollbackStatus();
+        }
+
+        private void UpdateRollbackStatus()
+        {
+            bool hasRollback = UpdateController.HasRollback();
+            RevertToPreviousVersionBtn.IsEnabled = hasRollback;
+            RollbackStatusText.Text = hasRollback
+                ? "✓ Previous version backup is available for rollback"
+                : "No rollback backup available";
+            RollbackStatusText.Foreground = hasRollback
+                ? System.Windows.Media.Brushes.Green
+                : System.Windows.Media.Brushes.Gray;
         }
 
         /// <summary>
@@ -291,6 +304,39 @@ namespace Assistant.UI
         {
             if (StartWithWindows.IsChecked == true && !StartupController.IsAddedToStartup() && !Properties.Settings.Default.DisableWarningPopups)
                 MessageBox.Show(Strings.AutoStartWarning, Strings.Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        private void CheckForUpdatesBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _mainWindow.TryCheckingForUpdates(true);
+        }
+
+        private void RevertToPreviousVersionBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (!UpdateController.HasRollback())
+            {
+                MessageBox.Show(this, "No previous version backup is currently available in the rollback cache.\n\nA backup is automatically created whenever an in-app update is installed.",
+                    "No Previous Version Available", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            MessageBoxResult result = MessageBox.Show(this,
+                "Are you sure you want to revert to the previous version?\n\nThe assistant will swap back to your previous executable and restart.",
+                "Revert to Previous Version",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                if (!UpdateController.TryRestorePreviousVersion(out string? error))
+                {
+                    MessageBox.Show(this, $"The previous version could not be restored:\n\n{error}",
+                        "Restore Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                System.Windows.Application.Current.Shutdown();
+            }
         }
 
         /// <summary>

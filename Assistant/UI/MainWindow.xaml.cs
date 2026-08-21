@@ -360,17 +360,7 @@ namespace Assistant.UI
             });
         }
 
-        /// <summary>
-        /// Tries checking for updates
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void CheckForUpdatesToolStripMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            TryCheckingForUpdates(true);
-        }
-
-        private async void TryCheckingForUpdates(bool manual = false)
+        public async void TryCheckingForUpdates(bool manual = false)
         {
             if (!_isUpdateCheckRunning)
             {
@@ -451,7 +441,7 @@ namespace Assistant.UI
             Dispatcher?.Invoke(async () =>
             {
                 MessageBoxResult choice = MessageBox.Show(
-                    text + "\n\nYes = update now (download + restart)\nNo = open releases page in browser",
+                    text + "\n\nYes = update now (download + verify + restart)\nNo = open releases page in browser",
                     title,
                     MessageBoxButton.YesNoCancel,
                     MessageBoxImage.Information);
@@ -462,14 +452,16 @@ namespace Assistant.UI
                     UpdateCheckProgress.Visibility = Visibility.Visible;
                     UpdateCheckProgress.IsActive = true;
 
-                    bool ok = await AutoUpdater.TryUpdateAsync(release).ConfigureAwait(true);
-                    if (ok)
+                    var (success, error) = await UpdateController.TryInstallAsync(release).ConfigureAwait(true);
+                    if (success)
                     {
                         System.Windows.Application.Current.Shutdown();
                         return;
                     }
 
-                    MessageBox.Show("Auto-update failed. Opening the releases page instead.",
+                    ToggleControls(true);
+                    StopUpdateIndicator();
+                    MessageBox.Show($"Auto-update could not be installed.\n\n{error}\n\nOpening the releases page instead.",
                         title, MessageBoxButton.OK, MessageBoxImage.Warning);
                     OpenUrl(Strings.ReleasesLink);
                 }
@@ -479,6 +471,8 @@ namespace Assistant.UI
                 }
             });
         }
+
+
 
         /// <summary>
         /// Checks for updates asynchronously
@@ -522,7 +516,7 @@ namespace Assistant.UI
                     }
                 }
 
-                if (matchedRelease != null && (AppController.IsBetaVersion && !isNewVersionBeta && string.CompareOrdinal(installedVersion, newVersion) == 0 || string.CompareOrdinal(installedVersion, newVersion) < 0))
+                if (matchedRelease != null && UpdateController.IsVersionNewer(newVersion, installedVersion))
                 { // Update available
                     if (Visibility != Visibility.Visible)
                         ResumeTrayStripMenuItem_Click(this, EventArgs.Empty);

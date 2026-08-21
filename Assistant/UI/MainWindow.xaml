@@ -59,7 +59,6 @@
 
     <DockPanel>
         <Menu x:Name="MenuStrip" DockPanel.Dock="Top" Height="32" Padding="0" Margin="0">
-            <MenuItem x:Name="CheckForUpdatesToolStripMenuItem" Header="Check For Updates" Click="CheckForUpdatesToolStripMenuItem_Click"/>
             <MenuItem x:Name="BackupSettingsToolStripMenuItem" Header="Automatic Backup Settings" Click="BackupSettingsToolStripMenuItem_Click"/>
             <MenuItem x:Name="FilterChatLogToolStripMenuItem" Header="Filter Chat Log" Click="FilterChatLogToolStripMenuItem_Click"/>
             <MenuItem x:Name="LiveTailToolStripMenuItem" Header="Live Tail" Click="LiveTailToolStripMenuItem_Click"/>

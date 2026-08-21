@@ -12,7 +12,7 @@
                       Closing="ProgramSettings_Closing"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Program Settings" Height="380" Width="520" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
+                      Title="Program Settings" Height="440" Width="530" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid>
         <!-- Column Separator -->
@@ -48,13 +48,22 @@
         <Label x:Name="TimeoutLabel2" Content="seconds." HorizontalAlignment="Left" Margin="459,150,0,0" VerticalAlignment="Top" Width="57"/>
         <CheckBox x:Name="IgnoreBetaVersions" Content="Ignore beta versions in the update check" HorizontalAlignment="Left" Margin="235,178,0,0" VerticalAlignment="Top" Width="281"/>
         
-        <Label Content="Application" HorizontalAlignment="Left" Margin="229,210,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
+        <!-- Update Action Buttons & Rollback Status -->
+        <StackPanel HorizontalAlignment="Left" Margin="235,204,0,0" VerticalAlignment="Top" Width="281">
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="CheckForUpdatesBtn" Click="CheckForUpdatesBtn_Click" Content="Check for Updates" Width="125" Height="26" Margin="0,0,8,0"/>
+                <Button x:Name="RevertToPreviousVersionBtn" Click="RevertToPreviousVersionBtn_Click" Content="Revert to Previous" Width="135" Height="26"/>
+            </StackPanel>
+            <TextBlock x:Name="RollbackStatusText" Text="Rollback backup: None" FontSize="10.5" Foreground="Gray" Margin="2,4,0,0"/>
+        </StackPanel>
         
-        <CheckBox x:Name="AlwaysCloseToTray" Content="Always close to the system tray" HorizontalAlignment="Left" Margin="235,240,0,0" VerticalAlignment="Top" Width="281"/>
-        <CheckBox x:Name="StartWithWindows" Checked="StartWithWindows_CheckedChanged" Unchecked="StartWithWindows_CheckedChanged" Content="Start with Windows (minimized)" HorizontalAlignment="Left" Margin="235,263,0,0" VerticalAlignment="Top" Width="281"/>
+        <Label Content="Application" HorizontalAlignment="Left" Margin="229,260,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
+        
+        <CheckBox x:Name="AlwaysCloseToTray" Content="Always close to the system tray" HorizontalAlignment="Left" Margin="235,290,0,0" VerticalAlignment="Top" Width="281"/>
+        <CheckBox x:Name="StartWithWindows" Checked="StartWithWindows_CheckedChanged" Unchecked="StartWithWindows_CheckedChanged" Content="Start with Windows (minimized)" HorizontalAlignment="Left" Margin="235,313,0,0" VerticalAlignment="Top" Width="281"/>
 
         <!-- BOTTOM BUTTONS -->
-        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="430,310,0,0" VerticalAlignment="Top" Width="75"/>
-        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="350,310,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="435,365,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="355,365,0,0" VerticalAlignment="Top" Width="75"/>
     </Grid>
 </Controls:MetroWindow>
