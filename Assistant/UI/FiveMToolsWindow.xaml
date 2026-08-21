@@ -69,19 +69,10 @@
                     <Border BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="0,1,0,0" Margin="0,0,0,10"/>
 
                     <!-- Row 2: First-Person Driving FOV -->
-                    <Grid Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="First-Person Driving FOV:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-                        <!-- Left: Label & Dropdown -->
-                        <TextBlock Grid.Column="0" Text="First-Person Driving FOV:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-
-                        <ComboBox Grid.Column="1" x:Name="FovPresetComboBox" Height="26" Width="195"
+                        <ComboBox x:Name="FovPresetComboBox" Height="26" Width="150" Margin="0,0,8,0"
                                   SelectionChanged="FovPresetComboBox_SelectionChanged">
                             <ComboBoxItem Content="60° (Recommended)" Tag="60"/>
                             <ComboBoxItem Content="0° (FiveM Default)" Tag="0"/>
@@ -89,15 +80,13 @@
                             <ComboBoxItem Content="Custom..." Tag="custom"/>
                         </ComboBox>
 
-                        <!-- Right: Custom Numeric Input & Save Button -->
-                        <Controls:NumericUpDown Grid.Column="3" x:Name="CustomFovNumericUpDown"
+                        <Controls:NumericUpDown x:Name="CustomFovNumericUpDown"
                                                 Minimum="0" Maximum="130" Value="60" Interval="1"
-                                                Height="26" Width="80" Margin="0,0,8,0"
+                                                Height="26" Width="80"
                                                 TextAlignment="Center" StringFormat="{}{0}°"
-                                                Visibility="Collapsed"/>
-
-                        <Button Grid.Column="4" x:Name="SaveFovBtn" Content="Save" Width="65" Height="26" FontWeight="SemiBold" Click="SaveFovBtn_Click"/>
-                    </Grid>
+                                                Visibility="Collapsed"
+                                                ValueChanged="CustomFovNumericUpDown_ValueChanged"/>
+                    </StackPanel>
 
                     <!-- Hint -->
                     <TextBlock Text="💡 Note: Changes to FiveM settings require restarting FiveM to take effect." FontSize="10.5" Foreground="Gray" Margin="0,4,0,0"/>

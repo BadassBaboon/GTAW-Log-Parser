@@ -247,48 +247,39 @@ namespace Assistant.UI
                     CustomFovNumericUpDown.Visibility = Visibility.Visible;
                     if (CustomFovNumericUpDown.Value == null || CustomFovNumericUpDown.Value < 0)
                         CustomFovNumericUpDown.Value = 60;
+
+                    float customVal = (float)(CustomFovNumericUpDown.Value ?? 60.0);
+                    customVal = Math.Clamp(customVal, 0.0f, 130.0f);
+                    FiveMConfigManager.SetVehicleFirstPersonFov(customVal, out _);
                 }
                 else
                 {
                     CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
-                    if (int.TryParse(tagStr, out int val) && val >= 0)
+                    if (tagStr == "-1")
                     {
-                        CustomFovNumericUpDown.Value = val;
+                        FiveMConfigManager.SetVehicleFirstPersonFov(-1.0f, out _);
+                    }
+                    else if (float.TryParse(tagStr, CultureInfo.InvariantCulture, out float presetFov))
+                    {
+                        CustomFovNumericUpDown.Value = presetFov;
+                        FiveMConfigManager.SetVehicleFirstPersonFov(presetFov, out _);
                     }
                 }
             }
         }
 
-        private void SaveFovBtn_Click(object sender, RoutedEventArgs e)
+        private void CustomFovNumericUpDown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
         {
-            float fovVal;
-            if (FovPresetComboBox.SelectedItem is ComboBoxItem item && item.Tag is string tagStr)
-            {
-                if (tagStr == "-1")
-                {
-                    fovVal = -1.0f;
-                }
-                else if (tagStr == "custom")
-                {
-                    fovVal = (float)(CustomFovNumericUpDown.Value ?? 60.0);
-                    fovVal = Math.Clamp(fovVal, 0.0f, 130.0f);
-                }
-                else if (float.TryParse(tagStr, CultureInfo.InvariantCulture, out float presetFov))
-                {
-                    fovVal = presetFov;
-                }
-                else
-                {
-                    fovVal = 60.0f;
-                }
-            }
-            else
-            {
-                fovVal = 60.0f;
-            }
+            if (_isInitializing) return;
 
-            bool success = FiveMConfigManager.SetVehicleFirstPersonFov(fovVal, out string statusMsg);
-            MessageBox.Show(this, statusMsg, "Driving FOV", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Error);
+            if (FovPresetComboBox.SelectedItem is ComboBoxItem item && item.Tag is string tagStr && tagStr == "custom")
+            {
+                if (CustomFovNumericUpDown.Value.HasValue)
+                {
+                    float customVal = (float)Math.Clamp(CustomFovNumericUpDown.Value.Value, 0.0, 130.0);
+                    FiveMConfigManager.SetVehicleFirstPersonFov(customVal, out _);
+                }
+            }
         }
 
         private void ClearCitizenBtn_Click(object sender, RoutedEventArgs e)
