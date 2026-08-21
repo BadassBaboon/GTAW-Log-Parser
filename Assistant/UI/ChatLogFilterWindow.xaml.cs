@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -163,7 +163,7 @@ namespace Assistant.UI
         private void LoadUnparsed_Click(object sender, RoutedEventArgs e)
         {
             AppController.InitializeServerIp();
-            ChatLog = AppController.ParseChatLog(Properties.Settings.Default.DirectoryPath, false, true);
+            ChatLog = AppController.ParseChatLog(false, true);
             
             if (_chatLogLoaded)
                 TryToFilter(true);

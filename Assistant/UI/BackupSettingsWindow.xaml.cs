@@ -168,7 +168,9 @@ namespace Assistant.UI
             {
                 Description = @"Backup Path",
                 RootFolder = Environment.SpecialFolder.MyComputer,
-                SelectedPath = string.IsNullOrWhiteSpace(BackupPath.Text) || !Directory.Exists(BackupPath.Text) ? (string.IsNullOrWhiteSpace(Properties.Settings.Default.DirectoryPath) || !Directory.Exists(Properties.Settings.Default.DirectoryPath) ? (Path.GetPathRoot(Environment.SystemDirectory) ?? string.Empty) : Properties.Settings.Default.DirectoryPath) : BackupPath.Text,
+                SelectedPath = string.IsNullOrWhiteSpace(BackupPath.Text) || !Directory.Exists(BackupPath.Text) 
+                    ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) 
+                    : BackupPath.Text,
                 ShowNewFolderButton = true
             };
 

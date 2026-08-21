@@ -251,5 +251,23 @@ namespace GTAWParser.Shared
                 }
             }
         }
+
+        /// <summary>
+        /// Checks whether any FiveM process (FiveM, FiveM_ROSLauncher, FiveM_GTAProcess, FiveM_ChromeBrowser) is currently running.
+        /// </summary>
+        public static bool IsFiveMRunning()
+        {
+            try
+            {
+                return Process.GetProcessesByName("FiveM").Length > 0 ||
+                       Process.GetProcessesByName("FiveM_ROSLauncher").Length > 0 ||
+                       Process.GetProcessesByName("FiveM_GTAProcess").Length > 0 ||
+                       Process.GetProcessesByName("FiveM_ChromeBrowser").Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

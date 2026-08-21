@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
 using GTAWParser.Shared;
 using Parser.Localization;
-using System.Windows.Forms;
 
 namespace Parser.Controllers
 {
@@ -12,30 +15,48 @@ namespace Parser.Controllers
         public const string ParameterPrefix = "--";
         public const string MutexName = "GTAWParserMini";
 
-        public static string ResourceDirectory => ChatLogScanner.ResourceDirectory;
-        public static string LogLocation => ChatLogScanner.LogLocation;
+        public static string ResourceDirectory => "FiveM local NUI chat";
+        public static string LogLocation => FiveMChatCaptureService.SessionFilePath;
 
-        /// <summary>
-        /// Probes the configured RAGEMP directory for the most recent
-        /// GTA World .storage file and updates the log location.
-        /// </summary>
         public static void InitializeServerIp()
         {
-            ChatLogScanner.InitializeServerIp(Properties.Settings.Default.DirectoryPath);
+            // Maintained for lifecycle compatibility
         }
 
         /// <summary>
-        /// Parses the most recent chat log under <paramref name="directoryPath"/>.
-        /// Displays a localized MessageBox on failure.
+        /// Reads the chat currently visible in GTAW's FiveM HUD on-demand.
         /// </summary>
-        public static string ParseChatLog(string directoryPath, bool removeTimestamps)
+        public static string ParseChatLog(bool removeTimestamps)
         {
-            string log = ChatLogParser.Parse(directoryPath, _ =>
+            try
             {
-                MessageBox.Show(Strings.ParseError, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            });
+                string sessionChat = FiveMChatCaptureService.ReadCapturedChat(removeTimestamps);
+                if (!string.IsNullOrWhiteSpace(sessionChat))
+                    return sessionChat;
 
-            return removeTimestamps ? ChatLogParser.StripTimestamps(log) : log;
+                List<string> lines = FiveMChatCaptureService.GetVisibleChatLinesAsync().GetAwaiter().GetResult();
+                if (lines.Count == 0)
+                    throw new System.IO.IOException("No chat lines captured.");
+
+                DateTime capturedAt = DateTime.Now;
+                DateTime sessionTimestamp = FiveMChatCaptureService.GetTimestamp(lines[0], capturedAt);
+                string log = FiveMChatCaptureService.CreateSessionHeader(sessionTimestamp) + "\n" +
+                             string.Join("\n", lines.Select(line => FiveMChatCaptureService.AddTimestamp(line, capturedAt)));
+
+                if (removeTimestamps)
+                    log = FiveMChatCaptureService.ReadCapturedChat(true);
+
+                return log;
+            }
+            catch
+            {
+                MessageBox.Show(
+                    "No FiveM GTAW chat is currently available. Open GTAW on FiveM and wait for its HUD to load.",
+                    Strings.Error,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return string.Empty;
+            }
         }
     }
 }

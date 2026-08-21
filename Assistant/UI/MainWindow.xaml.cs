@@ -32,6 +32,7 @@ namespace Assistant.UI
         private bool _isUpdateCheckRunning;
         private bool _isUpdateCheckManual;
         private readonly bool _isLoading;
+        private readonly System.Windows.Threading.DispatcherTimer _livePreviewTimer;
 
         private static bool isRestarting;
 
@@ -52,12 +53,20 @@ namespace Assistant.UI
             if (startMinimized)
                 _trayIcon.Visible = true;
 
-            // Also checks for the RAGEMP directory on the first start
             LoadSettings();
             InitializeAiAssistant();
 
             SetupServerList();
             BackupController.Initialize();
+
+            FiveMChatCaptureService.Initialize();
+            FiveMChatCaptureService.StateChanged += state => Dispatcher.BeginInvoke(RefreshCaptureStatus);
+
+            _livePreviewTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _livePreviewTimer.Tick += LivePreviewTimer_Tick;
+            _livePreviewTimer.Start();
+
+            RefreshCaptureStatus();
             _isLoading = false;
         }
 
@@ -115,12 +124,11 @@ namespace Assistant.UI
         /// </summary>
         private void SaveSettings()
         {
-            Properties.Settings.Default.DirectoryPath = DirectoryPath.Text;
+            Properties.Settings.Default.LivePreview = LivePreview.IsChecked == true;
             Properties.Settings.Default.RemoveTimestamps = RemoveTimestamps.IsChecked == true;
             Properties.Settings.Default.CheckForUpdatesAutomatically = CheckForUpdatesOnStartup.IsChecked == true;
 
             Properties.Settings.Default.Save();
-            AppController.InitializeServerIp();
         }
 
         /// <summary>
@@ -139,6 +147,7 @@ namespace Assistant.UI
             StatusLabel.Content = string.Format(Strings.BackupStatus, Properties.Settings.Default.BackupChatLogAutomatically ? Strings.Enabled : Strings.Disabled);
             Counter.Text = string.Format(Strings.CharacterCounter, 0, 0);
 
+            LivePreview.IsChecked = Properties.Settings.Default.LivePreview;
             RemoveTimestamps.IsChecked = Properties.Settings.Default.RemoveTimestamps;
             CheckForUpdatesOnStartup.IsChecked = Properties.Settings.Default.CheckForUpdatesAutomatically;
 
@@ -146,9 +155,6 @@ namespace Assistant.UI
             {
                 Properties.Settings.Default.FirstStart = false;
                 Properties.Settings.Default.Save();
-
-                LookForMainDirectory();
-                SaveSettings();
 
                 RoutedEventHandler? loadedHandler = null;
                 loadedHandler = (s, e) =>
@@ -169,114 +175,44 @@ namespace Assistant.UI
                 };
                 Loaded += loadedHandler;
             }
-            else
-            {
-                string currentSaved = Properties.Settings.Default.DirectoryPath;
-                if (string.IsNullOrWhiteSpace(currentSaved) || currentSaved.Contains("AppData", StringComparison.OrdinalIgnoreCase) || !File.Exists(Path.Combine(currentSaved, "FiveM.exe")))
-                {
-                    string newlyDetected = FiveMDetector.DetectFiveMDirectory();
-                    if (!string.IsNullOrEmpty(newlyDetected))
-                    {
-                        Properties.Settings.Default.DirectoryPath = newlyDetected;
-                        Properties.Settings.Default.Save();
-                        currentSaved = newlyDetected;
-                    }
-                }
-                DirectoryPath.Text = currentSaved;
-            }
         }
 
-        /// <summary>
-        /// Looks for the main RAGEMP directory
-        /// path on the first start
-        /// </summary>
-        private void LookForMainDirectory()
+        private void LivePreviewTimer_Tick(object? sender, EventArgs e)
         {
-            try
-            {
-                string detected = FiveMDetector.DetectFiveMDirectory();
-                if (!string.IsNullOrEmpty(detected))
-                {
-                    DirectoryPath.Text = detected;
-                    MessageBox.Show(string.Format(Strings.DirectoryFinder, DirectoryPath.Text), Strings.DirectoryFinderTitle, MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    throw new IOException();
-                }
-            }
-            catch
-            {
-                MessageBox.Show(Strings.DirectoryFinderNotFound, Strings.DirectoryFinderTitle, MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+            RefreshCaptureStatus();
+            if (LivePreview.IsChecked != true)
+                return;
+
+            string chat = AppController.ParseChatLog(RemoveTimestamps.IsChecked == true);
+            if (!string.Equals(Parsed.Text, chat, StringComparison.Ordinal))
+                Parsed.Text = chat;
         }
 
-        /// <summary>
-        /// Saves the settings when the
-        /// value of the text box changes
-        /// and disables automatic backup
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DirectoryPath_TextChanged(object sender, TextChangedEventArgs e)
+        private void LivePreview_CheckedChanged(object sender, RoutedEventArgs e)
         {
             if (_isLoading)
                 return;
 
-            if (Properties.Settings.Default.BackupChatLogAutomatically)
-            {
-                BackupSettingsWindow.ResetSettings();
-
-                StatusLabel.Content = string.Format(Strings.BackupStatus, Strings.Disabled);
-                MessageBox.Show(Strings.BackupTurnedOff, Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-
-            SaveSettings();
+            Properties.Settings.Default.LivePreview = LivePreview.IsChecked == true;
+            Properties.Settings.Default.Save();
         }
 
-        /// <summary>
-        /// Opens the directory picker
-        /// when the text box is clicked on
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DirectoryPath_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void RefreshCaptureStatus()
         {
-            if (string.IsNullOrWhiteSpace(DirectoryPath.Text))
-                Browse_Click(this, null!);
-        }
-
-        /// <summary>
-        /// Displays a directory picker until
-        /// a non-root directory is selected
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Browse_Click(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.FolderBrowserDialog directoryBrowserDialog = new System.Windows.Forms.FolderBrowserDialog
+            switch (FiveMChatCaptureService.CaptureState)
             {
-                Description = @"RAGEMP Directory Path",
-                RootFolder = Environment.SpecialFolder.MyComputer,
-                SelectedPath = string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text) ? (Path.GetPathRoot(Environment.SystemDirectory) ?? string.Empty) : DirectoryPath.Text,
-                ShowNewFolderButton = false
-            };
-
-            bool validLocation = false;
-            while (!validLocation)
-            {
-                if (directoryBrowserDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    if (directoryBrowserDialog.SelectedPath[directoryBrowserDialog.SelectedPath.Length - 1] != '\\')
-                    {
-                        DirectoryPath.Text = directoryBrowserDialog.SelectedPath + "\\";
-                        validLocation = true;
-                    }
-                    else
-                        MessageBox.Show(Strings.BadDirectoryPath, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                else
-                    validLocation = true;
+                case FiveMChatCaptureState.Capturing:
+                    CaptureStatus.Content = "Chat capture: Active";
+                    CaptureStatus.Foreground = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+                    break;
+                case FiveMChatCaptureState.WaitingForChat:
+                    CaptureStatus.Content = "Chat capture: Waiting for GTAW chat";
+                    CaptureStatus.Foreground = new SolidColorBrush(Color.FromRgb(255, 152, 0));
+                    break;
+                default:
+                    CaptureStatus.Content = "Chat capture: Waiting for FiveM";
+                    CaptureStatus.Foreground = SystemColors.GrayTextBrush;
+                    break;
             }
         }
 
@@ -288,23 +224,7 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void Parse_Click(object sender, RoutedEventArgs e)
         {
-            // The paths may have changed since the program has
-            // started, we need to initialize the locations again
-            AppController.InitializeServerIp();
-
-            if (string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text + "client_resources\\"))
-            {
-                MessageBox.Show(Strings.InvalidDirectoryPath, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (!File.Exists(DirectoryPath.Text + AppController.LogLocation))
-            {
-                MessageBox.Show(Strings.NoChatLog, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            Parsed.Text = AppController.ParseChatLog(DirectoryPath.Text, RemoveTimestamps.IsChecked == true, true);
+            Parsed.Text = AppController.ParseChatLog(RemoveTimestamps.IsChecked == true, true);
         }
 
         /// <summary>
@@ -394,7 +314,7 @@ namespace Assistant.UI
         /// <param name="e"></param>
         private void RemoveTimestamps_CheckedChanged(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(Parsed.Text) || string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text + "client_resources\\") || !File.Exists(DirectoryPath.Text+ AppController.LogLocation))
+            if (string.IsNullOrWhiteSpace(Parsed.Text))
                 return;
 
             if (RemoveTimestamps.IsChecked == true)
@@ -420,11 +340,10 @@ namespace Assistant.UI
                 Parse.IsEnabled = enable;
                 SaveParsed.IsEnabled = enable;
                 CopyParsedToClipboard.IsEnabled = enable;
-                DirectoryPath.IsEnabled = enable;
-                Browse.IsEnabled = enable;
                 Parsed.IsEnabled = enable;
                 CheckForUpdatesOnStartup.IsEnabled = enable;
                 RemoveTimestamps.IsEnabled = enable;
+                LivePreview.IsEnabled = enable;
                 Logo.IsEnabled = enable;
 
                 foreach (MenuItem item in MenuStrip.Items)
@@ -632,12 +551,6 @@ namespace Assistant.UI
         private static BackupSettingsWindow? backupSettings;
         private void BackupSettingsToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text + "client_resources\\"))
-            {
-                MessageBox.Show(Strings.InvalidDirectoryPathBackup, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
             if (Properties.Settings.Default.BackupChatLogAutomatically)
             {
                 if (!Properties.Settings.Default.DisableWarningPopups && MessageBox.Show(Strings.BackupWillBeOff, Strings.Warning, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
@@ -677,12 +590,6 @@ namespace Assistant.UI
         private static ChatLogFilterWindow? chatLogFilter;
         private void FilterChatLogToolStripMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(DirectoryPath.Text) || !Directory.Exists(DirectoryPath.Text + "client_resources\\"))
-            {
-                MessageBox.Show(Strings.InvalidDirectoryPathFilter, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
             SaveSettings();
 
             if (chatLogFilter == null)

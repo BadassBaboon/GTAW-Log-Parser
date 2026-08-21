@@ -34,6 +34,18 @@ namespace Assistant.Properties {
                 this["DirectoryPath"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("false")]
+        public bool LivePreview {
+            get {
+                return ((bool)(this["LivePreview"]));
+            }
+            set {
+                this["LivePreview"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

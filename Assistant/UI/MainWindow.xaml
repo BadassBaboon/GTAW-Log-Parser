@@ -76,6 +76,7 @@
                 <CheckBox x:Name="CheckForUpdatesOnStartup" Checked="CheckForUpdatesOnStartup_CheckedChanged" Unchecked="CheckForUpdatesOnStartup_CheckedChanged" Content="Check for updates automatically" HorizontalAlignment="Left" Margin="10,145,0,0" VerticalAlignment="Top" Width="288"/>
                 <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top" Width="288"/>
                 <CheckBox x:Name="BindTilde" Checked="BindTilde_CheckedChanged" Unchecked="BindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" HorizontalAlignment="Left" Margin="10,191,0,0" VerticalAlignment="Top" Width="288"/>
+                <CheckBox x:Name="LivePreview" Checked="LivePreview_CheckedChanged" Unchecked="LivePreview_CheckedChanged" Content="Live preview" HorizontalAlignment="Left" Margin="10,214,0,0" VerticalAlignment="Top" Width="288"/>
                 <Controls:ProgressRing x:Name="UpdateCheckProgress"
                                        Width="16"
                                        Height="16"
@@ -85,11 +86,9 @@
                                        VerticalAlignment="Top"
                                        Visibility="Collapsed" Margin="210,145,0,0"/>
 
-                <Label x:Name="PathLabel" Content="FiveM Directory:" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,0,0,0" VerticalAlignment="Top"/>
+                <Label x:Name="CaptureStatus" Content="Chat capture: Waiting for FiveM" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,0,0,0" VerticalAlignment="Top" Width="250"/>
                 <TextBlock x:Name="Version" TextWrapping="NoWrap" Text="v1.0.0" TextAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="549,5,0,0" Height="26"/>
-                <TextBox x:Name="DirectoryPath" MouseLeftButtonUp="DirectoryPath_MouseLeftButtonUp" TextChanged="DirectoryPath_TextChanged" HorizontalAlignment="Left" Height="23" Margin="303,23,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="241" IsReadOnly="True" VerticalScrollBarVisibility="Disabled"/>
-                <Button x:Name="Browse" Click="Browse_Click" Content="Browse" HorizontalAlignment="Left" Margin="549,23,0,0" VerticalAlignment="Top" Width="75"/>
-                <TextBox x:Name="Parsed" TextChanged="Parsed_TextChanged" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Height="145" Margin="303,54,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="321" AcceptsReturn="True"/>
+                <TextBox x:Name="Parsed" TextChanged="Parsed_TextChanged" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Height="176" Margin="303,28,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="321" AcceptsReturn="True"/>
                 <Label x:Name="StatusLabel" Content="Automatic Backup: OFF" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,208,0,0" VerticalAlignment="Top" Width="160"/>
                 <TextBlock TextWrapping="NoWrap" x:Name="Counter" Text="0 characters and 0 lines" TextAlignment="Right" HorizontalAlignment="Left" Margin="463,213,0,0" VerticalAlignment="Top" Width="161" Height="26"/>
                 
