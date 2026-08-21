@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -24,8 +25,8 @@ namespace Assistant.Controllers
         public static string ResourceDirectory => ChatLogScanner.ResourceDirectory;
         public static string LogLocation => ChatLogScanner.LogLocation;
 
-        public static readonly string ExecutablePath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-        public static readonly string StartupPath = Path.GetDirectoryName(ExecutablePath) ?? string.Empty;
+        public static readonly string ExecutablePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+        public static readonly string StartupPath = (!string.IsNullOrEmpty(ExecutablePath) ? Path.GetDirectoryName(ExecutablePath) : null) ?? AppContext.BaseDirectory;
         public static string PreviousLog = string.Empty;
 
         /// <summary>

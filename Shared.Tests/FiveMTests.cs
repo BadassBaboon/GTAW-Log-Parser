@@ -450,19 +450,31 @@ namespace Shared.Tests
         }
 
         [Fact]
-        public void VerifyPackIconMaterialKind_Values()
+        public void FiveMConfigManager_GetUpdateChannel_UnrecognizedValue_ReturnsRawValue()
         {
-            string[] names = Enum.GetNames(typeof(MahApps.Metro.IconPacks.PackIconMaterialKind));
-            
-            // Check available icon options:
-            Assert.Contains("RocketLaunch", names);
-            Assert.Contains("RocketLaunchOutline", names);
-            Assert.Contains("PlusBox", names);
-            Assert.Contains("PlusBoxOutline", names);
-            Assert.Contains("OpenInApp", names);
-            Assert.Contains("ApplicationExport", names);
-            Assert.Contains("ApplicationImport", names);
-            Assert.Contains("PlayBoxOutline", names);
+            string tempDir = Path.Combine(Path.GetTempPath(), "FiveMTest_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                string appDir = Path.Combine(tempDir, "FiveM.app");
+                Directory.CreateDirectory(appDir);
+                string iniPath = Path.Combine(appDir, "CitizenFX.ini");
+                File.WriteAllText(iniPath, "[Game]\r\nUpdateChannel=experimental_branch\r\n");
+
+                string channel = FiveMConfigManager.GetUpdateChannel(tempDir);
+                Assert.Equal("experimental_branch", channel);
+
+                // Setting an unrecognized/raw channel preserves it accurately
+                bool setSuccess = FiveMConfigManager.SetUpdateChannel(tempDir, "custom_channel_test", out string msg);
+                Assert.True(setSuccess);
+                string updated = FiveMConfigManager.GetUpdateChannel(tempDir);
+                Assert.Equal("custom_channel_test", updated);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
         }
     }
 }

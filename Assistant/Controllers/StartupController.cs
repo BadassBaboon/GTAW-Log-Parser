@@ -219,6 +219,10 @@ namespace Assistant.Controllers
             try
             {
                 string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                if (!Directory.Exists(desktop))
+                {
+                    Directory.CreateDirectory(desktop);
+                }
                 string shortcutPath = Path.Combine(desktop, "GTA World.lnk");
 
                 string iconPath = Path.Combine(AppController.StartupPath, "Resources", "ShortcutIcon.ico");

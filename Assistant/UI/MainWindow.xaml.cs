@@ -150,8 +150,10 @@ namespace Assistant.UI
                 LookForMainDirectory();
                 SaveSettings();
 
-                Loaded += (s, e) =>
+                RoutedEventHandler? loadedHandler = null;
+                loadedHandler = (s, e) =>
                 {
+                    Loaded -= loadedHandler;
                     Dispatcher.BeginInvoke(new Action(() =>
                     {
                         MessageBoxResult confirm = MessageBox.Show(this,
@@ -165,6 +167,7 @@ namespace Assistant.UI
                         }
                     }));
                 };
+                Loaded += loadedHandler;
             }
             else
             {

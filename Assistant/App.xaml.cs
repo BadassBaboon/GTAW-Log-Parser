@@ -90,23 +90,29 @@ namespace Assistant
                     FiveMDetector.LaunchFiveMAndConnect("fivem.gta.world");
                 }
 
-                // Make sure only one instance is running
+                // Make sure only one instance is running per user session
                 // if the application is not currently restarting
-                _appMutex = new Mutex(true, @"Global\" + AppController.MutexName, out bool isUnique);
-                if (!isUnique && !isRestarted)
+                try
                 {
-                    if (isQuickLaunch)
+                    _appMutex = new Mutex(true, @"Local\" + AppController.MutexName, out bool isUnique);
+                    if (!isUnique && !isRestarted)
                     {
-                        // The app is already running in background/tray; we already launched FiveM, so just exit cleanly
-                        Serilog.Log.Information("Quick-launch triggered while another instance is running. Exiting duplicate instance cleanly without error dialog.");
+                        if (isQuickLaunch)
+                        {
+                            Serilog.Log.Information("Quick-launch triggered while another instance is running. Exiting duplicate instance cleanly without error dialog.");
+                            Current.Shutdown();
+                            return;
+                        }
+
+                        Serilog.Log.Warning("Another instance is already running (Mutex not unique). Shutting down.");
+                        MessageBox.Show(Localization.Strings.OtherInstanceRunning, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
                         Current.Shutdown();
                         return;
                     }
-
-                    Serilog.Log.Warning("Another instance is already running (Mutex not unique). Shutting down.");
-                    MessageBox.Show(Localization.Strings.OtherInstanceRunning, Localization.Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                    Current.Shutdown();
-                    return;
+                }
+                catch (Exception ex)
+                {
+                    Serilog.Log.Warning(ex, "Could not acquire single-instance mutex. Continuing startup.");
                 }
 
                 // Check if settings already exist
@@ -142,7 +148,8 @@ namespace Assistant
 
                 // Don't let the garbage
                 // collector touch the Mutex
-                GC.KeepAlive(_appMutex);
+                if (_appMutex != null)
+                    GC.KeepAlive(_appMutex);
             }
             catch (Exception ex)
             {
@@ -162,6 +169,20 @@ namespace Assistant
             StyleController.StopWatchers();
             BackupController.Quitting = true;
             Logging.Shutdown();
+
+            if (_appMutex != null)
+            {
+                try
+                {
+                    _appMutex.ReleaseMutex();
+                }
+                catch
+                {
+                    // Ignored if mutex was not acquired or already released
+                }
+                _appMutex.Dispose();
+                _appMutex = null;
+            }
         }
     }
 }

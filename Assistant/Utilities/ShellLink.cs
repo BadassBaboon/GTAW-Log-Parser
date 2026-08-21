@@ -89,7 +89,18 @@ namespace Assistant.Utilities
             ((IPersistFile)Link).Save(path, true);
         }
 
+        ~ShellLink()
+        {
+            Dispose(false);
+        }
+
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
         {
             if (_link != null)
             {
