@@ -255,7 +255,7 @@ namespace GTAWParser.Shared
                 List<string> lines = new List<string>();
                 if (File.Exists(iniPath))
                 {
-                    lines.AddRange(File.ReadAllLines(iniPath));
+                    lines.AddRange(FiveMConfigManager.ReadAllLinesShared(iniPath));
                 }
 
                 int addonsSectionIndex = -1;

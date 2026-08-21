@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using GTAWParser.Shared;
@@ -26,32 +26,40 @@ namespace Parser
 
             // Make sure only one instance is running
             // if the application is not currently restarting
-            Mutex mutex = new Mutex(true, ProgramController.MutexName, out bool isUnique);
-            if (!isUnique && !isRestarted)
+            using (Mutex mutex = new Mutex(true, ProgramController.MutexName, out bool isUnique))
             {
-                MessageBox.Show(Strings.OtherInstanceRunning, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                if (!isUnique && !isRestarted)
+                {
+                    MessageBox.Show(Strings.OtherInstanceRunning, Strings.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Initialize the controllers and
+                // display the main user form
+                Logging.Initialize("Parser");
+
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+
+                if (Properties.Settings.Default.FirstStart)
+                    Properties.Settings.Default.Upgrade();
+
+                LocalizationController.InitializeLocale(Properties.Settings.Default.LanguageCode);
+                ProgramController.InitializeServerIp();
+                Application.Run(new UI.Main());
+
+                Logging.Shutdown();
+
+                try
+                {
+                    if (isUnique)
+                        mutex.ReleaseMutex();
+                }
+                catch
+                {
+                    // Ignored if mutex was not acquired or already released
+                }
             }
-
-            // Initialize the controllers and
-            // display the main user form
-            Logging.Initialize("Parser");
-
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
-            if (Properties.Settings.Default.FirstStart)
-                Properties.Settings.Default.Upgrade();
-
-            LocalizationController.InitializeLocale(Properties.Settings.Default.LanguageCode);
-            ProgramController.InitializeServerIp();
-            Application.Run(new UI.Main());
-
-            Logging.Shutdown();
-
-            // Don't let the garbage
-            // collector touch the Mutex
-            GC.KeepAlive(mutex);
         }
     }
 }

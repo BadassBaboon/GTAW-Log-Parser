@@ -33,7 +33,7 @@ namespace GTAWParser.Shared
                 FiveMPaths paths = FiveMDetector.ResolveFiveMPaths(fivemDir);
                 if (File.Exists(paths.CitizenFXIniPath))
                 {
-                    string[] lines = File.ReadAllLines(paths.CitizenFXIniPath);
+                    string[] lines = ReadAllLinesShared(paths.CitizenFXIniPath);
                     bool inGameSection = false;
                     foreach (string rawLine in lines)
                     {
@@ -100,7 +100,7 @@ namespace GTAWParser.Shared
                 FiveMPaths paths = FiveMDetector.ResolveFiveMPaths(fivemDir);
                 if (File.Exists(paths.CitizenFXIniPath))
                 {
-                    string[] lines = File.ReadAllLines(paths.CitizenFXIniPath);
+                    string[] lines = ReadAllLinesShared(paths.CitizenFXIniPath);
                     bool inGameSection = false;
                     foreach (string rawLine in lines)
                     {
@@ -260,7 +260,7 @@ namespace GTAWParser.Shared
                 string cfgPath = customCfgPath ?? GetFiveMCfgPath();
                 if (File.Exists(cfgPath))
                 {
-                    string[] lines = File.ReadAllLines(cfgPath);
+                    string[] lines = ReadAllLinesShared(cfgPath);
                     foreach (string rawLine in lines)
                     {
                         string line = rawLine.Trim();
@@ -301,7 +301,7 @@ namespace GTAWParser.Shared
                 List<string> lines = new List<string>();
                 if (File.Exists(cfgPath))
                 {
-                    lines.AddRange(File.ReadAllLines(cfgPath));
+                    lines.AddRange(ReadAllLinesShared(cfgPath));
                 }
                 else
                 {
@@ -403,7 +403,7 @@ namespace GTAWParser.Shared
             List<string> lines = new List<string>();
             if (File.Exists(iniPath))
             {
-                lines.AddRange(File.ReadAllLines(iniPath));
+                lines.AddRange(ReadAllLinesShared(iniPath));
             }
 
             string sectionHeader = $"[{sectionName}]";
@@ -452,6 +452,24 @@ namespace GTAWParser.Shared
 
             File.WriteAllLines(iniPath, lines);
             Log.Information("Updated CitizenFX.ini [{Section}] {Key}={Value}", sectionName, keyName, newValue);
+        }
+
+        public static string[] ReadAllLinesShared(string path)
+        {
+            if (!File.Exists(path))
+                return Array.Empty<string>();
+
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (StreamReader sr = new StreamReader(fs, System.Text.Encoding.UTF8))
+            {
+                List<string> lines = new List<string>();
+                string? line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    lines.Add(line);
+                }
+                return lines.ToArray();
+            }
         }
     }
 }

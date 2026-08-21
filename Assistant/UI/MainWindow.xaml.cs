@@ -36,6 +36,8 @@ namespace Assistant.UI
 
         private static bool isRestarting;
 
+        private readonly Action<FiveMChatCaptureState> _onStateChanged;
+
         /// <summary>
         /// Initializes the main window
         /// </summary>
@@ -59,8 +61,9 @@ namespace Assistant.UI
             SetupServerList();
             BackupController.Initialize();
 
+            _onStateChanged = state => Dispatcher.BeginInvoke(RefreshCaptureStatus);
             FiveMChatCaptureService.Initialize();
-            FiveMChatCaptureService.StateChanged += state => Dispatcher.BeginInvoke(RefreshCaptureStatus);
+            FiveMChatCaptureService.StateChanged += _onStateChanged;
 
             _livePreviewTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _livePreviewTimer.Tick += LivePreviewTimer_Tick;
@@ -679,6 +682,7 @@ namespace Assistant.UI
 
             StyleController.StopWatchers();
             BackupController.Quitting = true;
+            FiveMChatCaptureService.StateChanged -= _onStateChanged;
             SaveSettings();
             KeyboardHookManager.Stop();
 
