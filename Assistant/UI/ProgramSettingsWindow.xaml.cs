@@ -50,6 +50,7 @@ namespace Assistant.UI
             Properties.Settings.Default.DisableProjectButton = DisableProjectButton.IsChecked == true;
             if (Timeout.Value != null) Properties.Settings.Default.UpdateCheckTimeout = (int) Timeout.Value;
 
+            Properties.Settings.Default.CheckForUpdatesAutomatically = CheckForUpdatesAutomatically.IsChecked == true;
             Properties.Settings.Default.DisableInformationPopups = DisableInformationPopups.IsChecked == true;
             Properties.Settings.Default.DisableWarningPopups = DisableWarningPopups.IsChecked == true;
             Properties.Settings.Default.DisableErrorPopups = DisableErrorPopups.IsChecked == true;
@@ -78,6 +79,7 @@ namespace Assistant.UI
             DisableProjectButton.IsChecked = Properties.Settings.Default.DisableProjectButton;
             Timeout.Value = Properties.Settings.Default.UpdateCheckTimeout;
 
+            CheckForUpdatesAutomatically.IsChecked = Properties.Settings.Default.CheckForUpdatesAutomatically;
             DisableInformationPopups.IsChecked = Properties.Settings.Default.DisableInformationPopups;
             DisableWarningPopups.IsChecked = Properties.Settings.Default.DisableWarningPopups;
             DisableErrorPopups.IsChecked = Properties.Settings.Default.DisableErrorPopups;
@@ -141,6 +143,7 @@ namespace Assistant.UI
             Properties.Settings.Default.DisableProjectButton = true;
             Properties.Settings.Default.UpdateCheckTimeout = 4;
 
+            Properties.Settings.Default.CheckForUpdatesAutomatically = false;
             Properties.Settings.Default.DisableInformationPopups = false;
             Properties.Settings.Default.DisableWarningPopups = false;
             Properties.Settings.Default.DisableErrorPopups = false;

@@ -126,7 +126,6 @@ namespace Assistant.UI
         {
             Properties.Settings.Default.LivePreview = LivePreview.IsChecked == true;
             Properties.Settings.Default.RemoveTimestamps = RemoveTimestamps.IsChecked == true;
-            Properties.Settings.Default.CheckForUpdatesAutomatically = CheckForUpdatesOnStartup.IsChecked == true;
 
             Properties.Settings.Default.Save();
         }
@@ -149,7 +148,6 @@ namespace Assistant.UI
 
             LivePreview.IsChecked = Properties.Settings.Default.LivePreview;
             RemoveTimestamps.IsChecked = Properties.Settings.Default.RemoveTimestamps;
-            CheckForUpdatesOnStartup.IsChecked = Properties.Settings.Default.CheckForUpdatesAutomatically;
 
             if (Properties.Settings.Default.FirstStart)
             {
@@ -297,17 +295,6 @@ namespace Assistant.UI
         }
 
         /// <summary>
-        /// Toggles the "Check For Updates On Startup" option
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void CheckForUpdatesOnStartup_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            if (CheckForUpdatesOnStartup.IsChecked == true)
-                TryCheckingForUpdates();
-        }
-
-        /// <summary>
         /// Removes the timestamps from the parsed chat log
         /// </summary>
         /// <param name="sender"></param>
@@ -341,7 +328,6 @@ namespace Assistant.UI
                 SaveParsed.IsEnabled = enable;
                 CopyParsedToClipboard.IsEnabled = enable;
                 Parsed.IsEnabled = enable;
-                CheckForUpdatesOnStartup.IsEnabled = enable;
                 RemoveTimestamps.IsEnabled = enable;
                 LivePreview.IsEnabled = enable;
                 Logo.IsEnabled = enable;
@@ -719,7 +705,7 @@ namespace Assistant.UI
             Show();
             _trayIcon.Visible = false;
 
-            if (CheckForUpdatesOnStartup.IsChecked == true)
+            if (Properties.Settings.Default.CheckForUpdatesAutomatically)
                 TryCheckingForUpdates();
         }
 

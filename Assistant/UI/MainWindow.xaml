@@ -72,10 +72,9 @@
             <!-- Log Parser Tab Content -->
             <Grid x:Name="LogParserGrid" Visibility="Visible">
                 <Image x:Name="Logo" HorizontalAlignment="Left" Height="140" VerticalAlignment="Top" Width="288" Source="../Resources/Logo.png" Margin="10,0,0,0" Stretch="Fill"/>
-                <CheckBox x:Name="CheckForUpdatesOnStartup" Checked="CheckForUpdatesOnStartup_CheckedChanged" Unchecked="CheckForUpdatesOnStartup_CheckedChanged" Content="Check for updates automatically" HorizontalAlignment="Left" Margin="10,145,0,0" VerticalAlignment="Top" Width="288"/>
-                <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top" Width="288"/>
-                <CheckBox x:Name="BindTilde" Checked="BindTilde_CheckedChanged" Unchecked="BindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" HorizontalAlignment="Left" Margin="10,191,0,0" VerticalAlignment="Top" Width="288"/>
-                <CheckBox x:Name="LivePreview" Checked="LivePreview_CheckedChanged" Unchecked="LivePreview_CheckedChanged" Content="Live preview" HorizontalAlignment="Left" Margin="10,214,0,0" VerticalAlignment="Top" Width="288"/>
+                <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" HorizontalAlignment="Left" Margin="10,148,0,0" VerticalAlignment="Top" Width="288"/>
+                <CheckBox x:Name="BindTilde" Checked="BindTilde_CheckedChanged" Unchecked="BindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" HorizontalAlignment="Left" Margin="10,174,0,0" VerticalAlignment="Top" Width="288"/>
+                <CheckBox x:Name="LivePreview" Checked="LivePreview_CheckedChanged" Unchecked="LivePreview_CheckedChanged" Content="Live preview" HorizontalAlignment="Left" Margin="10,200,0,0" VerticalAlignment="Top" Width="288"/>
                 <Controls:ProgressRing x:Name="UpdateCheckProgress"
                                        Width="16"
                                        Height="16"
@@ -83,7 +82,7 @@
                                        IsActive="False"
                                        HorizontalAlignment="Left"
                                        VerticalAlignment="Top"
-                                       Visibility="Collapsed" Margin="210,145,0,0"/>
+                                       Visibility="Collapsed" Margin="530,6,0,0"/>
 
                 <Label x:Name="CaptureStatus" Content="Chat capture: Waiting for FiveM" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,0,0,0" VerticalAlignment="Top" Width="250"/>
                 <TextBlock x:Name="Version" TextWrapping="NoWrap" Text="v1.0.0" TextAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="549,5,0,0" Height="26"/>
