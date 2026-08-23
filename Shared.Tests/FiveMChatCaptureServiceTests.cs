@@ -103,5 +103,15 @@ namespace Shared.Tests
                 // Leave session file or let it be maintained
             }
         }
+
+        [Fact]
+        public void SessionFile_Normalization_EliminatesDoubleCarriageReturns()
+        {
+            string raw = "[12:00:00] First\r\n[12:00:01] Second\r\n";
+            string normalized = raw.Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n');
+
+            Assert.DoesNotContain("\r\r\n", normalized);
+            Assert.Equal("[12:00:00] First\n[12:00:01] Second", normalized);
+        }
     }
 }

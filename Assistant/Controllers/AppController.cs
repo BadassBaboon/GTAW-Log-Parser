@@ -48,7 +48,7 @@ namespace Assistant.Controllers
 
             if (string.IsNullOrWhiteSpace(log))
             {
-                if (showError)
+                if (showError && !Properties.Settings.Default.DisableErrorPopups)
                 {
                     MessageBox.Show(
                         "No FiveM GTAW chat is currently available. Open GTAW on FiveM and wait for its HUD to load.",

@@ -83,9 +83,9 @@
             <!-- Log Parser Tab Content -->
             <Grid x:Name="LogParserGrid" Visibility="Visible">
                 <Image x:Name="Logo" HorizontalAlignment="Left" Height="140" VerticalAlignment="Top" Width="288" Source="../Resources/Logo.png" Margin="10,0,0,0" Stretch="Fill"/>
-                <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" HorizontalAlignment="Left" Margin="10,148,0,0" VerticalAlignment="Top" Width="288"/>
-                <CheckBox x:Name="BindTilde" Checked="BindTilde_CheckedChanged" Unchecked="BindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" HorizontalAlignment="Left" Margin="10,174,0,0" VerticalAlignment="Top" Width="288"/>
-                <CheckBox x:Name="LivePreview" Checked="LivePreview_CheckedChanged" Unchecked="LivePreview_CheckedChanged" Content="Live preview" HorizontalAlignment="Left" Margin="10,200,0,0" VerticalAlignment="Top" Width="288"/>
+                <CheckBox x:Name="RemoveTimestamps" Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged" Content="Remove timestamps" ToolTip="Strip timestamp prefixes from chat messages" HorizontalAlignment="Left" Margin="10,148,0,0" VerticalAlignment="Top" Width="288"/>
+                <CheckBox x:Name="BindTilde" Checked="BindTilde_CheckedChanged" Unchecked="BindTilde_CheckedChanged" Content="Bind ~ to T (Like SA:MP)" ToolTip="Binds the tilde key (~) to open in-game chat" HorizontalAlignment="Left" Margin="10,174,0,0" VerticalAlignment="Top" Width="288"/>
+                <CheckBox x:Name="LivePreview" Checked="LivePreview_CheckedChanged" Unchecked="LivePreview_CheckedChanged" Content="Live preview" ToolTip="Continuously update the text box in real-time as chat messages arrive" HorizontalAlignment="Left" Margin="10,200,0,0" VerticalAlignment="Top" Width="288"/>
                 <Controls:ProgressRing x:Name="UpdateCheckProgress"
                                        Width="16"
                                        Height="16"
@@ -101,9 +101,9 @@
                 <Label x:Name="StatusLabel" Content="Automatic Backup: OFF" HorizontalContentAlignment="Left" HorizontalAlignment="Left" Margin="298,208,0,0" VerticalAlignment="Top" Width="160"/>
                 <TextBlock TextWrapping="NoWrap" x:Name="Counter" Text="0 characters and 0 lines" TextAlignment="Right" HorizontalAlignment="Left" Margin="463,213,0,0" VerticalAlignment="Top" Width="161" Height="26"/>
                 
-                <Button x:Name="Parse" Click="Parse_Click" Content="Parse" HorizontalAlignment="Left" Margin="303,238,0,0" VerticalAlignment="Top" Width="75"/>
-                <Button x:Name="SaveParsed" Click="SaveParsed_Click" Content="Save As" HorizontalAlignment="Left" Margin="383,238,0,0" VerticalAlignment="Top" Width="75"/>
-                <Button x:Name="CopyParsedToClipboard" Click="CopyParsedToClipboard_Click" Content="Copy To Clipboard" HorizontalAlignment="Left" Margin="463,238,0,0" VerticalAlignment="Top" Width="161"/>
+                <Button x:Name="Parse" Click="Parse_Click" Content="Parse" ToolTip="Parse the current FiveM chat session" HorizontalAlignment="Left" Margin="303,238,0,0" VerticalAlignment="Top" Width="75"/>
+                <Button x:Name="SaveParsed" Click="SaveParsed_Click" Content="Save As" ToolTip="Save parsed chat log to a text file" HorizontalAlignment="Left" Margin="383,238,0,0" VerticalAlignment="Top" Width="75"/>
+                <Button x:Name="CopyParsedToClipboard" Click="CopyParsedToClipboard_Click" Content="Copy To Clipboard" ToolTip="Copy parsed chat log to clipboard" HorizontalAlignment="Left" Margin="463,238,0,0" VerticalAlignment="Top" Width="161"/>
             </Grid>
             
             <!-- AI Assistant Tab Content -->

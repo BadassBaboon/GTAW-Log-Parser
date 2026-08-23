@@ -8,6 +8,7 @@
                       mc:Ignorable="d"
                       WindowStartupLocation="CenterScreen"
                       ResizeMode="CanResize"
+                      Loaded="LiveTail_Loaded"
                       Closing="LiveTail_Closing"
                       BorderThickness="0"
                       GlowBrush="Black"

@@ -11,7 +11,7 @@ namespace Assistant.UI
 {
     /// <summary>
     /// Displays live streaming chat lines received from FiveMChatCaptureService.
-    /// Auto-scrolls to bottom.
+    /// Auto-scrolls to bottom with clean line-spacing.
     /// </summary>
     public partial class LiveTailWindow
     {
@@ -21,6 +21,15 @@ namespace Assistant.UI
         public LiveTailWindow()
         {
             InitializeComponent();
+        }
+
+        private void LiveTail_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Automatically start live capture stream when window opens
+            if (!_isWatching)
+            {
+                StartWatching();
+            }
         }
 
         private void ToggleWatch_Click(object sender, RoutedEventArgs e)
@@ -33,6 +42,9 @@ namespace Assistant.UI
 
         private void StartWatching()
         {
+            if (_isWatching)
+                return;
+
             FiveMChatCaptureService.Initialize();
             FiveMChatCaptureService.LineReceived += OnLineReceived;
             _isWatching = true;
@@ -42,11 +54,14 @@ namespace Assistant.UI
             if (!string.IsNullOrWhiteSpace(existing))
             {
                 _previousFullLog = existing;
-                Tail.Text = existing.Replace("\n", Environment.NewLine) + Environment.NewLine;
+                // Normalize line breaks to standard single newlines
+                string normalized = existing.Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n');
+                Tail.Text = normalized;
                 Tail.ScrollToEnd();
             }
             else
             {
+                _previousFullLog = string.Empty;
                 Tail.Text = string.Empty;
             }
 
@@ -83,11 +98,19 @@ namespace Assistant.UI
                         Tail.Text = Tail.Text.Substring(cut + 1);
                 }
 
-                string formattedLine = RemoveTimestamps.IsChecked == true
+                string formattedLine = (RemoveTimestamps.IsChecked == true
                     ? Regex.Replace(line, @"^\[\d{1,2}:\d{1,2}:\d{1,2}\] ", string.Empty)
-                    : line;
+                    : line).TrimEnd('\r', '\n');
 
-                Tail.AppendText(formattedLine + Environment.NewLine);
+                if (string.IsNullOrEmpty(Tail.Text))
+                {
+                    Tail.AppendText(formattedLine);
+                }
+                else
+                {
+                    Tail.AppendText(Environment.NewLine + formattedLine);
+                }
+
                 Tail.ScrollToEnd();
             }));
         }
@@ -106,6 +129,8 @@ namespace Assistant.UI
             {
                 Tail.Text = _previousFullLog;
             }
+
+            Tail.ScrollToEnd();
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
@@ -125,7 +150,8 @@ namespace Assistant.UI
                 return;
             }
 
-            Counter.Text = $"{Tail.Text.Length} characters and {Tail.Text.Split('\n').Length} lines";
+            int lineCount = Tail.Text.Length == 0 ? 0 : Tail.Text.Split('\n').Length;
+            Counter.Text = $"{Tail.Text.Length} characters and {lineCount} lines";
         }
 
         private void LiveTail_Closing(object sender, System.ComponentModel.CancelEventArgs e)

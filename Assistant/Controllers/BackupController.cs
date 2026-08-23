@@ -142,7 +142,7 @@ namespace Assistant.Controllers
         {
             try
             {
-                string parsed = AppController.ParseChatLog(Properties.Settings.Default.RemoveTimestampsFromBackup, gameClosed);
+                string parsed = AppController.ParseChatLog(Properties.Settings.Default.RemoveTimestampsFromBackup, showError: false);
                 if (string.IsNullOrWhiteSpace(parsed))
                     return;
 

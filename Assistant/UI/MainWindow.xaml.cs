@@ -188,7 +188,14 @@ namespace Assistant.UI
 
             string chat = AppController.ParseChatLog(RemoveTimestamps.IsChecked == true);
             if (!string.Equals(Parsed.Text, chat, StringComparison.Ordinal))
+            {
+                int caret = Parsed.CaretIndex;
                 Parsed.Text = chat;
+                if (caret <= Parsed.Text.Length)
+                {
+                    Parsed.CaretIndex = caret;
+                }
+            }
         }
 
         private void LivePreview_CheckedChanged(object sender, RoutedEventArgs e)
