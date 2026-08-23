@@ -44,7 +44,7 @@ namespace GTAWParser.Shared
         private static readonly Regex GreenSuccessRegex = new Regex(
             @"^(Your vehicle has been teleported|Vehicle parked\.|You've used\s+|You have successfully\s+|Successfully\s+|Refilling\s+[\d\.]+\s+gallons)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly Regex RedErrorRegex = new Regex(@"^(Admin\s+.*\s+(banned|jailed|muted|kicked|warned|prisoned|punished)|Server:\s+.*\s+(banned|jailed|muted|kicked|warned)|\[ADMIN\]|Your vehicle insurance has expired|\[ERROR\]|You do not have\s+|You cannot\s+|You don't have\s+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex RedErrorRegex = new Regex(@"^(Admin\s+.*\s+(banned|jailed|muted|kicked|warned|prisoned|punished)|Server:\s+.*\s+(banned|jailed|muted|kicked|warned)|\[ADMIN\]|Your vehicle insurance has expired|\[ERROR\]|You do not have\s+|You cannot\s+|You don't have\s+|.*was\s+(kicked|banned|ajailed)\s+for:|You were kicked)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex YellowWarningRegex = new Regex(@"^(Your vehicle insurance expires in|Use F3 to activate|\[WARNING\]|We've placed a blip|A blip has been|A waypoint has been|GPS set to|GPS location|A checkpoint has been|The blip for your vehicle)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex BlueInfoRegex = new Regex(@"^(Weather forecast:|\[SERVER\])", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex SystemInfoRegex = new Regex(@"^(\[INFO\]|\[ERROR\]|\[WARNING\]|\[XM Radio\]|\[SERVER\]|Weather forecast:|Phones:|Temperature:|Wind:|You have|Your vehicle|The number you are trying|Use F3|Use /|Welcome to)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -61,6 +61,7 @@ namespace GTAWParser.Shared
         // "Refilling 3.17 gallons, please wait... ((9 seconds))"
         private static readonly Regex RefillProgressRegex = new Regex(@"^(Refilling\s+)([\d\.]+)(\s+gallons.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex GlobalOocSpanRegex = new Regex(@"^(\(\(\s*Global OOC:\s*(?:\(\d+\)\s*)?)([^:]+)(:.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex LocalOocSpanRegex = new Regex(@"^(\(\(\s*(?:\(\d+\)\s*)?)([^:]+)(:.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex EmbeddedCodesRegex = new Regex(@"(~[rgbypqocmuws]~)|(\{!?(?:#)?([0-9a-fA-F]{6})\})", RegexOptions.Compiled);
 
         public static (string Timestamp, string Content) SplitTimestamp(string line)
@@ -147,7 +148,31 @@ namespace GTAWParser.Shared
                 return ParseEmbeddedCodes(trimmed);
             }
 
-            // 3. Welcome to GTA World
+            // 4. Global OOC
+            Match mGlobal = GlobalOocSpanRegex.Match(trimmed);
+            if (mGlobal.Success)
+            {
+                return new List<CapturedChatSpan>
+                {
+                    new CapturedChatSpan(mGlobal.Groups[1].Value, "#FFFFFF"),
+                    new CapturedChatSpan(mGlobal.Groups[2].Value, "#FF0000"),
+                    new CapturedChatSpan(mGlobal.Groups[3].Value, "#FFFFFF")
+                };
+            }
+
+            // 5. Local OOC
+            Match mLocal = LocalOocSpanRegex.Match(trimmed);
+            if (mLocal.Success)
+            {
+                return new List<CapturedChatSpan>
+                {
+                    new CapturedChatSpan(mLocal.Groups[1].Value, "#A6ACAF"),
+                    new CapturedChatSpan(mLocal.Groups[2].Value, "#31CB31"),
+                    new CapturedChatSpan(mLocal.Groups[3].Value, "#A6ACAF")
+                };
+            }
+
+            // 6. Welcome to GTA World
             Match mWelcome = WelcomeRegex.Match(trimmed);
             if (mWelcome.Success)
             {

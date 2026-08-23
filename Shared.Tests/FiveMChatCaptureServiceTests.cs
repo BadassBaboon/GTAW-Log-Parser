@@ -38,7 +38,21 @@ namespace Shared.Tests
             int tsOverlap = FiveMChatCaptureService.FindOverlap(timestampedSeen, rawIncoming);
             Assert.Equal(2, tsOverlap);
 
-            // Case 5: Empty inputs
+            // Case 5: Overlap with slight whitespace or formatting variation (fuzzy matching)
+            List<string> seenWithSpaces = new List<string> { "(( (545) Oxygarum: hey ))", "Diego Sendez was kicked for: AFK" };
+            List<string> incomingFuzzy = new List<string> { "((  (545)  Oxygarum: hey  ))", "Diego Sendez was kicked for: AFK", "Next Line" };
+            int fuzzyOverlap = FiveMChatCaptureService.FindOverlap(seenWithSpaces, incomingFuzzy);
+            Assert.Equal(2, fuzzyOverlap);
+
+            // Case 6: Exact 100-line buffer overlap (nothing new typed)
+            List<string> buffer100 = new List<string>();
+            for (int i = 0; i < 100; i++) buffer100.Add($"[23:00:{i:D2}] Message number {i}");
+            List<string> incoming100 = new List<string>();
+            for (int i = 0; i < 100; i++) incoming100.Add($"Message number {i}");
+            int full100Overlap = FiveMChatCaptureService.FindOverlap(buffer100, incoming100);
+            Assert.Equal(100, full100Overlap);
+
+            // Case 7: Empty inputs
             Assert.Equal(0, FiveMChatCaptureService.FindOverlap(new List<string>(), new List<string> { "Line 1" }));
             Assert.Equal(0, FiveMChatCaptureService.FindOverlap(new List<string> { "Line 1" }, new List<string>()));
         }

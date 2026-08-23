@@ -409,7 +409,19 @@ namespace GTAWParser.Shared
         {
             if (string.IsNullOrWhiteSpace(line)) return string.Empty;
             var (_, content) = ChatLineClassifier.SplitTimestamp(line.Trim());
-            return string.IsNullOrWhiteSpace(content) ? line.Trim() : content.Trim();
+            
+            string stripped = string.IsNullOrWhiteSpace(content) ? line : content;
+            StringBuilder sb = new StringBuilder(stripped.Length);
+            
+            foreach (char c in stripped)
+            {
+                if (!char.IsWhiteSpace(c))
+                {
+                    sb.Append(char.ToLowerInvariant(c));
+                }
+            }
+            
+            return sb.ToString();
         }
 
         public static string AddTimestamp(string line, DateTime capturedAt)
@@ -442,20 +454,26 @@ namespace GTAWParser.Shared
             var normalizedNew = newLines.Select(NormalizeForOverlap).ToList();
 
             int max = Math.Min(normalizedOld.Count, normalizedNew.Count);
+            
             for (int length = max; length > 0; length--)
             {
-                bool matches = true;
+                int matchCount = 0;
                 for (int i = 0; i < length; i++)
                 {
-                    if (!string.Equals(normalizedOld[normalizedOld.Count - length + i], normalizedNew[i], StringComparison.Ordinal))
+                    if (string.Equals(normalizedOld[normalizedOld.Count - length + i], normalizedNew[i], StringComparison.Ordinal))
                     {
-                        matches = false;
-                        break;
+                        matchCount++;
                     }
                 }
 
-                if (matches)
+                // Require 100% match for tiny blocks (<= 3 lines) to prevent false positives.
+                // For larger blocks, allow 1 mismatch per 10 lines (90% threshold).
+                int allowedMismatches = length <= 3 ? 0 : (length / 10) + 1;
+                
+                if (length - matchCount <= allowedMismatches)
+                {
                     return length;
+                }
             }
 
             return 0;
