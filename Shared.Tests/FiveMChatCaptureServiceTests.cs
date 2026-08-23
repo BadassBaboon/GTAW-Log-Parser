@@ -83,11 +83,15 @@ namespace Shared.Tests
         public void SessionFile_StreamsAndReadsCorrectly()
         {
             string sessionFile = FiveMChatCaptureService.SessionFilePath;
+            string? originalContent = File.Exists(sessionFile) ? File.ReadAllText(sessionFile) : null;
             string testLine1 = "[12:00:00] Test user says: First line";
             string testLine2 = "[12:00:05] Test user says: Second line";
 
             try
             {
+                // Clear for test
+                if (File.Exists(sessionFile)) File.Delete(sessionFile);
+
                 FiveMChatCaptureService.AppendLinesToSession(new List<string> { testLine1, testLine2 });
 
                 string readWithTs = FiveMChatCaptureService.ReadCapturedChat(false);
@@ -100,7 +104,14 @@ namespace Shared.Tests
             }
             finally
             {
-                // Leave session file or let it be maintained
+                if (originalContent != null)
+                {
+                    File.WriteAllText(sessionFile, originalContent);
+                }
+                else if (File.Exists(sessionFile))
+                {
+                    File.Delete(sessionFile);
+                }
             }
         }
 
