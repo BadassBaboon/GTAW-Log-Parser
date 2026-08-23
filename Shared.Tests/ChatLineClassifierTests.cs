@@ -33,6 +33,7 @@ namespace GTAWParser.Shared.Tests
         [InlineData("Your vehicle has been teleported to your location.", ChatLineCategory.Success)]
         [InlineData("Vehicle parked.", ChatLineCategory.Success)]
         [InlineData("You've used Slushy.", ChatLineCategory.Success)]
+        [InlineData("Refilling 3.17 gallons, please wait... ((9 seconds))", ChatLineCategory.Success)]
         [InlineData("We've placed a blip on your map to help you locate your vehicle.", ChatLineCategory.Warning)]
         [InlineData("[DATE: 23/AUG/2026 | TIME: 18:06:05]", ChatLineCategory.SessionHeader)]
         public void Classify_CategorizesCorrectly(string line, ChatLineCategory expected)
@@ -192,6 +193,30 @@ namespace GTAWParser.Shared.Tests
             Assert.Equal("#1E90FF", spans[1].Color);
             Assert.Equal("$150", spans[3].Text);
             Assert.Equal("#31CB31", spans[3].Color);
+        }
+
+        [Fact]
+        public void ParseSpans_RefillGallons_ReturnsGreen()
+        {
+            string line = "Refilling 3.17 gallons, please wait... ((9 seconds))";
+            List<CapturedChatSpan> spans = ChatLineClassifier.ParseSpans(line);
+
+            Assert.NotNull(spans);
+            Assert.Single(spans);
+            Assert.Equal("#31CB31", spans[0].Color);
+        }
+
+        [Fact]
+        public void ParseSpans_GasFillReceipt_ReturnsPriceGreen()
+        {
+            string line = "[San Chianski Gas Station]: Filled 3.17 gallons for $72!";
+            List<CapturedChatSpan> spans = ChatLineClassifier.ParseSpans(line);
+
+            Assert.Equal(2, spans.Count);
+            Assert.Equal("[San Chianski Gas Station]: Filled 3.17 gallons for ", spans[0].Text);
+            Assert.Equal("#FFFFFF", spans[0].Color);
+            Assert.Equal("$72!", spans[1].Text);
+            Assert.Equal("#31CB31", spans[1].Color);
         }
 
         [Fact]

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -239,13 +240,21 @@ namespace Assistant.UI
                 return p;
             }
 
-            // Per-span coloring if detailed spans are available from NUI DOM
-            if (line.Spans != null && line.Spans.Count > 0)
+            // Per-span coloring if NUI DOM spans are available AND carry at least one non-white color.
+            // An all-white span set means the isolated world couldn't read stylesheet-applied colors —
+            // fall through to the reliable pattern classifier in that case.
+            bool nuiHasColor = line.Spans != null && line.Spans.Count > 0 &&
+                line.Spans.Any(s => !string.IsNullOrEmpty(s.Color) &&
+                    !string.Equals(s.Color, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(s.Color, "#DCDCDC", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(s.Color, "#F0F0F0", StringComparison.OrdinalIgnoreCase));
+
+            if (nuiHasColor)
             {
                 bool firstSpan = true;
                 int runsAdded = 0;
 
-                foreach (CapturedChatSpan span in line.Spans)
+                foreach (CapturedChatSpan span in line.Spans!)
                 {
                     if (string.IsNullOrEmpty(span.Text))
                         continue;
@@ -282,9 +291,7 @@ namespace Assistant.UI
                 }
 
                 if (runsAdded > 0)
-                {
                     return p;
-                }
             }
 
             // Dominant color if provided and not default

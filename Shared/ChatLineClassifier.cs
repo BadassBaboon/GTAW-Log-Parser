@@ -41,7 +41,9 @@ namespace GTAWParser.Shared
         private static readonly Regex IcShoutRegex = new Regex(@"^(\(Car\)\s+)?[\p{L}0-9_ ]+\s+shouts:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex IcSpeechRegex = new Regex(@"^(\(Car\)\s+)?[\p{L}0-9_ ]+\s+says(\s*\((phone|radio)\))?:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private static readonly Regex GreenSuccessRegex = new Regex(@"^(Your vehicle has been teleported|Vehicle parked|You've used\s+|You have successfully\s+|Successfully\s+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex GreenSuccessRegex = new Regex(
+            @"^(Your vehicle has been teleported|Vehicle parked\.|You've used\s+|You have successfully\s+|Successfully\s+|Refilling\s+[\d\.]+\s+gallons)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex RedErrorRegex = new Regex(@"^(Admin\s+.*\s+(banned|jailed|muted|kicked|warned|prisoned|punished)|Server:\s+.*\s+(banned|jailed|muted|kicked|warned)|\[ADMIN\]|Your vehicle insurance has expired|\[ERROR\]|You do not have\s+|You cannot\s+|You don't have\s+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex YellowWarningRegex = new Regex(@"^(Your vehicle insurance expires in|Use F3 to activate|\[WARNING\]|We've placed a blip|A blip has been|A waypoint has been|GPS set to|GPS location|A checkpoint has been|The blip for your vehicle)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex BlueInfoRegex = new Regex(@"^(Weather forecast:|\[SERVER\])", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -54,6 +56,8 @@ namespace GTAWParser.Shared
         private static readonly Regex WeatherWindRegex = new Regex(@"^(Wind:\s*)([\d\.\-]+\s*km/h)\s*\(([\d\.\-]+\s*mph)\)(,\s*humidity:\s*)(\d+%)(,\s*rain precipitation:\s*)(\d+\s*mm)(\.?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex StorePromptRegex = new Regex(@"^([^:]+:\s*)(Press\s+[A-Za-z0-9]+\s+to\s+[^.]+\.?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex ItemBoughtRegex = new Regex(@"^(You bought a total of\s*)(\d+)(\s*item\(s\)\s*for\s*)(\$[\d,]+)(\.?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        // "[San Chianski Gas Station]: Filled 3.17 gallons for $72!"
+        private static readonly Regex GasFillReceiptRegex = new Regex(@"^(\[[^\]]+\]:\s*Filled\s+[\d\.]+\s+gallons\s+for\s+)(\$[\d,]+[!.]?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex GlobalOocSpanRegex = new Regex(@"^(\(\(\s*Global OOC:\s*(?:\(\d+\)\s*)?)([^:]+)(:.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex EmbeddedCodesRegex = new Regex(@"(~[rgbypqocmuws]~)|(\{!?(?:#)?([0-9a-fA-F]{6})\})", RegexOptions.Compiled);
 
@@ -223,7 +227,18 @@ namespace GTAWParser.Shared
                 };
             }
 
-            // 9. Global OOC
+            // 9. Gas station fill receipt: "[San Chianski Gas Station]: Filled 3.17 gallons for $72!"
+            Match mGas = GasFillReceiptRegex.Match(trimmed);
+            if (mGas.Success)
+            {
+                return new List<CapturedChatSpan>
+                {
+                    new CapturedChatSpan(mGas.Groups[1].Value, "#FFFFFF"),
+                    new CapturedChatSpan(mGas.Groups[2].Value, "#31CB31")
+                };
+            }
+
+            // 10. Global OOC: white body, red admin name
             Match mGlobalOoc = GlobalOocSpanRegex.Match(trimmed);
             if (mGlobalOoc.Success)
             {
@@ -235,7 +250,7 @@ namespace GTAWParser.Shared
                 };
             }
 
-            // 10. Single-color roleplay and system categories
+            // 11. Single-color roleplay and system categories
             ChatLineCategory category = Classify(trimmed);
             string hexColor = GetHexColor(category);
             return new List<CapturedChatSpan> { new CapturedChatSpan(content, hexColor) };
