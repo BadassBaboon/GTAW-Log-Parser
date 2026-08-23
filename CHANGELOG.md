@@ -5,9 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.3.0] - 2026-08-23
+## [6.3.0] - 2026-08-24
 
 ### Added
+- **Unified AppData Storage Architecture (`Shared/Logging.cs`, `Shared/FiveMChatCaptureService.cs`, `Assistant/Controllers/AiAssistantController.cs`, `Assistant/Controllers/UpdateController.cs`, `AppController.cs`)**:
+  - Consolidated all scattered AppData paths into a single, clean, standardized directory at `%LOCALAPPDATA%\GTAW-Log-Parser\` (`config\`, `session\`, `logs\`, `rollback\`).
+  - Added automatic startup migration in `AppController.MigrateLegacyAppDataDirectories()` that silently moves settings and session files from legacy paths (`AppData\Roaming\GTAWChatLogAssistant` and `AppData\Local\GTAW-Log-Parser-FiveM`) and permanently cleans up the old directories.
+- **Rich HTML Chatlog Export and WYSIWYG Forum Paste Safety (`ChatLogHtmlExporter.cs`, `MainWindow.xaml.cs`)**:
+  - Added standalone HTML export with full color preservation, clean dark mode container styling, and responsive layout.
+  - Spans carry only foreground color styles (`color: #RRGGBB`) without inline background blocks, preventing intrusive dark highlight boxes when copying and pasting into Invision Community (IPS) forum WYSIWYG editors.
+  - Integrated into the Main Window "Save As..." dialog with `.txt` and `.html` file type filters.
+- **Configurable Automatic Backup Formats (`BackupController.cs`, `BackupSettingsWindow.xaml`, `BackupSettingsWindow.xaml.cs`)**:
+  - Added `BackupFormat` setting with dropdown options: `Plain Text (.txt)`, `Rich HTML (.html)`, or `Both (.txt and .html)`.
+  - Automatically exports backups using the selected format during periodic (interval) and game-exit backup runs with automatic deduplication.
 - **Per-Feature AI Toggles and Shortcuts (`MainWindow.xaml`, `MainWindow.xaml.cs`, `AiAssistantSettings`, `KeyboardHookManager`)**:
   - Added dedicated on/off toggle checkboxes for each AI capability: Accent & Action Enricher (`AiAccentEnabled`), Language Translation (`AiTranslateEnabled`), and Auto-Correct (`AiCorrectEnabled`).
   - Disabling a feature's checkbox disables and grays out its shortcut configuration button and removes key combination interception in `KeyboardHookManager`.
@@ -17,23 +27,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When other applications (such as Chrome, VS Code, or Notepad) are active, key combinations pass through to the operating system.
 - **Live Tail Search Bar and Navigation (`LiveTailWindow.xaml`, `LiveTailWindow.xaml.cs`)**:
   - Added an inline search bar with match counter (`0/0`, `1 of 14`, `No matches`), Next match (`▼`), Previous match (`▲`), and Clear search (`✕`) buttons.
-  - Buttons (`▲`, `▼`, `✕`) initialize as disabled when the search query is empty and activate when active queries or matches are found.
-  - Fixed match counter column width to 75 px with centered alignment to prevent search box resizing and jitter when match text changes.
-  - Added keyboard shortcuts: `Ctrl+F` focuses search, `Enter` / `F3` steps forward, `Shift+Enter` / `Shift+F3` steps backward, and `Escape` clears search and restores log view focus.
-  - Highlights all matching ranges in the `RichTextBox` and scrolls the active match into view.
-- **GTA World Roleplay Syntax Colorizer (`ChatLineClassifier.cs`, `LiveTailWindow.xaml.cs`)**:
-  - Added `ChatLineClassifier` in `GTAWParser.Shared` classifying log lines into 11 roleplay categories (Emote, Action, IC Speech, IC Whisper, IC Shout, OOC, PM, Radio, Ads, Phone, System Info).
-  - Added `Colored text` toggle checkbox in `LiveTailWindow` rendering chat lines in authentic GTA World hex colors (`#C2A2DA` for `/me`, `#48C9B0` for `/do`, `#F1C40F` for PMs, `#3498DB` for Radio, `#95A5A6` for Whispers, `#F39C12` for Shouts, `#2ECC71` for Ads, `#E74C3C` for System Info).
-  - Added `Copy All` button on the bottom bar for one-click plain text clipboard copying.
-- **Previous Session Fail-Safe Archival (`FiveMChatCaptureService.cs`)**:
-  - Automatically copies `current-session.txt` to `%LOCALAPPDATA%\GTAW-Log-Parser-FiveM\previous-session.txt` before clearing the active session buffer on game relaunch.
-- **Live Tail Auto-Start and Continuous Auto-Scroll (`LiveTailWindow.xaml.cs`)**:
+  - Re-engineered search engine to generate highlighted `Run` elements on demand, resolving single-character lockup and flow document run fragmentation. Full words match case-insensitively across multi-colored lines.
+- **NUI DOM CSS Color Extraction and Per-Span Colorizer (`CapturedChatLine.cs`, `FiveMChatCaptureService.cs`, `LiveTailWindow.xaml.cs`)**:
+  - Replaced heuristic regex coloring with live Chrome DevTools Protocol DOM extraction from FiveM's CEF browser.
+  - Traverses `.chat__messages > li` child nodes via `TreeWalker` to extract inline `style.color` and computed styles per text segment.
+  - Emits structured `CapturedChatLine` objects over `CapturedLineReceived` event with exact per-span and dominant hex colors while preserving plain-text `current-session.txt` format.
+  - Renders multi-colored messages (e.g. weather forecasts, store notices, and server info) with segment-level color runs in Live Tail.
+  - Added thread-safe `DynamicBrushCache` with frozen `SolidColorBrush` instances for zero-allocation rendering.
+  - Updated unclassified text and default fallback to white (`#FFFFFF`).
+- **Live Tail Auto-Start, Buffer Capping, and Continuous Auto-Scroll (`LiveTailWindow.xaml.cs`)**:
   - Automatically begins log streaming on window load (`LiveTail_Loaded`) without requiring manual activation.
+  - Capped active in-memory line buffer at 5,000 lines to ensure minimal RAM usage and high UI responsiveness.
   - Automatically scrolls to the bottom on every received line and upon initial session load.
 - **UI Tooltips (`MainWindow.xaml`)**:
   - Added tooltips across action controls and buttons (`Remove timestamps`, `Bind ~ to T`, `Live preview`, `Parse`, `Save As`, and `Copy To Clipboard`).
 
 ### Changed
+- **In-Game Performance Optimization (Frame-Dip Elimination) (`FiveMChatCaptureService.cs`)**:
+  - Rewrote the NUI JavaScript extraction expression to use an in-memory `hexCache` and `WeakMap` cached `getComputedStyle`.
+  - Completely eliminated HTML5 canvas rendering and layout-reflow thrashing in FiveM's CEF browser, eliminating in-game frame dips during continuous chat capture.
 - **Phonetic Spelling Default**:
   - Changed `PhoneticEnabled` default value to `true` in `AiAssistantSettings` and UI initialization.
 - **AI Assistant Labels and Layout**:
@@ -45,6 +57,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Closing FiveM before joining a server or before the chat HUD renders no longer displays modal error dialogs.
 
 ### Fixed
+- **Bulletproof Fuzzy Overlap Engine (`FiveMChatCaptureService.cs`, `FiveMDetector.cs`)**:
+  - Re-engineered `FindOverlap` to employ a 90% fuzzy match threshold alongside aggressive whitespace and casing normalization (`NormalizeForOverlap`).
+  - Closing and reopening the Assistant mid-game safely resumes the active session instead of wiping `current-session.txt` or repeatedly appending 100-line duplicate blocks.
+- **In-Character Timestamp Preservation (`FiveMChatCaptureService.cs`, `ProgramController.cs`)**:
+  - Anchored timestamp removal regexes (`(?m)^\[\d{1,2}:\d{1,2}:\d{1,2}\]\s*`), ensuring manual in-character roleplay timestamps within message bodies are never stripped.
+- **Fallback Color Classification Accuracy (`ChatLineClassifier.cs`)**:
+  - Added native regex matching for Admin kick announcements (`.*was kicked for:`) and Local OOC messages (`(( (ID) Name: message ))`), rendering Admin kicks in `#FF0000` Red and Local OOC usernames in `#31CB31` Green.
+- **Exit Flush Safeguard for Interval Backups (`BackupController.cs`)**:
+  - `BackupController.Quitting` now triggers an immediate backup flush for both interval-based and game-exit backup configurations.
+  - Added path validation guard to prevent writing to relative paths if the backup directory is unset.
 - **Live Tail Double Newlines (`LiveTailWindow.xaml.cs`)**:
   - Replaced `.Replace("\n", Environment.NewLine)` with newline normalization (`.Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n')`), eliminating `\r\r\n` extra blank lines in WPF text boxes.
 - **Live Preview Caret Preservation (`MainWindow.xaml.cs`)**:
