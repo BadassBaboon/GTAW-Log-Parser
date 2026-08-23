@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.3.0] - 2026-08-23
+
+### Added
+- **Per-Feature AI Toggles and Shortcuts (`MainWindow.xaml`, `MainWindow.xaml.cs`, `AiAssistantSettings`, `KeyboardHookManager`)**:
+  - Added dedicated on/off toggle checkboxes for each AI capability: Accent & Action Enricher (`AiAccentEnabled`), Language Translation (`AiTranslateEnabled`), and Auto-Correct (`AiCorrectEnabled`).
+  - Disabling a feature's checkbox disables and grays out its shortcut configuration button and removes key combination interception in `KeyboardHookManager`.
+- **FiveM Foreground Window Hotkey Filter (`KeyboardHookManager.cs`, `MainWindow.xaml`)**:
+  - Added `AiFiveMOnlyEnabled` checkbox (`FiveM hotkey only`, enabled by default).
+  - Uses Win32 `GetForegroundWindow` and process name inspection to restrict `Ctrl+T`, `Ctrl+U`, `Ctrl+H`, and `~` hotkeys to FiveM processes (`FiveM_GTAProcess`, `GTA5`, `citizenfx`).
+  - When other applications (such as Chrome, VS Code, or Notepad) are active, key combinations pass through to the operating system.
+- **Live Tail Search Bar and Navigation (`LiveTailWindow.xaml`, `LiveTailWindow.xaml.cs`)**:
+  - Added an inline search bar with match counter (`0/0`, `1 of 14`, `No matches`), Next match (`▼`), Previous match (`▲`), and Clear search (`✕`) buttons.
+  - Buttons (`▲`, `▼`, `✕`) initialize as disabled when the search query is empty and activate when active queries or matches are found.
+  - Fixed match counter column width to 75 px with centered alignment to prevent search box resizing and jitter when match text changes.
+  - Added keyboard shortcuts: `Ctrl+F` focuses search, `Enter` / `F3` steps forward, `Shift+Enter` / `Shift+F3` steps backward, and `Escape` clears search and restores log view focus.
+  - Highlights all matching ranges in the `RichTextBox` and scrolls the active match into view.
+- **GTA World Roleplay Syntax Colorizer (`ChatLineClassifier.cs`, `LiveTailWindow.xaml.cs`)**:
+  - Added `ChatLineClassifier` in `GTAWParser.Shared` classifying log lines into 11 roleplay categories (Emote, Action, IC Speech, IC Whisper, IC Shout, OOC, PM, Radio, Ads, Phone, System Info).
+  - Added `Colored text` toggle checkbox in `LiveTailWindow` rendering chat lines in authentic GTA World hex colors (`#C2A2DA` for `/me`, `#48C9B0` for `/do`, `#F1C40F` for PMs, `#3498DB` for Radio, `#95A5A6` for Whispers, `#F39C12` for Shouts, `#2ECC71` for Ads, `#E74C3C` for System Info).
+  - Added `Copy All` button on the bottom bar for one-click plain text clipboard copying.
+- **Previous Session Fail-Safe Archival (`FiveMChatCaptureService.cs`)**:
+  - Automatically copies `current-session.txt` to `%LOCALAPPDATA%\GTAW-Log-Parser-FiveM\previous-session.txt` before clearing the active session buffer on game relaunch.
+- **Live Tail Auto-Start and Continuous Auto-Scroll (`LiveTailWindow.xaml.cs`)**:
+  - Automatically begins log streaming on window load (`LiveTail_Loaded`) without requiring manual activation.
+  - Automatically scrolls to the bottom on every received line and upon initial session load.
+- **UI Tooltips (`MainWindow.xaml`)**:
+  - Added tooltips across action controls and buttons (`Remove timestamps`, `Bind ~ to T`, `Live preview`, `Parse`, `Save As`, and `Copy To Clipboard`).
+
+### Changed
+- **Phonetic Spelling Default**:
+  - Changed `PhoneticEnabled` default value to `true` in `AiAssistantSettings` and UI initialization.
+- **AI Assistant Labels and Layout**:
+  - Renamed `AI Mode:` to `Configure AI Feature:`.
+  - Renamed `Keyboard Shortcuts:` to `Active AI Features & Shortcuts:`.
+  - Adjusted shortcut button width to 238 px to accommodate toggle checkboxes.
+- **Silent Background Auto-Backups (`BackupController.cs`, `AppController.cs`)**:
+  - Background auto-backups on FiveM game close and interval timers now pass `showError: false`.
+  - Closing FiveM before joining a server or before the chat HUD renders no longer displays modal error dialogs.
+
+### Fixed
+- **Live Tail Double Newlines (`LiveTailWindow.xaml.cs`)**:
+  - Replaced `.Replace("\n", Environment.NewLine)` with newline normalization (`.Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n')`), eliminating `\r\r\n` extra blank lines in WPF text boxes.
+- **Live Preview Caret Preservation (`MainWindow.xaml.cs`)**:
+  - Retained `CaretIndex` and text selection across background `LivePreviewTimer_Tick` updates to prevent cursor resets during log review.
+
 ## [6.2.0] - 2026-08-22
 
 ### Added
