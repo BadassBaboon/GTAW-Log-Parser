@@ -390,19 +390,48 @@ namespace GTAWParser.Shared
                 const string expression = @"(() => {
                     const namedColors = {
                         'red': '#FF0000',
+                        'darkred': '#8B0000',
+                        'crimson': '#DC143C',
                         'green': '#31CB31',
+                        'darkgreen': '#006400',
+                        'lime': '#31CB31',
+                        'limegreen': '#32CD32',
                         'blue': '#1E90FF',
+                        'darkblue': '#00008B',
+                        'navy': '#000080',
+                        'dodgerblue': '#1E90FF',
+                        'deepskyblue': '#00BFFF',
+                        'skyblue': '#87CEEB',
                         'yellow': '#FFFF00',
+                        'gold': '#FFD700',
+                        'goldenrod': '#DAA520',
                         'white': '#FFFFFF',
                         'black': '#000000',
                         'orange': '#FFA500',
+                        'darkorange': '#FF8C00',
+                        'coral': '#FF7F50',
                         'purple': '#C2A2DA',
+                        'darkpurple': '#800080',
+                        'magenta': '#FF00FF',
+                        'fuchsia': '#FF00FF',
+                        'pink': '#FF69B4',
+                        'hotpink': '#FF69B4',
+                        'deepink': '#FF1493',
                         'gray': '#A6ACAF',
                         'grey': '#A6ACAF',
-                        'dodgerblue': '#1E90FF',
-                        'gold': '#FFFF00',
-                        'lime': '#31CB31',
-                        'teal': '#48C9B0'
+                        'darkgray': '#666666',
+                        'darkgrey': '#666666',
+                        'lightgray': '#D3D3D3',
+                        'lightgrey': '#D3D3D3',
+                        'silver': '#C0C0C0',
+                        'teal': '#48C9B0',
+                        'cyan': '#00FFFF',
+                        'aqua': '#00FFFF',
+                        'olive': '#808000',
+                        'maroon': '#800000',
+                        'brown': '#A52A2A',
+                        'wheat': '#F5DEB3',
+                        'khaki': '#F0E68C'
                     };
 
                     const tildeMap = {
@@ -417,29 +446,60 @@ namespace GTAWParser.Shared
                         '~m~': '#666666',
                         '~u~': '#000000',
                         '~w~': '#FFFFFF',
-                        '~s~': '#FFFFFF'
+                        '~s~': '#FFFFFF',
+                        '~h~': '#FFFFFF'
+                    };
+
+                    const fivemColorMap = {
+                        '^0': '#FFFFFF',
+                        '^1': '#FF0000',
+                        '^2': '#31CB31',
+                        '^3': '#FFFF00',
+                        '^4': '#1E90FF',
+                        '^5': '#48C9B0',
+                        '^6': '#C2A2DA',
+                        '^7': '#FFFFFF',
+                        '^8': '#8B0000',
+                        '^9': '#FF69B4'
                     };
 
                     function parseHex(c) {
                         if (!c) return '';
                         c = String(c).trim().toLowerCase();
                         if (namedColors[c]) return namedColors[c];
-                        const rgb = c.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-                        if (rgb) {
-                            const r = parseInt(rgb[1], 10).toString(16).padStart(2, '0');
-                            const g = parseInt(rgb[2], 10).toString(16).padStart(2, '0');
-                            const b = parseInt(rgb[3], 10).toString(16).padStart(2, '0');
-                            return ('#' + r + g + b).toUpperCase();
-                        }
+                        if (c === 'transparent' || c === 'inherit' || c === 'initial' || c === 'unset') return '';
+
                         if (c.startsWith('#')) {
                             if (c.length === 4) {
                                 return ('#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3]).toUpperCase();
                             }
-                            if (c.length === 7) {
-                                return c.toUpperCase();
+                            if (c.length >= 7) {
+                                return c.substring(0, 7).toUpperCase();
                             }
                         }
+
+                        const rgb = c.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+                        if (rgb) {
+                            const r = Math.min(255, parseInt(rgb[1], 10)).toString(16).padStart(2, '0');
+                            const g = Math.min(255, parseInt(rgb[2], 10)).toString(16).padStart(2, '0');
+                            const b = Math.min(255, parseInt(rgb[3], 10)).toString(16).padStart(2, '0');
+                            return ('#' + r + g + b).toUpperCase();
+                        }
+
+                        try {
+                            const ctx = document.createElement('canvas').getContext('2d');
+                            if (ctx) {
+                                ctx.fillStyle = c;
+                                const comp = ctx.fillStyle;
+                                if (comp && comp.startsWith('#')) return comp.toUpperCase();
+                            }
+                        } catch (e) {}
+
                         return '';
+                    }
+
+                    function isNonDefaultColor(c) {
+                        return c && c !== '#FFFFFF' && c !== '#DCDCDC' && c !== '#F0F0F0' && c !== '#000000' && c !== 'TRANSPARENT';
                     }
 
                     function getNodeColor(node, rootEl) {
@@ -475,26 +535,22 @@ namespace GTAWParser.Shared
                                     if (c) return c;
                                 }
                             }
-                            p = p.parentElement;
-                        }
-                        const target = node.nodeType === 1 ? node : node.parentElement;
-                        if (target) {
                             try {
-                                const comp = window.getComputedStyle(target);
+                                const comp = window.getComputedStyle(p);
                                 if (comp && comp.color) {
                                     const c = parseHex(comp.color);
-                                    if (c && c !== '#FFFFFF' && c !== '#DCDCDC' && c !== '#F0F0F0' && c !== '#000000' && c !== 'TRANSPARENT') {
-                                        return c;
-                                    }
+                                    if (isNonDefaultColor(c)) return c;
                                 }
                             } catch (e) {}
+
+                            p = p.parentElement;
                         }
                         return '#FFFFFF';
                     }
 
                     function parseTextCodes(rawText, baseColor) {
                         if (!rawText) return [];
-                        const pattern = /(~[rgbypqocmuws]~)|(\{!?(?:#)?([0-9a-fA-F]{6})\})/g;
+                        const pattern = /(~[rgbypqocmuwsh]~)|(\{!?(?:#)?([0-9a-fA-F]{6})\})|(\^([0-9]))/g;
                         let lastIndex = 0;
                         let currentColor = baseColor || '#FFFFFF';
                         const subSpans = [];
@@ -509,6 +565,8 @@ namespace GTAWParser.Shared
                                 currentColor = tildeMap[match[1].toLowerCase()] || currentColor;
                             } else if (match[3]) {
                                 currentColor = '#' + match[3].toUpperCase();
+                            } else if (match[5]) {
+                                currentColor = fivemColorMap['^' + match[5]] || currentColor;
                             }
                             lastIndex = pattern.lastIndex;
                         }
@@ -521,7 +579,11 @@ namespace GTAWParser.Shared
                         return subSpans.length > 0 ? subSpans : [{ t: rawText, c: baseColor || '#FFFFFF' }];
                     }
 
-                    const items = Array.from(document.querySelectorAll('.chat__messages > li'));
+                    const selector = '.chat__messages > li, .chat-messages > li, .chat-messages > div, #chat-messages > li, #chat-messages > div, .chat__message, .chat-message, #messages > div, #messages > li';
+                    let items = Array.from(document.querySelectorAll(selector));
+                    if (items.length === 0) {
+                        items = Array.from(document.querySelectorAll('.chat__messages li, .chat-messages li, #chat-messages li, #messages li'));
+                    }
                     const results = [];
 
                     for (const el of items) {
@@ -570,7 +632,7 @@ namespace GTAWParser.Shared
 
                         let dominantColor = '#FFFFFF';
                         for (const s of mergedSpans) {
-                            if (s.c && s.c !== '#FFFFFF' && s.c !== '#DCDCDC' && s.c !== '#F0F0F0' && s.c !== '#000000') {
+                            if (isNonDefaultColor(s.c)) {
                                 dominantColor = s.c;
                                 break;
                             }
@@ -772,10 +834,18 @@ namespace GTAWParser.Shared
                 if (frameTree.TryGetProperty("frame", out JsonElement frame))
                 {
                     if (frame.TryGetProperty("url", out JsonElement urlElem) &&
-                        urlElem.GetString()?.StartsWith(ClientFrameUrl, StringComparison.OrdinalIgnoreCase) == true &&
                         frame.TryGetProperty("id", out JsonElement idElem))
                     {
-                        return idElem.GetString();
+                        string? url = urlElem.GetString();
+                        if (!string.IsNullOrEmpty(url) &&
+                            (url.StartsWith(ClientFrameUrl, StringComparison.OrdinalIgnoreCase) ||
+                             url.IndexOf("cfx-nui-client", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             url.IndexOf("cfx-nui-chat", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             url.IndexOf("chat/html", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             url.IndexOf("chat/web", StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            return idElem.GetString();
+                        }
                     }
                 }
 

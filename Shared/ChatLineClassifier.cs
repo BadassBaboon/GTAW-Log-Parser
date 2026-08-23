@@ -58,6 +58,8 @@ namespace GTAWParser.Shared
         private static readonly Regex ItemBoughtRegex = new Regex(@"^(You bought a total of\s*)(\d+)(\s*item\(s\)\s*for\s*)(\$[\d,]+)(\.?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         // "[San Chianski Gas Station]: Filled 3.17 gallons for $72!"
         private static readonly Regex GasFillReceiptRegex = new Regex(@"^(\[[^\]]+\]:\s*Filled\s+[\d\.]+\s+gallons\s+for\s+)(\$[\d,]+[!.]?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        // "Refilling 3.17 gallons, please wait... ((9 seconds))"
+        private static readonly Regex RefillProgressRegex = new Regex(@"^(Refilling\s+)([\d\.]+)(\s+gallons.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex GlobalOocSpanRegex = new Regex(@"^(\(\(\s*Global OOC:\s*(?:\(\d+\)\s*)?)([^:]+)(:.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex EmbeddedCodesRegex = new Regex(@"(~[rgbypqocmuws]~)|(\{!?(?:#)?([0-9a-fA-F]{6})\})", RegexOptions.Compiled);
 
@@ -238,7 +240,19 @@ namespace GTAWParser.Shared
                 };
             }
 
-            // 10. Global OOC: white body, red admin name
+            // 10. Refilling gallons progress: "Refilling 3.17 gallons, please wait... ((9 seconds))"
+            Match mRefill = RefillProgressRegex.Match(trimmed);
+            if (mRefill.Success)
+            {
+                return new List<CapturedChatSpan>
+                {
+                    new CapturedChatSpan(mRefill.Groups[1].Value, "#31CB31"),
+                    new CapturedChatSpan(mRefill.Groups[2].Value, "#FFFFFF"),
+                    new CapturedChatSpan(mRefill.Groups[3].Value, "#31CB31")
+                };
+            }
+
+            // 11. Global OOC: white body, red admin name
             Match mGlobalOoc = GlobalOocSpanRegex.Match(trimmed);
             if (mGlobalOoc.Success)
             {
@@ -250,7 +264,7 @@ namespace GTAWParser.Shared
                 };
             }
 
-            // 11. Single-color roleplay and system categories
+            // 12. Single-color roleplay and system categories
             ChatLineCategory category = Classify(trimmed);
             string hexColor = GetHexColor(category);
             return new List<CapturedChatSpan> { new CapturedChatSpan(content, hexColor) };

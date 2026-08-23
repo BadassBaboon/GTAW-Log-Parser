@@ -196,14 +196,18 @@ namespace GTAWParser.Shared.Tests
         }
 
         [Fact]
-        public void ParseSpans_RefillGallons_ReturnsGreen()
+        public void ParseSpans_RefillGallons_ReturnsGreenWithWhiteNumber()
         {
             string line = "Refilling 3.17 gallons, please wait... ((9 seconds))";
             List<CapturedChatSpan> spans = ChatLineClassifier.ParseSpans(line);
 
-            Assert.NotNull(spans);
-            Assert.Single(spans);
+            Assert.Equal(3, spans.Count);
+            Assert.Equal("Refilling ", spans[0].Text);
             Assert.Equal("#31CB31", spans[0].Color);
+            Assert.Equal("3.17", spans[1].Text);
+            Assert.Equal("#FFFFFF", spans[1].Color);
+            Assert.Equal(" gallons, please wait... ((9 seconds))", spans[2].Text);
+            Assert.Equal("#31CB31", spans[2].Color);
         }
 
         [Fact]
