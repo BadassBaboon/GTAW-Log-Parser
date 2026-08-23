@@ -391,7 +391,7 @@ namespace GTAWParser.Shared
                     if (ChatLineClassifier.DateHeaderRegex.IsMatch(line.Trim())) continue;
 
                     _sessionRichLines.Add(new CapturedChatLine(line));
-                    _previousVisibleLines.Add(line.Trim());
+                    _previousVisibleLines.Add(NormalizeForOverlap(line));
                 }
 
                 if (_previousVisibleLines.Count > 100)
@@ -403,6 +403,13 @@ namespace GTAWParser.Shared
             {
                 Log.Warning(ex, "Failed to load existing session lines from current-session.txt");
             }
+        }
+
+        public static string NormalizeForOverlap(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return string.Empty;
+            var (_, content) = ChatLineClassifier.SplitTimestamp(line.Trim());
+            return string.IsNullOrWhiteSpace(content) ? line.Trim() : content.Trim();
         }
 
         public static string AddTimestamp(string line, DateTime capturedAt)
@@ -424,19 +431,23 @@ namespace GTAWParser.Shared
 
         /// <summary>
         /// Finds the overlap length between the end of <paramref name="oldLines"/> and the beginning of <paramref name="newLines"/>.
+        /// Normalizes lines by stripping timestamps to prevent duplicates across tool restarts.
         /// </summary>
         public static int FindOverlap(IList<string> oldLines, IList<string> newLines)
         {
             if (oldLines == null || newLines == null || oldLines.Count == 0 || newLines.Count == 0)
                 return 0;
 
-            int max = Math.Min(oldLines.Count, newLines.Count);
+            var normalizedOld = oldLines.Select(NormalizeForOverlap).ToList();
+            var normalizedNew = newLines.Select(NormalizeForOverlap).ToList();
+
+            int max = Math.Min(normalizedOld.Count, normalizedNew.Count);
             for (int length = max; length > 0; length--)
             {
                 bool matches = true;
                 for (int i = 0; i < length; i++)
                 {
-                    if (!string.Equals(oldLines[oldLines.Count - length + i], newLines[i], StringComparison.Ordinal))
+                    if (!string.Equals(normalizedOld[normalizedOld.Count - length + i], normalizedNew[i], StringComparison.Ordinal))
                     {
                         matches = false;
                         break;
@@ -450,7 +461,7 @@ namespace GTAWParser.Shared
             return 0;
         }
 
-        private static readonly Regex TimestampRegex = new Regex(@"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", RegexOptions.Compiled);
+        private static readonly Regex TimestampRegex = new Regex(@"(?m)^\[\d{1,2}:\d{1,2}:\d{1,2}\]\s*", RegexOptions.Compiled);
 
         private sealed class NuiChatReader
         {

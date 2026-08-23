@@ -32,7 +32,13 @@ namespace Shared.Tests
             int noOverlap = FiveMChatCaptureService.FindOverlap(noSeen, noIncoming);
             Assert.Equal(0, noOverlap);
 
-            // Case 4: Empty inputs
+            // Case 4: Overlap with timestamp prefixes vs un-prefixed incoming lines
+            List<string> timestampedSeen = new List<string> { "[23:22:02] Line A", "[23:22:02] Line B", "[23:22:02] Line C" };
+            List<string> rawIncoming = new List<string> { "Line B", "Line C", "Line D" };
+            int tsOverlap = FiveMChatCaptureService.FindOverlap(timestampedSeen, rawIncoming);
+            Assert.Equal(2, tsOverlap);
+
+            // Case 5: Empty inputs
             Assert.Equal(0, FiveMChatCaptureService.FindOverlap(new List<string>(), new List<string> { "Line 1" }));
             Assert.Equal(0, FiveMChatCaptureService.FindOverlap(new List<string> { "Line 1" }, new List<string>()));
         }

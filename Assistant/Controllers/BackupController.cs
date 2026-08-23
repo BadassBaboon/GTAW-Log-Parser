@@ -32,7 +32,23 @@ namespace Assistant.Controllers
             {
                 _quitting = value;
                 if (value)
+                {
+                    try
+                    {
+                        if (Properties.Settings.Default.BackupChatLogAutomatically && 
+                            File.Exists(FiveMChatCaptureService.SessionFilePath) && 
+                            new FileInfo(FiveMChatCaptureService.SessionFilePath).Length > 0)
+                        {
+                            ParseThenSaveToFile(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug(ex, "Failed to flush backup on tool exit");
+                    }
+
                     AbortAll();
+                }
             }
         }
 
