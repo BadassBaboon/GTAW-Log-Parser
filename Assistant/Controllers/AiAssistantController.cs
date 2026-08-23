@@ -52,7 +52,7 @@ namespace Assistant.Controllers
         public bool SoundEnabled { get; set; } = true;
         public bool BindTildeEnabled { get; set; } = false;
         public string LengthConstraint { get; set; } = "Similar"; // NoConstraint, Similar, Concise
-        public bool PhoneticEnabled { get; set; } = false;
+        public bool PhoneticEnabled { get; set; } = true;
         public bool ActionEnricherEnabled { get; set; } = false;
         public bool AccentEnabled { get; set; } = true;
         public bool TranslateEnabled { get; set; } = true;
