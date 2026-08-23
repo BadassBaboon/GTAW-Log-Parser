@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -199,7 +200,7 @@ namespace Assistant.UI
                     }
                 }
 
-                string query = SearchBox?.Text?.Trim() ?? string.Empty;
+                string query = SearchBox?.Text ?? string.Empty;
                 Paragraph p = CreateLineParagraph(line, RemoveTimestamps?.IsChecked == true, ColoredText?.IsChecked == true, query, _searchMatchRuns);
                 _document.Blocks.Add(p);
 
@@ -229,6 +230,18 @@ namespace Assistant.UI
             }));
         }
 
+        private readonly struct TextSegment
+        {
+            public string Text { get; }
+            public SolidColorBrush Brush { get; }
+
+            public TextSegment(string text, SolidColorBrush brush)
+            {
+                Text = text;
+                Brush = brush;
+            }
+        }
+
         private Paragraph CreateLineParagraph(
             CapturedChatLine line,
             bool hideTimestamps,
@@ -243,144 +256,214 @@ namespace Assistant.UI
             };
 
             var (timestamp, content) = ChatLineClassifier.SplitTimestamp(line.Text);
+            List<TextSegment> segments = new List<TextSegment>();
 
             if (!hideTimestamps && !string.IsNullOrEmpty(timestamp))
             {
-                AddInlineWithSearchHighlight(p, timestamp, TimestampBrush, searchQuery, searchMatchRuns);
+                segments.Add(new TextSegment(timestamp, TimestampBrush));
             }
 
             if (!useColors)
             {
-                AddInlineWithSearchHighlight(p, content, DefaultTextBrush, searchQuery, searchMatchRuns);
-                return p;
+                segments.Add(new TextSegment(content, DefaultTextBrush));
             }
-
-            // Per-span coloring if NUI DOM spans are available AND carry at least one non-white color.
-            bool nuiHasColor = line.Spans != null && line.Spans.Count > 0 &&
-                line.Spans.Any(s => !string.IsNullOrEmpty(s.Color) &&
-                    !string.Equals(s.Color, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(s.Color, "#DCDCDC", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(s.Color, "#F0F0F0", StringComparison.OrdinalIgnoreCase));
-
-            if (nuiHasColor)
+            else
             {
-                bool firstSpan = true;
-                int runsAdded = 0;
+                // Per-span coloring if NUI DOM spans are available AND carry at least one non-white color.
+                bool nuiHasColor = line.Spans != null && line.Spans.Count > 0 &&
+                    line.Spans.Any(s => !string.IsNullOrEmpty(s.Color) &&
+                        !string.Equals(s.Color, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(s.Color, "#DCDCDC", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(s.Color, "#F0F0F0", StringComparison.OrdinalIgnoreCase));
 
-                foreach (CapturedChatSpan span in line.Spans!)
+                if (nuiHasColor)
                 {
-                    if (string.IsNullOrEmpty(span.Text))
-                        continue;
+                    bool firstSpan = true;
+                    int initialCount = segments.Count;
 
-                    string spanText = span.Text;
-                    if (firstSpan)
+                    foreach (CapturedChatSpan span in line.Spans!)
                     {
-                        firstSpan = false;
-                        if (!string.IsNullOrEmpty(timestamp) && spanText.StartsWith(timestamp, StringComparison.Ordinal))
+                        if (string.IsNullOrEmpty(span.Text))
+                            continue;
+
+                        string spanText = span.Text;
+                        if (firstSpan)
                         {
-                            spanText = spanText.Substring(timestamp.Length);
-                        }
-                        else if (spanText.StartsWith("[") && spanText.IndexOf(']') > 0)
-                        {
-                            int endBracket = spanText.IndexOf(']');
-                            string potentialTs = spanText.Substring(0, endBracket + 1);
-                            if (ChatLineClassifier.SplitTimestamp(potentialTs + " ").Timestamp.Length > 0)
+                            firstSpan = false;
+                            if (!string.IsNullOrEmpty(timestamp) && spanText.StartsWith(timestamp, StringComparison.Ordinal))
                             {
-                                spanText = spanText.Substring(endBracket + 1).TrimStart(' ');
+                                spanText = spanText.Substring(timestamp.Length);
+                            }
+                            else if (spanText.StartsWith("[") && spanText.IndexOf(']') > 0)
+                            {
+                                int endBracket = spanText.IndexOf(']');
+                                string potentialTs = spanText.Substring(0, endBracket + 1);
+                                if (ChatLineClassifier.SplitTimestamp(potentialTs + " ").Timestamp.Length > 0)
+                                {
+                                    spanText = spanText.Substring(endBracket + 1).TrimStart(' ');
+                                }
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(spanText))
+                            continue;
+
+                        segments.Add(new TextSegment(spanText, GetOrCreateBrush(span.Color)));
+                    }
+
+                    if (segments.Count == initialCount)
+                    {
+                        segments.Add(new TextSegment(content, DefaultTextBrush));
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(line.DominantColor) &&
+                    !string.Equals(line.DominantColor, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(line.DominantColor, "#DCDCDC", StringComparison.OrdinalIgnoreCase))
+                {
+                    segments.Add(new TextSegment(content, GetOrCreateBrush(line.DominantColor)));
+                }
+                else
+                {
+                    // Fallback: Rich per-span pattern parsing
+                    List<CapturedChatSpan> fallbackSpans = ChatLineClassifier.ParseSpans(content);
+                    if (fallbackSpans != null && fallbackSpans.Count > 0)
+                    {
+                        foreach (CapturedChatSpan span in fallbackSpans)
+                        {
+                            if (!string.IsNullOrEmpty(span.Text))
+                            {
+                                segments.Add(new TextSegment(span.Text, GetOrCreateBrush(span.Color)));
                             }
                         }
                     }
-
-                    if (string.IsNullOrEmpty(spanText))
-                        continue;
-
-                    SolidColorBrush spanBrush = GetOrCreateBrush(span.Color);
-                    AddInlineWithSearchHighlight(p, spanText, spanBrush, searchQuery, searchMatchRuns);
-                    runsAdded++;
+                    else
+                    {
+                        segments.Add(new TextSegment(content, DefaultTextBrush));
+                    }
                 }
-
-                if (runsAdded > 0)
-                    return p;
             }
 
-            // Dominant color if provided and not default
-            if (!string.IsNullOrWhiteSpace(line.DominantColor) &&
-                !string.Equals(line.DominantColor, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(line.DominantColor, "#DCDCDC", StringComparison.OrdinalIgnoreCase))
-            {
-                SolidColorBrush dominantBrush = GetOrCreateBrush(line.DominantColor);
-                AddInlineWithSearchHighlight(p, content, dominantBrush, searchQuery, searchMatchRuns);
-                return p;
-            }
-
-            // Fallback: Rich per-span pattern parsing
-            List<CapturedChatSpan> fallbackSpans = ChatLineClassifier.ParseSpans(content);
-            if (fallbackSpans != null && fallbackSpans.Count > 0)
-            {
-                foreach (CapturedChatSpan span in fallbackSpans)
-                {
-                    if (string.IsNullOrEmpty(span.Text))
-                        continue;
-
-                    SolidColorBrush spanBrush = GetOrCreateBrush(span.Color);
-                    AddInlineWithSearchHighlight(p, span.Text, spanBrush, searchQuery, searchMatchRuns);
-                }
-                return p;
-            }
-
-            AddInlineWithSearchHighlight(p, content, DefaultTextBrush, searchQuery, searchMatchRuns);
+            RenderSegmentsWithSearch(p, segments, searchQuery, searchMatchRuns);
             return p;
         }
 
-        private void AddInlineWithSearchHighlight(
-            Paragraph paragraph,
-            string text,
-            SolidColorBrush foreground,
+        private static void RenderSegmentsWithSearch(
+            Paragraph p,
+            List<TextSegment> segments,
             string? searchQuery,
             List<Run>? searchMatchRuns)
         {
-            if (string.IsNullOrEmpty(text))
+            if (segments.Count == 0)
                 return;
 
             if (string.IsNullOrEmpty(searchQuery))
             {
-                paragraph.Inlines.Add(new Run(text) { Foreground = foreground });
+                foreach (var seg in segments)
+                {
+                    if (!string.IsNullOrEmpty(seg.Text))
+                    {
+                        p.Inlines.Add(new Run(seg.Text) { Foreground = seg.Brush });
+                    }
+                }
                 return;
             }
 
-            int idx = text.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
+            // Build full line text to find multi-segment match intervals
+            StringBuilder sb = new StringBuilder();
+            foreach (var seg in segments)
             {
-                paragraph.Inlines.Add(new Run(text) { Foreground = foreground });
-                return;
+                sb.Append(seg.Text);
             }
+            string fullLine = sb.ToString();
 
-            int lastIdx = 0;
+            // Find all match intervals [start, end)
+            List<(int Start, int End)> matchIntervals = new List<(int Start, int End)>();
+            int idx = fullLine.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase);
             while (idx >= 0)
             {
-                if (idx > lastIdx)
-                {
-                    string before = text.Substring(lastIdx, idx - lastIdx);
-                    paragraph.Inlines.Add(new Run(before) { Foreground = foreground });
-                }
-
-                string matchText = text.Substring(idx, searchQuery.Length);
-                Run matchRun = new Run(matchText)
-                {
-                    Foreground = foreground,
-                    Background = SearchMatchBgBrush
-                };
-                paragraph.Inlines.Add(matchRun);
-                searchMatchRuns?.Add(matchRun);
-
-                lastIdx = idx + searchQuery.Length;
-                idx = text.IndexOf(searchQuery, lastIdx, StringComparison.OrdinalIgnoreCase);
+                matchIntervals.Add((idx, idx + searchQuery.Length));
+                idx = fullLine.IndexOf(searchQuery, idx + searchQuery.Length, StringComparison.OrdinalIgnoreCase);
             }
 
-            if (lastIdx < text.Length)
+            if (matchIntervals.Count == 0)
             {
-                string remaining = text.Substring(lastIdx);
-                paragraph.Inlines.Add(new Run(remaining) { Foreground = foreground });
+                foreach (var seg in segments)
+                {
+                    if (!string.IsNullOrEmpty(seg.Text))
+                    {
+                        p.Inlines.Add(new Run(seg.Text) { Foreground = seg.Brush });
+                    }
+                }
+                return;
+            }
+
+            // Render segments by slicing across match intervals
+            int segGlobalStart = 0;
+            foreach (var seg in segments)
+            {
+                if (string.IsNullOrEmpty(seg.Text))
+                    continue;
+
+                int segLength = seg.Text.Length;
+                int segGlobalEnd = segGlobalStart + segLength;
+                int currentSegOffset = 0;
+
+                while (currentSegOffset < segLength)
+                {
+                    int currentGlobalPos = segGlobalStart + currentSegOffset;
+
+                    int activeMatchIdx = -1;
+                    int nextMatchIdx = -1;
+
+                    for (int m = 0; m < matchIntervals.Count; m++)
+                    {
+                        var (mStart, mEnd) = matchIntervals[m];
+                        if (currentGlobalPos >= mStart && currentGlobalPos < mEnd)
+                        {
+                            activeMatchIdx = m;
+                            break;
+                        }
+                        if (mStart > currentGlobalPos)
+                        {
+                            nextMatchIdx = m;
+                            break;
+                        }
+                    }
+
+                    if (activeMatchIdx >= 0)
+                    {
+                        int matchEndGlobal = matchIntervals[activeMatchIdx].End;
+                        int chunkEndGlobal = Math.Min(segGlobalEnd, matchEndGlobal);
+                        int chunkLength = chunkEndGlobal - currentGlobalPos;
+
+                        string chunk = seg.Text.Substring(currentSegOffset, chunkLength);
+                        Run matchRun = new Run(chunk)
+                        {
+                            Foreground = seg.Brush,
+                            Background = SearchMatchBgBrush
+                        };
+                        p.Inlines.Add(matchRun);
+                        searchMatchRuns?.Add(matchRun);
+
+                        currentSegOffset += chunkLength;
+                    }
+                    else
+                    {
+                        int chunkEndGlobal = segGlobalEnd;
+                        if (nextMatchIdx >= 0)
+                        {
+                            chunkEndGlobal = Math.Min(segGlobalEnd, matchIntervals[nextMatchIdx].Start);
+                        }
+                        int chunkLength = chunkEndGlobal - currentGlobalPos;
+
+                        string chunk = seg.Text.Substring(currentSegOffset, chunkLength);
+                        p.Inlines.Add(new Run(chunk) { Foreground = seg.Brush });
+
+                        currentSegOffset += chunkLength;
+                    }
+                }
+
+                segGlobalStart = segGlobalEnd;
             }
         }
 
@@ -395,7 +478,7 @@ namespace Assistant.UI
 
             bool hideTimestamps = RemoveTimestamps?.IsChecked == true;
             bool useColors = ColoredText?.IsChecked == true;
-            string query = SearchBox?.Text?.Trim() ?? string.Empty;
+            string query = SearchBox?.Text ?? string.Empty;
 
             foreach (CapturedChatLine line in _capturedLines)
             {

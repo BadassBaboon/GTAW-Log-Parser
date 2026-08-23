@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When other applications (such as Chrome, VS Code, or Notepad) are active, key combinations pass through to the operating system.
 - **Live Tail Search Bar and Navigation (`LiveTailWindow.xaml`, `LiveTailWindow.xaml.cs`)**:
   - Added an inline search bar with match counter (`0/0`, `1 of 14`, `No matches`), Next match (`▼`), Previous match (`▲`), and Clear search (`✕`) buttons.
-  - Re-engineered search engine to generate highlighted `Run` elements on demand, resolving single-character lockup and flow document run fragmentation. Full words match case-insensitively across multi-colored lines.
+  - Re-engineered search engine to perform paragraph-level multi-span slicing, allowing search terms with leading/trailing spaces (e.g. `"Benjamin "`) and multi-word phrases to seamlessly match across different colored text spans while preserving per-span formatting and navigation stepping.
 - **NUI DOM CSS Color Extraction and Per-Span Colorizer (`CapturedChatLine.cs`, `FiveMChatCaptureService.cs`, `LiveTailWindow.xaml.cs`)**:
   - Replaced heuristic regex coloring with live Chrome DevTools Protocol DOM extraction from FiveM's CEF browser.
   - Traverses `.chat__messages > li` child nodes via `TreeWalker` to extract inline `style.color` and computed styles per text segment.
