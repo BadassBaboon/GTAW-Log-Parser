@@ -364,8 +364,15 @@ namespace Assistant.UI
 
         private void SearchClearBtn_Click(object sender, RoutedEventArgs e)
         {
-            SearchBox.Text = string.Empty;
-            SearchBox.Focus();
+            if (SearchBox != null) SearchBox.Text = string.Empty;
+            ClearHighlights();
+            _searchMatches.Clear();
+            _currentMatchIndex = -1;
+            if (SearchMatchCount != null) SearchMatchCount.Text = "0/0";
+            if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
+            if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
+            if (SearchClearBtn != null) SearchClearBtn.IsEnabled = false;
+            TailRich?.Focus();
         }
 
         private void ClearHighlights()
@@ -386,14 +393,17 @@ namespace Assistant.UI
             _searchMatches.Clear();
             _currentMatchIndex = -1;
 
-            string query = SearchBox.Text?.Trim() ?? string.Empty;
+            string query = SearchBox?.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrEmpty(query))
             {
-                SearchMatchCount.Text = "0/0";
-                SearchPrevBtn.IsEnabled = false;
-                SearchNextBtn.IsEnabled = false;
+                if (SearchMatchCount != null) SearchMatchCount.Text = "0/0";
+                if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
+                if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
+                if (SearchClearBtn != null) SearchClearBtn.IsEnabled = false;
                 return;
             }
+
+            if (SearchClearBtn != null) SearchClearBtn.IsEnabled = true;
 
             TextPointer position = _document.ContentStart;
             while (position != null && position.CompareTo(_document.ContentEnd) < 0)
@@ -426,15 +436,15 @@ namespace Assistant.UI
             {
                 _currentMatchIndex = 0;
                 HighlightActiveMatch();
-                SearchMatchCount.Text = $"1 of {_searchMatches.Count}";
-                SearchPrevBtn.IsEnabled = true;
-                SearchNextBtn.IsEnabled = true;
+                if (SearchMatchCount != null) SearchMatchCount.Text = $"1 of {_searchMatches.Count}";
+                if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = true;
+                if (SearchNextBtn != null) SearchNextBtn.IsEnabled = true;
             }
             else
             {
-                SearchMatchCount.Text = "No matches";
-                SearchPrevBtn.IsEnabled = false;
-                SearchNextBtn.IsEnabled = false;
+                if (SearchMatchCount != null) SearchMatchCount.Text = "No matches";
+                if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
+                if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
             }
         }
 

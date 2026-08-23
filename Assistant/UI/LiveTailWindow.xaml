@@ -13,8 +13,8 @@
                       KeyDown="LiveTail_KeyDown"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Live Tail" Height="550" Width="820"
-                      MinHeight="350" MinWidth="550"
+                      Title="Live Tail" Height="500" Width="700"
+                      MinHeight="300" MinWidth="500"
                       IsMaxRestoreButtonEnabled="True" IsMinButtonEnabled="True"
                       TitleCharacterCasing="Normal" ShowIconOnTitleBar="False"
                       Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
@@ -26,7 +26,7 @@
             <Grid Margin="0,0,0,6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -38,15 +38,16 @@
                          TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown"/>
 
                 <TextBlock x:Name="SearchMatchCount" Grid.Column="1" Text="0/0"
-                           VerticalAlignment="Center" Margin="8,0,8,0" Foreground="Gray" FontSize="11"/>
+                           TextAlignment="Center" VerticalAlignment="Center" Margin="4,0,4,0"
+                           Foreground="{DynamicResource MahApps.Brushes.Gray}" FontSize="11"/>
 
-                <Button x:Name="SearchPrevBtn" Grid.Column="2" Content="▲" Width="28" Height="26"
+                <Button x:Name="SearchPrevBtn" Grid.Column="2" Content="▲" Width="28" Height="26" IsEnabled="False"
                         Click="SearchPrevBtn_Click" ToolTip="Previous match (Shift+Enter / Shift+F3)"/>
 
-                <Button x:Name="SearchNextBtn" Grid.Column="3" Content="▼" Width="28" Height="26" Margin="4,0,4,0"
+                <Button x:Name="SearchNextBtn" Grid.Column="3" Content="▼" Width="28" Height="26" Margin="4,0,4,0" IsEnabled="False"
                         Click="SearchNextBtn_Click" ToolTip="Next match (Enter / F3)"/>
 
-                <Button x:Name="SearchClearBtn" Grid.Column="4" Content="✕" Width="28" Height="26"
+                <Button x:Name="SearchClearBtn" Grid.Column="4" Content="✕" Width="28" Height="26" IsEnabled="False"
                         Click="SearchClearBtn_Click" ToolTip="Clear search (Esc)"/>
             </Grid>
 
