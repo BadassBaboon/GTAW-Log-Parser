@@ -269,5 +269,28 @@ namespace GTAWParser.Shared
                 return false;
             }
         }
+
+        /// <summary>
+        /// Retrieves the process start time of the active FiveM game process if running.
+        /// </summary>
+        public static DateTime? GetFiveMStartTime()
+        {
+            try
+            {
+                foreach (string procName in new[] { "FiveM_GTAProcess", "FiveM", "FiveM_ROSLauncher" })
+                {
+                    Process[] procs = Process.GetProcessesByName(procName);
+                    if (procs.Length > 0)
+                    {
+                        return procs[0].StartTime;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Failed to retrieve FiveM process start time");
+            }
+            return null;
+        }
     }
 }

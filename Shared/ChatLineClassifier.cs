@@ -28,7 +28,7 @@ namespace GTAWParser.Shared
     {
         private static readonly Regex TimestampPrefixRegex = new Regex(@"^\[\d{1,2}:\d{1,2}:\d{1,2}\]\s*", RegexOptions.Compiled);
 
-        private static readonly Regex DateHeaderRegex = new Regex(@"^\[DATE:\s*.*\s*\|\s*TIME:\s*.*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        public static readonly Regex DateHeaderRegex = new Regex(@"^\[DATE:\s*(\d{1,2}/[A-Za-z]{3}/\d{4})\s*\|\s*TIME:\s*(\d{1,2}:\d{2}:\d{2})\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex GlobalOocRegex = new Regex(@"^\(\(\s*Global OOC:\s*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex PmRegex = new Regex(@"^\(\(\s*PM\s+(to|from)\s+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex OocRegex = new Regex(@"^\(\(\s*(\(\d+\)\s*)?", RegexOptions.Compiled);

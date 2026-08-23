@@ -193,26 +193,46 @@ namespace GTAWParser.Shared
                     {
                         lock (SyncRoot)
                         {
-                            _sessionStartedAt = DateTime.MinValue;
-                            _previousVisibleLines.Clear();
+                            bool isContinuingExistingSession = false;
 
-                            if (File.Exists(SessionFilePath))
+                            if (File.Exists(SessionFilePath) && new FileInfo(SessionFilePath).Length > 0)
                             {
-                                string backupFile = Path.Combine(SessionDirectory, "previous-session.txt");
-                                try
+                                DateTime? fiveMStart = FiveMDetector.GetFiveMStartTime();
+                                DateTime? fileSessionStart = TryReadSessionHeaderTimestamp(SessionFilePath);
+
+                                if (fileSessionStart.HasValue)
                                 {
-                                    File.Copy(SessionFilePath, backupFile, true);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Warning(ex, "Failed to copy current-session.txt to previous-session.txt before clearing");
+                                    if (!fiveMStart.HasValue || fiveMStart.Value <= File.GetLastWriteTime(SessionFilePath).AddMinutes(1))
+                                    {
+                                        _sessionStartedAt = fileSessionStart.Value;
+                                        isContinuingExistingSession = true;
+                                        LoadExistingSessionLines();
+                                        Log.Information("Resuming existing FiveM session from {SessionTime}", _sessionStartedAt);
+                                    }
                                 }
                             }
 
-                            File.WriteAllText(SessionFilePath, string.Empty, new UTF8Encoding(false));
-                            lock (SyncRoot)
+                            if (!isContinuingExistingSession)
                             {
+                                _sessionStartedAt = DateTime.MinValue;
+                                _previousVisibleLines.Clear();
+
+                                if (File.Exists(SessionFilePath) && new FileInfo(SessionFilePath).Length > 0)
+                                {
+                                    string backupFile = Path.Combine(SessionDirectory, "previous-session.txt");
+                                    try
+                                    {
+                                        File.Copy(SessionFilePath, backupFile, true);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Warning(ex, "Failed to copy current-session.txt to previous-session.txt before clearing");
+                                    }
+                                }
+
+                                File.WriteAllText(SessionFilePath, string.Empty, new UTF8Encoding(false));
                                 _sessionRichLines.Clear();
+                                Log.Information("Started fresh FiveM session buffer");
                             }
                         }
                         _wasFiveMRunning = true;
@@ -325,6 +345,64 @@ namespace GTAWParser.Shared
         {
             string date = timestamp.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture).ToUpperInvariant();
             return string.Format(CultureInfo.InvariantCulture, "[DATE: {0} | TIME: {1}]", date, timestamp.ToString("HH:mm:ss", CultureInfo.InvariantCulture));
+        }
+
+        private static DateTime? TryReadSessionHeaderTimestamp(string path)
+        {
+            try
+            {
+                using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
+                {
+                    string? firstLine = sr.ReadLine();
+                    if (!string.IsNullOrWhiteSpace(firstLine))
+                    {
+                        Match match = ChatLineClassifier.DateHeaderRegex.Match(firstLine.Trim());
+                        if (match.Success)
+                        {
+                            string dateStr = match.Groups[1].Value;
+                            string timeStr = match.Groups[2].Value;
+                            if (DateTime.TryParseExact($"{dateStr} {timeStr}", "d/MMM/yyyy H:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
+                            {
+                                return dt;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Failed to parse session header timestamp from {Path}", path);
+            }
+            return null;
+        }
+
+        private static void LoadExistingSessionLines()
+        {
+            try
+            {
+                _sessionRichLines.Clear();
+                _previousVisibleLines.Clear();
+
+                string[] lines = File.ReadAllLines(SessionFilePath, Encoding.UTF8);
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (ChatLineClassifier.DateHeaderRegex.IsMatch(line.Trim())) continue;
+
+                    _sessionRichLines.Add(new CapturedChatLine(line));
+                    _previousVisibleLines.Add(line.Trim());
+                }
+
+                if (_previousVisibleLines.Count > 100)
+                {
+                    _previousVisibleLines = _previousVisibleLines.Skip(_previousVisibleLines.Count - 100).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to load existing session lines from current-session.txt");
+            }
         }
 
         public static string AddTimestamp(string line, DateTime capturedAt)
