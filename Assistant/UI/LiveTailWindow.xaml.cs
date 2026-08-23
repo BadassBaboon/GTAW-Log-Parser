@@ -153,6 +153,11 @@ namespace Assistant.UI
                 }
             }
 
+            if (_capturedLines.Count > MaxLineBuffer)
+            {
+                _capturedLines.RemoveRange(0, _capturedLines.Count - MaxLineBuffer);
+            }
+
             RebuildDocument();
 
             ToggleWatch.Content = "Stop";

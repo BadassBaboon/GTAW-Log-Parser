@@ -35,7 +35,7 @@ namespace Assistant.Controllers
                 {
                     try
                     {
-                        if (Properties.Settings.Default.BackupChatLogAutomatically && 
+                        if ((Properties.Settings.Default.BackupChatLogAutomatically || Properties.Settings.Default.EnableIntervalBackup) && 
                             File.Exists(FiveMChatCaptureService.SessionFilePath) && 
                             new FileInfo(FiveMChatCaptureService.SessionFilePath).Length > 0)
                         {
@@ -158,6 +158,10 @@ namespace Assistant.Controllers
         {
             try
             {
+                backupPath = Properties.Settings.Default.BackupPath;
+                if (string.IsNullOrWhiteSpace(backupPath) || !Directory.Exists(backupPath))
+                    return;
+
                 string parsed = AppController.ParseChatLog(Properties.Settings.Default.RemoveTimestampsFromBackup, showError: false);
                 if (string.IsNullOrWhiteSpace(parsed))
                     return;
