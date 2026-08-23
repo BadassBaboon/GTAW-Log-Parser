@@ -58,6 +58,7 @@ namespace Assistant.UI
             Properties.Settings.Default.RemoveTimestampsFromBackup = RemoveTimestamps.IsChecked == true;
             Properties.Settings.Default.SuppressNotifications = SuppressNotifications.IsChecked == true;
             Properties.Settings.Default.WarnOnSameHash = WarnWithHash.IsChecked == true;
+            Properties.Settings.Default.BackupFormat = BackupFormat.SelectedIndex >= 0 ? BackupFormat.SelectedIndex : 0;
 
             Properties.Settings.Default.Save();
         }
@@ -78,6 +79,10 @@ namespace Assistant.UI
             SuppressNotifications.IsChecked = Properties.Settings.Default.SuppressNotifications;
             WarnWithHash.IsChecked = Properties.Settings.Default.WarnOnSameHash;
 
+            int format = Properties.Settings.Default.BackupFormat;
+            BackupFormat.SelectedIndex = (format >= 0 && format <= 2) ? format : 0;
+            BackupFormat.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
+
             Interval.Foreground = StyleController.DarkMode ? System.Windows.Media.Brushes.White : System.Windows.Media.Brushes.Black;
         }
 
@@ -94,6 +99,7 @@ namespace Assistant.UI
             Properties.Settings.Default.RemoveTimestampsFromBackup = false;
             Properties.Settings.Default.SuppressNotifications = false;
             Properties.Settings.Default.WarnOnSameHash = false;
+            Properties.Settings.Default.BackupFormat = 0;
 
             Properties.Settings.Default.Save();
         }
@@ -206,12 +212,14 @@ namespace Assistant.UI
             RemoveTimestamps.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
             SuppressNotifications.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
             WarnWithHash.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
+            BackupFormat.IsEnabled = BackUpChatLogAutomatically.IsChecked == true;
 
             if (BackUpChatLogAutomatically.IsChecked == true) return;
             RemoveTimestamps.IsChecked = false;
             EnableIntervalBackup.IsChecked = false;
             SuppressNotifications.IsChecked = false;
             WarnWithHash.IsChecked = false;
+            BackupFormat.SelectedIndex = 0;
         }
 
         /// <summary>

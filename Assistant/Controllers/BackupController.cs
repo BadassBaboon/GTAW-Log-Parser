@@ -119,10 +119,10 @@ namespace Assistant.Controllers
                 {
                     int intervalMinutes = Math.Max(1, Properties.Settings.Default.IntervalTime);
 
+                    await Task.Delay(intervalMinutes * 60_000, ct).ConfigureAwait(false);
+
                     if (isGameRunning && File.Exists(FiveMChatCaptureService.SessionFilePath))
                         ParseThenSaveToFile(false);
-
-                    await Task.Delay(intervalMinutes * 60_000, ct).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
@@ -152,41 +152,49 @@ namespace Assistant.Controllers
                 string year = sessionTime.ToString("yyyy", CultureInfo.InvariantCulture);
                 string month = sessionTime.ToString("MMM", CultureInfo.InvariantCulture).ToUpperInvariant();
 
-                string fileName = $"{datePart}-{timePart}.txt";
+                int backupFormat = Properties.Settings.Default.BackupFormat;
+                bool removeTimestamps = Properties.Settings.Default.RemoveTimestampsFromBackup;
+                string baseFileName = $"{datePart}-{timePart}";
                 string directory = Path.Combine(backupPath, year, month);
-                string finalPath = Path.Combine(directory, fileName);
-                string tempPath = Path.Combine(directory, ".temp");
-
                 Directory.CreateDirectory(directory);
 
-                if (!File.Exists(finalPath))
+                string primarySavedPath = string.Empty;
+
+                // 1. Plain Text Backup (.txt)
+                if (backupFormat == 0 || backupFormat == 2)
                 {
-                    File.WriteAllText(finalPath, parsed.Replace("\n", Environment.NewLine), Encoding.UTF8);
+                    string txtPath = Path.Combine(directory, $"{baseFileName}.txt");
+                    string txtTemp = Path.Combine(directory, $".temp_{baseFileName}.txt");
+
+                    WriteBackupFileWithDeduplication(txtPath, txtTemp, parsed.Replace("\n", Environment.NewLine));
+                    primarySavedPath = txtPath;
                 }
-                else
+
+                // 2. Rich HTML Backup (.html)
+                if (backupFormat == 1 || backupFormat == 2)
                 {
-                    if (File.Exists(tempPath))
-                        File.Delete(tempPath);
-
-                    File.WriteAllText(tempPath, parsed.Replace("\n", Environment.NewLine), Encoding.UTF8);
-
-                    long oldLen = new FileInfo(finalPath).Length;
-                    long newLen = new FileInfo(tempPath).Length;
-
-                    if (oldLen < newLen)
+                    string htmlContent;
+                    var richLines = FiveMChatCaptureService.SessionRichLines;
+                    if (richLines != null && richLines.Count > 0)
                     {
-                        File.Delete(finalPath);
-                        File.Move(tempPath, finalPath);
+                        htmlContent = ChatLogHtmlExporter.GenerateHtml(richLines, removeTimestamps, $"GTAW Chat Log - {datePart}");
                     }
                     else
                     {
-                        File.Delete(tempPath);
+                        htmlContent = ChatLogHtmlExporter.GenerateHtmlFromText(parsed, removeTimestamps, $"GTAW Chat Log - {datePart}");
                     }
+
+                    string htmlPath = Path.Combine(directory, $"{baseFileName}.html");
+                    string htmlTemp = Path.Combine(directory, $".temp_{baseFileName}.html");
+
+                    WriteBackupFileWithDeduplication(htmlPath, htmlTemp, htmlContent);
+                    if (string.IsNullOrEmpty(primarySavedPath))
+                        primarySavedPath = htmlPath;
                 }
 
                 if (!gameClosed) return;
                 if (!Properties.Settings.Default.SuppressNotifications)
-                    DisplayBackupResultMessage(string.Format(Strings.SuccessfulBackup, finalPath), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
+                    DisplayBackupResultMessage(string.Format(Strings.SuccessfulBackup, primarySavedPath), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
 
                 if (Properties.Settings.Default.WarnOnSameHash)
                     HashGenerator.SaveParsedHash(parsed);
@@ -196,6 +204,34 @@ namespace Assistant.Controllers
                 Log.Error(ex, "ParseThenSaveToFile failed");
                 if (gameClosed)
                     DisplayBackupResultMessage(Strings.BackupError, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static void WriteBackupFileWithDeduplication(string finalPath, string tempPath, string content)
+        {
+            if (!File.Exists(finalPath))
+            {
+                File.WriteAllText(finalPath, content, Encoding.UTF8);
+            }
+            else
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+
+                File.WriteAllText(tempPath, content, Encoding.UTF8);
+
+                long oldLen = new FileInfo(finalPath).Length;
+                long newLen = new FileInfo(tempPath).Length;
+
+                if (oldLen < newLen)
+                {
+                    File.Delete(finalPath);
+                    File.Move(tempPath, finalPath);
+                }
+                else
+                {
+                    File.Delete(tempPath);
+                }
             }
         }
     }

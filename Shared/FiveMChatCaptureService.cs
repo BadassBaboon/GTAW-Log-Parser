@@ -389,121 +389,72 @@ namespace GTAWParser.Shared
 
                 const string expression = @"(() => {
                     const namedColors = {
-                        'red': '#FF0000',
-                        'darkred': '#8B0000',
-                        'crimson': '#DC143C',
-                        'green': '#31CB31',
-                        'darkgreen': '#006400',
-                        'lime': '#31CB31',
-                        'limegreen': '#32CD32',
-                        'blue': '#1E90FF',
-                        'darkblue': '#00008B',
-                        'navy': '#000080',
-                        'dodgerblue': '#1E90FF',
-                        'deepskyblue': '#00BFFF',
-                        'skyblue': '#87CEEB',
-                        'yellow': '#FFFF00',
-                        'gold': '#FFD700',
-                        'goldenrod': '#DAA520',
-                        'white': '#FFFFFF',
-                        'black': '#000000',
-                        'orange': '#FFA500',
-                        'darkorange': '#FF8C00',
-                        'coral': '#FF7F50',
-                        'purple': '#C2A2DA',
-                        'darkpurple': '#800080',
-                        'magenta': '#FF00FF',
-                        'fuchsia': '#FF00FF',
-                        'pink': '#FF69B4',
-                        'hotpink': '#FF69B4',
-                        'deepink': '#FF1493',
-                        'gray': '#A6ACAF',
-                        'grey': '#A6ACAF',
-                        'darkgray': '#666666',
-                        'darkgrey': '#666666',
-                        'lightgray': '#D3D3D3',
-                        'lightgrey': '#D3D3D3',
-                        'silver': '#C0C0C0',
-                        'teal': '#48C9B0',
-                        'cyan': '#00FFFF',
-                        'aqua': '#00FFFF',
-                        'olive': '#808000',
-                        'maroon': '#800000',
-                        'brown': '#A52A2A',
-                        'wheat': '#F5DEB3',
-                        'khaki': '#F0E68C'
+                        'red': '#FF0000', 'darkred': '#8B0000', 'crimson': '#DC143C',
+                        'green': '#31CB31', 'darkgreen': '#006400', 'lime': '#31CB31', 'limegreen': '#32CD32',
+                        'blue': '#1E90FF', 'darkblue': '#00008B', 'navy': '#000080', 'dodgerblue': '#1E90FF',
+                        'deepskyblue': '#00BFFF', 'skyblue': '#87CEEB', 'yellow': '#FFFF00', 'gold': '#FFD700',
+                        'goldenrod': '#DAA520', 'white': '#FFFFFF', 'black': '#000000', 'orange': '#FFA500',
+                        'darkorange': '#FF8C00', 'coral': '#FF7F50', 'purple': '#C2A2DA', 'darkpurple': '#800080',
+                        'magenta': '#FF00FF', 'fuchsia': '#FF00FF', 'pink': '#FF69B4', 'hotpink': '#FF69B4',
+                        'deepink': '#FF1493', 'gray': '#A6ACAF', 'grey': '#A6ACAF', 'darkgray': '#666666',
+                        'darkgrey': '#666666', 'lightgray': '#D3D3D3', 'lightgrey': '#D3D3D3', 'silver': '#C0C0C0',
+                        'teal': '#48C9B0', 'cyan': '#00FFFF', 'aqua': '#00FFFF', 'olive': '#808000',
+                        'maroon': '#800000', 'brown': '#A52A2A', 'wheat': '#F5DEB3', 'khaki': '#F0E68C'
                     };
 
                     const tildeMap = {
-                        '~r~': '#FF0000',
-                        '~g~': '#31CB31',
-                        '~b~': '#1E90FF',
-                        '~y~': '#FFFF00',
-                        '~p~': '#C2A2DA',
-                        '~q~': '#FF69B4',
-                        '~o~': '#FFA500',
-                        '~c~': '#A6ACAF',
-                        '~m~': '#666666',
-                        '~u~': '#000000',
-                        '~w~': '#FFFFFF',
-                        '~s~': '#FFFFFF',
-                        '~h~': '#FFFFFF'
+                        '~r~': '#FF0000', '~g~': '#31CB31', '~b~': '#1E90FF', '~y~': '#FFFF00',
+                        '~p~': '#C2A2DA', '~q~': '#FF69B4', '~o~': '#FFA500', '~c~': '#A6ACAF',
+                        '~m~': '#666666', '~u~': '#000000', '~w~': '#FFFFFF', '~s~': '#FFFFFF', '~h~': '#FFFFFF'
                     };
 
                     const fivemColorMap = {
-                        '^0': '#FFFFFF',
-                        '^1': '#FF0000',
-                        '^2': '#31CB31',
-                        '^3': '#FFFF00',
-                        '^4': '#1E90FF',
-                        '^5': '#48C9B0',
-                        '^6': '#C2A2DA',
-                        '^7': '#FFFFFF',
-                        '^8': '#8B0000',
-                        '^9': '#FF69B4'
+                        '^0': '#FFFFFF', '^1': '#FF0000', '^2': '#31CB31', '^3': '#FFFF00',
+                        '^4': '#1E90FF', '^5': '#48C9B0', '^6': '#C2A2DA', '^7': '#FFFFFF',
+                        '^8': '#8B0000', '^9': '#FF69B4'
                     };
 
+                    const hexCache = new Map();
                     function parseHex(c) {
                         if (!c) return '';
-                        c = String(c).trim().toLowerCase();
-                        if (namedColors[c]) return namedColors[c];
-                        if (c === 'transparent' || c === 'inherit' || c === 'initial' || c === 'unset') return '';
+                        if (hexCache.has(c)) return hexCache.get(c);
 
-                        if (c.startsWith('#')) {
-                            if (c.length === 4) {
-                                return ('#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3]).toUpperCase();
+                        let res = '';
+                        const s = String(c).trim().toLowerCase();
+                        if (namedColors[s]) {
+                            res = namedColors[s];
+                        } else if (s === 'transparent' || s === 'inherit' || s === 'initial' || s === 'unset') {
+                            res = '';
+                        } else if (s.startsWith('#')) {
+                            if (s.length === 4) {
+                                res = ('#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3]).toUpperCase();
+                            } else if (s.length >= 7) {
+                                res = s.substring(0, 7).toUpperCase();
                             }
-                            if (c.length >= 7) {
-                                return c.substring(0, 7).toUpperCase();
+                        } else {
+                            const rgb = s.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+                            if (rgb) {
+                                const r = Math.min(255, parseInt(rgb[1], 10)).toString(16).padStart(2, '0');
+                                const g = Math.min(255, parseInt(rgb[2], 10)).toString(16).padStart(2, '0');
+                                const b = Math.min(255, parseInt(rgb[3], 10)).toString(16).padStart(2, '0');
+                                res = ('#' + r + g + b).toUpperCase();
                             }
                         }
 
-                        const rgb = c.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-                        if (rgb) {
-                            const r = Math.min(255, parseInt(rgb[1], 10)).toString(16).padStart(2, '0');
-                            const g = Math.min(255, parseInt(rgb[2], 10)).toString(16).padStart(2, '0');
-                            const b = Math.min(255, parseInt(rgb[3], 10)).toString(16).padStart(2, '0');
-                            return ('#' + r + g + b).toUpperCase();
-                        }
-
-                        try {
-                            const ctx = document.createElement('canvas').getContext('2d');
-                            if (ctx) {
-                                ctx.fillStyle = c;
-                                const comp = ctx.fillStyle;
-                                if (comp && comp.startsWith('#')) return comp.toUpperCase();
-                            }
-                        } catch (e) {}
-
-                        return '';
+                        hexCache.set(c, res);
+                        return res;
                     }
 
                     function isNonDefaultColor(c) {
-                        return c && c !== '#FFFFFF' && c !== '#DCDCDC' && c !== '#F0F0F0' && c !== '#000000' && c !== 'TRANSPARENT';
+                        return c && c !== '#FFFFFF' && c !== '#DCDCDC' && c !== '#F0F0F0' && c !== '#000000';
                     }
 
+                    const computedColorCache = new WeakMap();
                     function getNodeColor(node, rootEl) {
                         let p = node.nodeType === 1 ? node : node.parentElement;
+                        let targetElem = p;
+
+                        // 1. Fast check for inline attributes / style without triggering style recalculation
                         while (p && p !== rootEl.parentElement) {
                             if (p.getAttribute) {
                                 const attrColor = p.getAttribute('color');
@@ -511,40 +462,44 @@ namespace GTAWParser.Shared
                                     const c = parseHex(attrColor);
                                     if (c) return c;
                                 }
-                            }
-                            if (p.color) {
-                                const c = parseHex(p.color);
-                                if (c) return c;
-                            }
-                            if (p.style && p.style.color) {
-                                const c = parseHex(p.style.color);
-                                if (c) return c;
-                            }
-                            if (p.getAttribute) {
+                                const dataColor = p.getAttribute('data-color');
+                                if (dataColor) {
+                                    const c = parseHex(dataColor);
+                                    if (c) return c;
+                                }
                                 const styleAttr = p.getAttribute('style');
-                                if (styleAttr) {
+                                if (styleAttr && styleAttr.indexOf('color') !== -1) {
                                     const m = styleAttr.match(/color\s*:\s*([^;]+)/i);
                                     if (m) {
                                         const c = parseHex(m[1]);
                                         if (c) return c;
                                     }
                                 }
-                                const dataColor = p.getAttribute('data-color');
-                                if (dataColor) {
-                                    const c = parseHex(dataColor);
-                                    if (c) return c;
-                                }
                             }
-                            try {
-                                const comp = window.getComputedStyle(p);
-                                if (comp && comp.color) {
-                                    const c = parseHex(comp.color);
-                                    if (isNonDefaultColor(c)) return c;
-                                }
-                            } catch (e) {}
-
+                            if (p.style && p.style.color) {
+                                const c = parseHex(p.style.color);
+                                if (c) return c;
+                            }
                             p = p.parentElement;
                         }
+
+                        // 2. Computed style lookup (cached per element, inherits cascade from ancestors)
+                        if (targetElem) {
+                            if (computedColorCache.has(targetElem)) {
+                                return computedColorCache.get(targetElem);
+                            }
+                            try {
+                                const comp = window.getComputedStyle(targetElem);
+                                if (comp && comp.color) {
+                                    const c = parseHex(comp.color);
+                                    if (c) {
+                                        computedColorCache.set(targetElem, c);
+                                        return c;
+                                    }
+                                }
+                            } catch (e) {}
+                        }
+
                         return '#FFFFFF';
                     }
 
@@ -590,20 +545,13 @@ namespace GTAWParser.Shared
                         const fullText = (el.innerText || '').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
                         if (!fullText) continue;
 
-                        const nodes = [el].concat(Array.from(el.querySelectorAll('*')));
                         let timestamp = '';
-                        for (const node of nodes) {
-                            for (const attribute of Array.from(node.attributes || [])) {
-                                const match = String(attribute.value).match(/\b\d{1,2}:\d{2}:\d{2}\b/);
-                                if (match) { timestamp = match[0]; break; }
+                        if (el.getAttribute) {
+                            const tsAttr = el.getAttribute('data-timestamp') || el.getAttribute('timestamp');
+                            if (tsAttr) {
+                                const m = String(tsAttr).match(/\b\d{1,2}:\d{2}:\d{2}\b/);
+                                if (m) timestamp = m[0];
                             }
-                            if (!timestamp) {
-                                try {
-                                    const match = String(window.getComputedStyle(node, '::before').content || '').match(/\b\d{1,2}:\d{2}:\d{2}\b/);
-                                    if (match) timestamp = match[0];
-                                } catch (e) {}
-                            }
-                            if (timestamp) break;
                         }
 
                         const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
@@ -614,15 +562,16 @@ namespace GTAWParser.Shared
                             if (val && val.length > 0) {
                                 const color = getNodeColor(curr, el);
                                 const parsedSubSpans = parseTextCodes(val, color);
-                                for (const sub of parsedSubSpans) {
-                                    rawSpans.push(sub);
+                                for (let i = 0; i < parsedSubSpans.length; i++) {
+                                    rawSpans.push(parsedSubSpans[i]);
                                 }
                             }
                             curr = walker.nextNode();
                         }
 
                         const mergedSpans = [];
-                        for (const s of rawSpans) {
+                        for (let i = 0; i < rawSpans.length; i++) {
+                            const s = rawSpans[i];
                             if (mergedSpans.length > 0 && mergedSpans[mergedSpans.length - 1].c === s.c) {
                                 mergedSpans[mergedSpans.length - 1].t += s.t;
                             } else {
@@ -631,9 +580,9 @@ namespace GTAWParser.Shared
                         }
 
                         let dominantColor = '#FFFFFF';
-                        for (const s of mergedSpans) {
-                            if (isNonDefaultColor(s.c)) {
-                                dominantColor = s.c;
+                        for (let i = 0; i < mergedSpans.length; i++) {
+                            if (isNonDefaultColor(mergedSpans[i].c)) {
+                                dominantColor = mergedSpans[i].c;
                                 break;
                             }
                         }
@@ -650,7 +599,7 @@ namespace GTAWParser.Shared
                     }
 
                     return JSON.stringify(results);
-                })()";
+                })();";
 
                 using JsonDocument result = await SendCdpRequestAsync("Runtime.evaluate", new
                 {

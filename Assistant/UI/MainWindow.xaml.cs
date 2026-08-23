@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using Octokit;
 using System.IO;
@@ -277,13 +278,24 @@ namespace Assistant.UI
                 Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
                 {
                     FileName = "chatlog.txt",
-                    Filter = "Text File | *.txt"
+                    Filter = "Text File (*.txt)|*.txt|Rich HTML (*.html)|*.html|All Files (*.*)|*.*",
+                    DefaultExt = ".txt"
                 };
 
                 if (dialog.ShowDialog() != true) return;
-                using (StreamWriter sw = new StreamWriter(dialog.OpenFile()))
+
+                string ext = Path.GetExtension(dialog.FileName).ToLowerInvariant();
+                if (ext == ".html" || ext == ".htm")
                 {
-                    sw.Write(Parsed.Text.Replace("\n", Environment.NewLine));
+                    string html = ChatLogHtmlExporter.GenerateHtmlFromText(Parsed.Text, RemoveTimestamps.IsChecked == true);
+                    File.WriteAllText(dialog.FileName, html, Encoding.UTF8);
+                }
+                else
+                {
+                    using (StreamWriter sw = new StreamWriter(dialog.OpenFile()))
+                    {
+                        sw.Write(Parsed.Text.Replace("\n", Environment.NewLine));
+                    }
                 }
             }
             catch

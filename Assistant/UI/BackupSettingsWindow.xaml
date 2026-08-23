@@ -12,7 +12,7 @@
                       Closing="BackupSettings_Closing"
                       BorderThickness="0"
                       GlowBrush="Black"
-                      Title="Automatic Backup Settings" Height="305.994" Width="476" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
+                      Title="Automatic Backup Settings" Height="355" Width="476" ShowInTaskbar="True" IsMaxRestoreButtonEnabled="False" IsMinButtonEnabled="False" TitleCharacterCasing="Normal" ShowIconOnTitleBar="False" Icon="pack://application:,,,/GTAWAssistant;component/Resources/AppIcon.ico">
 
     <Grid>
         <Label x:Name="BackupPathLabel" Content="Backup Path:" HorizontalAlignment="Left" Margin="5,10,0,0" VerticalAlignment="Top" Width="455"/>
@@ -25,10 +25,16 @@
         <Label x:Name="IntervalLabel2" Content="minutes. (recommended)" HorizontalAlignment="Left" Margin="189,114,0,0" VerticalAlignment="Top" Width="271"/>
         <CheckBox x:Name="RemoveTimestamps" Content="Remove timestamps from backup" HorizontalAlignment="Left" Margin="10,145,0,0" VerticalAlignment="Top" Width="450" IsEnabled="False"/>
         <CheckBox x:Name="SuppressNotifications" Content="Suppress successful backup notifications" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top" Width="450" IsEnabled="False"/>
-
-
-        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="385,233,0,0" VerticalAlignment="Top" Width="75"/>
-        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="305,233,0,0" VerticalAlignment="Top" Width="75"/>
         <CheckBox x:Name="WarnWithHash" Content="Warn when the same chat log has been saved 2 or more times" HorizontalAlignment="Left" Margin="10,191,0,0" VerticalAlignment="Top" Width="450" IsEnabled="False"/>
+
+        <Label x:Name="BackupFormatLabel" Content="Save Format:" HorizontalAlignment="Left" Margin="5,218,0,0" VerticalAlignment="Top" Width="100"/>
+        <ComboBox x:Name="BackupFormat" HorizontalAlignment="Left" Margin="100,220,0,0" VerticalAlignment="Top" Width="210" Height="26" IsEnabled="False">
+            <ComboBoxItem Content="Plain Text (.txt)" Tag="0"/>
+            <ComboBoxItem Content="Rich HTML (.html)" Tag="1"/>
+            <ComboBoxItem Content="Both (.txt and .html)" Tag="2"/>
+        </ComboBox>
+
+        <Button x:Name="Reset" Click="Reset_Click" Content="Reset" HorizontalAlignment="Left" Margin="305,275,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button x:Name="CloseWindow" Click="CloseWindow_Click" Content="Close" HorizontalAlignment="Left" Margin="385,275,0,0" VerticalAlignment="Top" Width="75"/>
     </Grid>
 </Controls:MetroWindow>

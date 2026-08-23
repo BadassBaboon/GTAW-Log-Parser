@@ -559,5 +559,17 @@ namespace Assistant.Properties {
                 this["WarnOnSameHash"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int BackupFormat {
+            get {
+                return ((int)(this["BackupFormat"]));
+            }
+            set {
+                this["BackupFormat"] = value;
+            }
+        }
     }
 }
