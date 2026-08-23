@@ -23,7 +23,7 @@ namespace Assistant.UI
         private const int MaxLineBuffer = 5000;
         private readonly List<CapturedChatLine> _capturedLines = new List<CapturedChatLine>();
         private readonly FlowDocument _document = new FlowDocument();
-        private readonly List<TextRange> _searchMatches = new List<TextRange>();
+        private readonly List<Run> _searchMatchRuns = new List<Run>();
         private int _currentMatchIndex = -1;
         private bool _isWatching;
         private bool _isInitialized;
@@ -194,24 +194,42 @@ namespace Assistant.UI
                     }
                 }
 
-                Paragraph p = CreateLineParagraph(line, RemoveTimestamps.IsChecked == true, ColoredText.IsChecked == true);
+                string query = SearchBox?.Text?.Trim() ?? string.Empty;
+                Paragraph p = CreateLineParagraph(line, RemoveTimestamps?.IsChecked == true, ColoredText?.IsChecked == true, query, _searchMatchRuns);
                 _document.Blocks.Add(p);
 
                 UpdateCounter();
 
-                if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+                if (!string.IsNullOrEmpty(query))
                 {
-                    ExecuteSearch();
+                    if (_searchMatchRuns.Count > 0)
+                    {
+                        if (_currentMatchIndex < 0) _currentMatchIndex = 0;
+                        if (SearchMatchCount != null) SearchMatchCount.Text = $"{_currentMatchIndex + 1} of {_searchMatchRuns.Count}";
+                        if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = true;
+                        if (SearchNextBtn != null) SearchNextBtn.IsEnabled = true;
+                    }
+                    else
+                    {
+                        if (SearchMatchCount != null) SearchMatchCount.Text = "No matches";
+                        if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
+                        if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
+                    }
                 }
 
-                if (AutoScroll.IsChecked == true)
+                if (AutoScroll?.IsChecked == true && string.IsNullOrEmpty(query))
                 {
-                    TailRich.ScrollToEnd();
+                    TailRich?.ScrollToEnd();
                 }
             }));
         }
 
-        private Paragraph CreateLineParagraph(CapturedChatLine line, bool hideTimestamps, bool useColors)
+        private Paragraph CreateLineParagraph(
+            CapturedChatLine line,
+            bool hideTimestamps,
+            bool useColors,
+            string? searchQuery = null,
+            List<Run>? searchMatchRuns = null)
         {
             Paragraph p = new Paragraph
             {
@@ -223,26 +241,16 @@ namespace Assistant.UI
 
             if (!hideTimestamps && !string.IsNullOrEmpty(timestamp))
             {
-                Run tsRun = new Run(timestamp)
-                {
-                    Foreground = TimestampBrush
-                };
-                p.Inlines.Add(tsRun);
+                AddInlineWithSearchHighlight(p, timestamp, TimestampBrush, searchQuery, searchMatchRuns);
             }
 
             if (!useColors)
             {
-                Run contentRun = new Run(content)
-                {
-                    Foreground = DefaultTextBrush
-                };
-                p.Inlines.Add(contentRun);
+                AddInlineWithSearchHighlight(p, content, DefaultTextBrush, searchQuery, searchMatchRuns);
                 return p;
             }
 
             // Per-span coloring if NUI DOM spans are available AND carry at least one non-white color.
-            // An all-white span set means the isolated world couldn't read stylesheet-applied colors —
-            // fall through to the reliable pattern classifier in that case.
             bool nuiHasColor = line.Spans != null && line.Spans.Count > 0 &&
                 line.Spans.Any(s => !string.IsNullOrEmpty(s.Color) &&
                     !string.Equals(s.Color, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
@@ -282,11 +290,7 @@ namespace Assistant.UI
                         continue;
 
                     SolidColorBrush spanBrush = GetOrCreateBrush(span.Color);
-                    Run spanRun = new Run(spanText)
-                    {
-                        Foreground = spanBrush
-                    };
-                    p.Inlines.Add(spanRun);
+                    AddInlineWithSearchHighlight(p, spanText, spanBrush, searchQuery, searchMatchRuns);
                     runsAdded++;
                 }
 
@@ -300,11 +304,7 @@ namespace Assistant.UI
                 !string.Equals(line.DominantColor, "#DCDCDC", StringComparison.OrdinalIgnoreCase))
             {
                 SolidColorBrush dominantBrush = GetOrCreateBrush(line.DominantColor);
-                Run contentRun = new Run(content)
-                {
-                    Foreground = dominantBrush
-                };
-                p.Inlines.Add(contentRun);
+                AddInlineWithSearchHighlight(p, content, dominantBrush, searchQuery, searchMatchRuns);
                 return p;
             }
 
@@ -318,22 +318,65 @@ namespace Assistant.UI
                         continue;
 
                     SolidColorBrush spanBrush = GetOrCreateBrush(span.Color);
-                    Run spanRun = new Run(span.Text)
-                    {
-                        Foreground = spanBrush
-                    };
-                    p.Inlines.Add(spanRun);
+                    AddInlineWithSearchHighlight(p, span.Text, spanBrush, searchQuery, searchMatchRuns);
                 }
                 return p;
             }
 
-            Run fallbackRun = new Run(content)
-            {
-                Foreground = DefaultTextBrush
-            };
-            p.Inlines.Add(fallbackRun);
-
+            AddInlineWithSearchHighlight(p, content, DefaultTextBrush, searchQuery, searchMatchRuns);
             return p;
+        }
+
+        private void AddInlineWithSearchHighlight(
+            Paragraph paragraph,
+            string text,
+            SolidColorBrush foreground,
+            string? searchQuery,
+            List<Run>? searchMatchRuns)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            if (string.IsNullOrEmpty(searchQuery))
+            {
+                paragraph.Inlines.Add(new Run(text) { Foreground = foreground });
+                return;
+            }
+
+            int idx = text.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+            {
+                paragraph.Inlines.Add(new Run(text) { Foreground = foreground });
+                return;
+            }
+
+            int lastIdx = 0;
+            while (idx >= 0)
+            {
+                if (idx > lastIdx)
+                {
+                    string before = text.Substring(lastIdx, idx - lastIdx);
+                    paragraph.Inlines.Add(new Run(before) { Foreground = foreground });
+                }
+
+                string matchText = text.Substring(idx, searchQuery.Length);
+                Run matchRun = new Run(matchText)
+                {
+                    Foreground = foreground,
+                    Background = SearchMatchBgBrush
+                };
+                paragraph.Inlines.Add(matchRun);
+                searchMatchRuns?.Add(matchRun);
+
+                lastIdx = idx + searchQuery.Length;
+                idx = text.IndexOf(searchQuery, lastIdx, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (lastIdx < text.Length)
+            {
+                string remaining = text.Substring(lastIdx);
+                paragraph.Inlines.Add(new Run(remaining) { Foreground = foreground });
+            }
         }
 
         private void RebuildDocument()
@@ -342,23 +385,49 @@ namespace Assistant.UI
                 return;
 
             _document.Blocks.Clear();
+            _searchMatchRuns.Clear();
+            _currentMatchIndex = -1;
+
             bool hideTimestamps = RemoveTimestamps?.IsChecked == true;
             bool useColors = ColoredText?.IsChecked == true;
+            string query = SearchBox?.Text?.Trim() ?? string.Empty;
 
             foreach (CapturedChatLine line in _capturedLines)
             {
-                Paragraph p = CreateLineParagraph(line, hideTimestamps, useColors);
+                Paragraph p = CreateLineParagraph(line, hideTimestamps, useColors, query, _searchMatchRuns);
                 _document.Blocks.Add(p);
             }
 
             UpdateCounter();
 
-            if (SearchBox != null && !string.IsNullOrWhiteSpace(SearchBox.Text))
+            if (string.IsNullOrEmpty(query))
             {
-                ExecuteSearch();
+                if (SearchMatchCount != null) SearchMatchCount.Text = "0/0";
+                if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
+                if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
+                if (SearchClearBtn != null) SearchClearBtn.IsEnabled = false;
+            }
+            else
+            {
+                if (SearchClearBtn != null) SearchClearBtn.IsEnabled = true;
+
+                if (_searchMatchRuns.Count > 0)
+                {
+                    _currentMatchIndex = 0;
+                    HighlightActiveMatch();
+                    if (SearchMatchCount != null) SearchMatchCount.Text = $"1 of {_searchMatchRuns.Count}";
+                    if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = true;
+                    if (SearchNextBtn != null) SearchNextBtn.IsEnabled = true;
+                }
+                else
+                {
+                    if (SearchMatchCount != null) SearchMatchCount.Text = "No matches";
+                    if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
+                    if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
+                }
             }
 
-            if (AutoScroll?.IsChecked == true)
+            if (AutoScroll?.IsChecked == true && string.IsNullOrEmpty(query))
             {
                 TailRich?.ScrollToEnd();
             }
@@ -394,10 +463,12 @@ namespace Assistant.UI
         {
             _capturedLines.Clear();
             _document.Blocks.Clear();
-            ClearHighlights();
-            _searchMatches.Clear();
+            _searchMatchRuns.Clear();
             _currentMatchIndex = -1;
             if (SearchMatchCount != null) SearchMatchCount.Text = "0/0";
+            if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
+            if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
+            if (SearchClearBtn != null) SearchClearBtn.IsEnabled = false;
             UpdateCounter();
         }
 
@@ -429,7 +500,7 @@ namespace Assistant.UI
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!_isInitialized) return;
-            ExecuteSearch();
+            RebuildDocument();
         }
 
         private void SearchBox_KeyDown(object sender, KeyEventArgs e)
@@ -498,118 +569,46 @@ namespace Assistant.UI
         private void SearchClearBtn_Click(object sender, RoutedEventArgs e)
         {
             if (SearchBox != null) SearchBox.Text = string.Empty;
-            ClearHighlights();
-            _searchMatches.Clear();
+            _searchMatchRuns.Clear();
             _currentMatchIndex = -1;
             if (SearchMatchCount != null) SearchMatchCount.Text = "0/0";
             if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
             if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
             if (SearchClearBtn != null) SearchClearBtn.IsEnabled = false;
+            RebuildDocument();
             TailRich?.Focus();
-        }
-
-        private void ClearHighlights()
-        {
-            foreach (TextRange match in _searchMatches)
-            {
-                try
-                {
-                    match.ApplyPropertyValue(TextElement.BackgroundProperty, Brushes.Transparent);
-                }
-                catch { }
-            }
-        }
-
-        private void ExecuteSearch()
-        {
-            ClearHighlights();
-            _searchMatches.Clear();
-            _currentMatchIndex = -1;
-
-            string query = SearchBox?.Text?.Trim() ?? string.Empty;
-            if (string.IsNullOrEmpty(query))
-            {
-                if (SearchMatchCount != null) SearchMatchCount.Text = "0/0";
-                if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
-                if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
-                if (SearchClearBtn != null) SearchClearBtn.IsEnabled = false;
-                return;
-            }
-
-            if (SearchClearBtn != null) SearchClearBtn.IsEnabled = true;
-
-            TextPointer position = _document.ContentStart;
-            while (position != null && position.CompareTo(_document.ContentEnd) < 0)
-            {
-                if (position.GetPointerContext(LogicalDirection.Forward) == TextPointerContext.Text)
-                {
-                    string textRun = position.GetTextInRun(LogicalDirection.Forward);
-                    int matchIndex = textRun.IndexOf(query, StringComparison.OrdinalIgnoreCase);
-
-                    while (matchIndex >= 0)
-                    {
-                        TextPointer start = position.GetPositionAtOffset(matchIndex);
-                        TextPointer end = position.GetPositionAtOffset(matchIndex + query.Length);
-
-                        if (start != null && end != null)
-                        {
-                            TextRange matchRange = new TextRange(start, end);
-                            matchRange.ApplyPropertyValue(TextElement.BackgroundProperty, SearchMatchBgBrush);
-                            _searchMatches.Add(matchRange);
-                        }
-
-                        matchIndex = textRun.IndexOf(query, matchIndex + query.Length, StringComparison.OrdinalIgnoreCase);
-                    }
-                }
-
-                position = position.GetNextContextPosition(LogicalDirection.Forward);
-            }
-
-            if (_searchMatches.Count > 0)
-            {
-                _currentMatchIndex = 0;
-                HighlightActiveMatch();
-                if (SearchMatchCount != null) SearchMatchCount.Text = $"1 of {_searchMatches.Count}";
-                if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = true;
-                if (SearchNextBtn != null) SearchNextBtn.IsEnabled = true;
-            }
-            else
-            {
-                if (SearchMatchCount != null) SearchMatchCount.Text = "No matches";
-                if (SearchPrevBtn != null) SearchPrevBtn.IsEnabled = false;
-                if (SearchNextBtn != null) SearchNextBtn.IsEnabled = false;
-            }
         }
 
         private void NavigateSearch(int direction)
         {
-            if (_searchMatches.Count == 0)
+            if (_searchMatchRuns.Count == 0)
                 return;
 
             // Reset current active highlight
-            if (_currentMatchIndex >= 0 && _currentMatchIndex < _searchMatches.Count)
+            if (_currentMatchIndex >= 0 && _currentMatchIndex < _searchMatchRuns.Count)
             {
-                _searchMatches[_currentMatchIndex].ApplyPropertyValue(TextElement.BackgroundProperty, SearchMatchBgBrush);
+                _searchMatchRuns[_currentMatchIndex].Background = SearchMatchBgBrush;
             }
 
-            _currentMatchIndex = (_currentMatchIndex + direction + _searchMatches.Count) % _searchMatches.Count;
+            _currentMatchIndex = (_currentMatchIndex + direction + _searchMatchRuns.Count) % _searchMatchRuns.Count;
             HighlightActiveMatch();
-            SearchMatchCount.Text = $"{_currentMatchIndex + 1} of {_searchMatches.Count}";
+            if (SearchMatchCount != null)
+            {
+                SearchMatchCount.Text = $"{_currentMatchIndex + 1} of {_searchMatchRuns.Count}";
+            }
         }
 
         private void HighlightActiveMatch()
         {
-            if (_currentMatchIndex < 0 || _currentMatchIndex >= _searchMatches.Count)
+            if (_currentMatchIndex < 0 || _currentMatchIndex >= _searchMatchRuns.Count)
                 return;
 
-            TextRange active = _searchMatches[_currentMatchIndex];
-            active.ApplyPropertyValue(TextElement.BackgroundProperty, SearchActiveMatchBgBrush);
+            Run active = _searchMatchRuns[_currentMatchIndex];
+            active.Background = SearchActiveMatchBgBrush;
 
             try
             {
-                TailRich.Selection.Select(active.Start, active.End);
-                var charRect = active.Start.GetCharacterRect(LogicalDirection.Forward);
-                TailRich.ScrollToVerticalOffset(TailRich.VerticalOffset + charRect.Top - 50);
+                active.BringIntoView();
             }
             catch { }
         }
