@@ -65,8 +65,9 @@ namespace Assistant.Controllers
     public static class AiAssistantController
     {
         private static readonly string ConfigDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "GTAWChatLogAssistant"
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "GTAW-Log-Parser",
+            "config"
         );
         private static readonly string ConfigFile = Path.Combine(ConfigDir, "ai_settings.json");
         private static readonly HttpClient _httpClient = new HttpClient();
@@ -88,6 +89,27 @@ namespace Assistant.Controllers
                     if (!Directory.Exists(ConfigDir))
                     {
                         Directory.CreateDirectory(ConfigDir);
+                    }
+
+                    // Check legacy Roaming path if new config file does not exist yet
+                    string legacyRoamingDir = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "GTAWChatLogAssistant"
+                    );
+                    string legacyRoamingFile = Path.Combine(legacyRoamingDir, "ai_settings.json");
+
+                    if (!File.Exists(ConfigFile) && File.Exists(legacyRoamingFile))
+                    {
+                        try
+                        {
+                            File.Copy(legacyRoamingFile, ConfigFile, true);
+                            File.Delete(legacyRoamingFile);
+                            if (Directory.GetFiles(legacyRoamingDir).Length == 0 && Directory.GetDirectories(legacyRoamingDir).Length == 0)
+                            {
+                                Directory.Delete(legacyRoamingDir, false);
+                            }
+                        }
+                        catch { }
                     }
 
                     if (File.Exists(ConfigFile))

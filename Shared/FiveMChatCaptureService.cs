@@ -35,7 +35,8 @@ namespace GTAWParser.Shared
         private static readonly object SyncRoot = new object();
         public static readonly string SessionDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "GTAW-Log-Parser-FiveM");
+            "GTAW-Log-Parser",
+            "session");
         public static readonly string SessionFilePath = Path.Combine(SessionDirectory, "current-session.txt");
 
         private static readonly NuiChatReader Reader = new NuiChatReader();
@@ -292,6 +293,7 @@ namespace GTAWParser.Shared
 
             DateTime capturedAt = DateTime.Now;
             DateTime sessionTimestamp = GetTimestamp(newLines[0].Text, capturedAt);
+            Directory.CreateDirectory(SessionDirectory);
             bool startOfSession = !File.Exists(SessionFilePath) || new FileInfo(SessionFilePath).Length == 0;
 
             using (FileStream stream = new FileStream(SessionFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
@@ -321,6 +323,7 @@ namespace GTAWParser.Shared
         {
             if (lines == null) return;
             DateTime capturedAt = DateTime.Now;
+            Directory.CreateDirectory(SessionDirectory);
             bool startOfSession = !File.Exists(SessionFilePath) || new FileInfo(SessionFilePath).Length == 0;
 
             using (FileStream stream = new FileStream(SessionFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))

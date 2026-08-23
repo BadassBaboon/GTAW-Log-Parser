@@ -48,6 +48,7 @@ namespace Assistant
             };
 
             Logging.Initialize("Assistant");
+            AppController.MigrateLegacyAppDataDirectories();
 
             // Initialize the eligibility
             StyleController.InitializeFollowEligibility();

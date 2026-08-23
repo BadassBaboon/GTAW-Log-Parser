@@ -28,7 +28,7 @@ namespace Assistant.Controllers
         public static string GetRollbackDirectory()
         {
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            return Path.Combine(localAppData, "GTAW-Log-Parser-FiveM", "Rollback");
+            return Path.Combine(localAppData, "GTAW-Log-Parser", "rollback");
         }
 
         public static bool HasRollback()

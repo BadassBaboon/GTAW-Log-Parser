@@ -44,7 +44,7 @@ namespace Parser.Controllers
                              string.Join("\n", lines.Select(line => FiveMChatCaptureService.AddTimestamp(line, capturedAt)));
 
                 if (removeTimestamps)
-                    log = System.Text.RegularExpressions.Regex.Replace(log, @"\[\d{1,2}:\d{1,2}:\d{1,2}\] ", string.Empty);
+                    log = System.Text.RegularExpressions.Regex.Replace(log, @"(?m)^\[\d{1,2}:\d{1,2}:\d{1,2}\]\s*", string.Empty);
 
                 return log;
             }
