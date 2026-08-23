@@ -41,6 +41,12 @@ namespace Assistant.Utilities
         [DllImport("user32.dll")]
         private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
         // VirtKey Constants
         private const int VK_OEM_3 = 0xC0; // ~ or ` key
         private const int VK_T = 0x54;
@@ -113,6 +119,10 @@ namespace Assistant.Utilities
         // Settings
         public static bool BindTildeToT { get; set; } = false;
         public static bool HotkeyEnabled { get; set; } = true;
+        public static bool AccentEnabled { get; set; } = true;
+        public static bool TranslateEnabled { get; set; } = true;
+        public static bool CorrectEnabled { get; set; } = true;
+        public static bool FiveMOnly { get; set; } = true;
 
         public class HotkeyConfig
         {
@@ -184,6 +194,28 @@ namespace Assistant.Utilities
             return ctrlPressed == config.Ctrl && altPressed == config.Alt && shiftPressed == config.Shift;
         }
 
+        public static bool IsFiveMActive()
+        {
+            try
+            {
+                IntPtr hwnd = GetForegroundWindow();
+                if (hwnd == IntPtr.Zero) return false;
+
+                GetWindowThreadProcessId(hwnd, out uint pid);
+                if (pid == 0) return false;
+
+                using (Process proc = Process.GetProcessById((int)pid))
+                {
+                    string name = proc.ProcessName.ToLowerInvariant();
+                    return name.Contains("fivem") || name.Contains("gta5") || name.Contains("citizenfx");
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             if (nCode >= 0)
@@ -197,6 +229,11 @@ namespace Assistant.Utilities
                 // 1. Remap tilde (~) to T
                 if (BindTildeToT && vkCode == VK_OEM_3)
                 {
+                    if (FiveMOnly && !IsFiveMActive())
+                    {
+                        return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                    }
+
                     if (isKeyDown)
                     {
                         // Simulate pressing T
@@ -210,7 +247,12 @@ namespace Assistant.Utilities
                 // 2. Custom hotkey checks for different modes
                 if (HotkeyEnabled)
                 {
-                    if (vkCode == HotkeyAccent.VirtualKey && CheckModifiers(HotkeyAccent))
+                    if (FiveMOnly && !IsFiveMActive())
+                    {
+                        return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                    }
+
+                    if (AccentEnabled && vkCode == HotkeyAccent.VirtualKey && CheckModifiers(HotkeyAccent))
                     {
                         if (isKeyDown)
                         {
@@ -218,7 +260,7 @@ namespace Assistant.Utilities
                         }
                         return (IntPtr)1;
                     }
-                    if (vkCode == HotkeyTranslate.VirtualKey && CheckModifiers(HotkeyTranslate))
+                    if (TranslateEnabled && vkCode == HotkeyTranslate.VirtualKey && CheckModifiers(HotkeyTranslate))
                     {
                         if (isKeyDown)
                         {
@@ -226,7 +268,7 @@ namespace Assistant.Utilities
                         }
                         return (IntPtr)1;
                     }
-                    if (vkCode == HotkeyCorrect.VirtualKey && CheckModifiers(HotkeyCorrect))
+                    if (CorrectEnabled && vkCode == HotkeyCorrect.VirtualKey && CheckModifiers(HotkeyCorrect))
                     {
                         if (isKeyDown)
                         {

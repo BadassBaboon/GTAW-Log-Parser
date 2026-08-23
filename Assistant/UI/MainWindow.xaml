@@ -109,7 +109,7 @@
             <!-- AI Assistant Tab Content -->
             <Grid x:Name="AiAssistantGrid" Visibility="Collapsed">
                 <!-- Left Column: Settings -->
-                <Label Content="AI Mode:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="100"/>
+                <Label Content="Configure AI Feature:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="160"/>
                 <ComboBox x:Name="AiMode" SelectionChanged="AiMode_SelectionChanged" HorizontalAlignment="Left" Margin="10,33,0,0" VerticalAlignment="Top" Width="260">
                     <ComboBoxItem Content="Change Accent"/>
                     <ComboBoxItem Content="Translate Language"/>
@@ -137,14 +137,20 @@
 
                 <!-- Right Column: Hook & Keys -->
                 <Label Content="Settings:" HorizontalAlignment="Left" Margin="300,10,0,0" VerticalAlignment="Top" Width="150"/>
-                <CheckBox x:Name="AiSoundEnabled" Checked="AiSoundEnabled_CheckedChanged" Unchecked="AiSoundEnabled_CheckedChanged" Content="Notification sound" HorizontalAlignment="Left" Margin="300,33,0,0" VerticalAlignment="Top" Width="280"/>
+                <CheckBox x:Name="AiSoundEnabled" Checked="AiSoundEnabled_CheckedChanged" Unchecked="AiSoundEnabled_CheckedChanged" Content="Notification sound" HorizontalAlignment="Left" Margin="300,33,0,0" VerticalAlignment="Top" Width="140"/>
+                <CheckBox x:Name="AiFiveMOnlyEnabled" Checked="AiFiveMOnlyEnabled_CheckedChanged" Unchecked="AiFiveMOnlyEnabled_CheckedChanged" Content="FiveM hotkey only" ToolTip="Only intercept hotkeys when FiveM is the active foreground window" HorizontalAlignment="Left" Margin="448,33,0,0" VerticalAlignment="Top" Width="155"/>
                 <CheckBox x:Name="AiPhoneticEnabled" Checked="AiPhoneticEnabled_CheckedChanged" Unchecked="AiPhoneticEnabled_CheckedChanged" Content="Phonetic Spelling" HorizontalAlignment="Left" Margin="300,55,0,0" VerticalAlignment="Top" Width="140"/>
                 <CheckBox x:Name="AiActionEnricherEnabled" Checked="AiActionEnricherEnabled_CheckedChanged" Unchecked="AiActionEnricherEnabled_CheckedChanged" Content="Action Enricher" HorizontalAlignment="Left" Margin="448,55,0,0" VerticalAlignment="Top" Width="155"/>
 
-                <Label Content="Keyboard Shortcuts:" HorizontalAlignment="Left" Margin="300,85,0,0" VerticalAlignment="Top" Width="180"/>
-                <Button x:Name="RecordAccentHotkeyBtn" Click="RecordAccentHotkeyBtn_Click" Content="Accent &amp; Action Enricher Shortcut: Ctrl+T" HorizontalAlignment="Left" Margin="300,108,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
-                <Button x:Name="RecordTranslateHotkeyBtn" Click="RecordTranslateHotkeyBtn_Click" Content="Translate Shortcut: Ctrl+U" HorizontalAlignment="Left" Margin="300,138,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
-                <Button x:Name="RecordCorrectHotkeyBtn" Click="RecordCorrectHotkeyBtn_Click" Content="Correct Shortcut: Ctrl+H" HorizontalAlignment="Left" Margin="300,168,0,0" VerticalAlignment="Top" Width="305" Height="25"/>
+                <Label Content="Active AI Features &amp; Shortcuts:" HorizontalAlignment="Left" Margin="300,85,0,0" VerticalAlignment="Top" Width="220"/>
+                <Button x:Name="RecordAccentHotkeyBtn" Click="RecordAccentHotkeyBtn_Click" Content="Accent &amp; Enricher: Ctrl+T" HorizontalAlignment="Left" Margin="300,108,0,0" VerticalAlignment="Top" Width="238" Height="25"/>
+                <CheckBox x:Name="AiAccentEnabled" Checked="AiAccentEnabled_CheckedChanged" Unchecked="AiAccentEnabled_CheckedChanged" Content="On" ToolTip="Enable Accent Feature &amp; Hotkey" HorizontalAlignment="Left" Margin="548,112,0,0" VerticalAlignment="Top" Width="55"/>
+
+                <Button x:Name="RecordTranslateHotkeyBtn" Click="RecordTranslateHotkeyBtn_Click" Content="Translate: Ctrl+U" HorizontalAlignment="Left" Margin="300,138,0,0" VerticalAlignment="Top" Width="238" Height="25"/>
+                <CheckBox x:Name="AiTranslateEnabled" Checked="AiTranslateEnabled_CheckedChanged" Unchecked="AiTranslateEnabled_CheckedChanged" Content="On" ToolTip="Enable Translate Feature &amp; Hotkey" HorizontalAlignment="Left" Margin="548,142,0,0" VerticalAlignment="Top" Width="55"/>
+
+                <Button x:Name="RecordCorrectHotkeyBtn" Click="RecordCorrectHotkeyBtn_Click" Content="Auto-Correct: Ctrl+H" HorizontalAlignment="Left" Margin="300,168,0,0" VerticalAlignment="Top" Width="238" Height="25"/>
+                <CheckBox x:Name="AiCorrectEnabled" Checked="AiCorrectEnabled_CheckedChanged" Unchecked="AiCorrectEnabled_CheckedChanged" Content="On" ToolTip="Enable Auto-Correct Feature &amp; Hotkey" HorizontalAlignment="Left" Margin="548,172,0,0" VerticalAlignment="Top" Width="55"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="300,200,0,0" VerticalAlignment="Top">
                     <Label Content="Temperature:" Width="82" Padding="0,0,0,0" VerticalContentAlignment="Center"/>

@@ -875,20 +875,31 @@ namespace Assistant.UI
             KeyboardHookManager.HotkeyAccent = KeyboardHookManager.HotkeyConfig.Parse(AiAssistantController.Settings.ShortcutAccent);
             KeyboardHookManager.HotkeyTranslate = KeyboardHookManager.HotkeyConfig.Parse(AiAssistantController.Settings.ShortcutTranslate);
             KeyboardHookManager.HotkeyCorrect = KeyboardHookManager.HotkeyConfig.Parse(AiAssistantController.Settings.ShortcutCorrect);
+            KeyboardHookManager.AccentEnabled = AiAssistantController.Settings.AccentEnabled;
+            KeyboardHookManager.TranslateEnabled = AiAssistantController.Settings.TranslateEnabled;
+            KeyboardHookManager.CorrectEnabled = AiAssistantController.Settings.CorrectEnabled;
+            KeyboardHookManager.FiveMOnly = AiAssistantController.Settings.FiveMOnly;
             KeyboardHookManager.OnModeShortcutPressed = OnAiModeShortcutTriggered;
             KeyboardHookManager.Start();
 
             // Sync controls
             BindTilde.IsChecked = AiAssistantController.Settings.BindTildeEnabled;
             AiSoundEnabled.IsChecked = AiAssistantController.Settings.SoundEnabled;
+            AiFiveMOnlyEnabled.IsChecked = AiAssistantController.Settings.FiveMOnly;
             AiPhoneticEnabled.IsChecked = AiAssistantController.Settings.PhoneticEnabled;
             AiActionEnricherEnabled.IsChecked = AiAssistantController.Settings.ActionEnricherEnabled;
+            AiAccentEnabled.IsChecked = AiAssistantController.Settings.AccentEnabled;
+            AiTranslateEnabled.IsChecked = AiAssistantController.Settings.TranslateEnabled;
+            AiCorrectEnabled.IsChecked = AiAssistantController.Settings.CorrectEnabled;
+            RecordAccentHotkeyBtn.IsEnabled = AiAssistantController.Settings.AccentEnabled;
+            RecordTranslateHotkeyBtn.IsEnabled = AiAssistantController.Settings.TranslateEnabled;
+            RecordCorrectHotkeyBtn.IsEnabled = AiAssistantController.Settings.CorrectEnabled;
             AiTemperature.Value = AiAssistantController.Settings.Temperature;
             AiTemperatureLabel.Content = AiAssistantController.Settings.Temperature.ToString("0.0");
 
             UpdateAccentHotkeyButtonLabel();
-            RecordTranslateHotkeyBtn.Content = $"Translate Shortcut: {AiAssistantController.Settings.ShortcutTranslate}";
-            RecordCorrectHotkeyBtn.Content = $"Correct Shortcut: {AiAssistantController.Settings.ShortcutCorrect}";
+            RecordTranslateHotkeyBtn.Content = $"Translate: {AiAssistantController.Settings.ShortcutTranslate}";
+            RecordCorrectHotkeyBtn.Content = $"Auto-Correct: {AiAssistantController.Settings.ShortcutCorrect}";
 
             switch (AiAssistantController.Settings.LengthConstraint)
             {
@@ -926,8 +937,8 @@ namespace Assistant.UI
 
             AiModel.Text = AiAssistantController.Settings.ActiveModel;
             UpdateAccentHotkeyButtonLabel();
-            RecordTranslateHotkeyBtn.Content = $"Translate Shortcut: {AiAssistantController.Settings.ShortcutTranslate}";
-            RecordCorrectHotkeyBtn.Content = $"Correct Shortcut: {AiAssistantController.Settings.ShortcutCorrect}";
+            RecordTranslateHotkeyBtn.Content = $"Translate: {AiAssistantController.Settings.ShortcutTranslate}";
+            RecordCorrectHotkeyBtn.Content = $"Auto-Correct: {AiAssistantController.Settings.ShortcutCorrect}";
 
             // Default to Log Parser view on startup
             SwitchToTab(true);
@@ -1170,8 +1181,8 @@ namespace Assistant.UI
                 {
                     string oldKey = GetShortcutStringForMode(_recordingHotkeyMode);
                     string labelPrefix = _recordingHotkeyMode == "Accent" 
-                        ? (AiAssistantController.Settings.ActionEnricherEnabled ? "Accent & Action Enricher Shortcut" : "Accent Shortcut")
-                        : $"{_recordingHotkeyMode} Shortcut";
+                        ? (AiAssistantController.Settings.ActionEnricherEnabled ? "Accent & Enricher" : "Accent")
+                        : (_recordingHotkeyMode == "Correct" ? "Auto-Correct" : "Translate");
                     GetButtonForMode(_recordingHotkeyMode).Content = $"{labelPrefix}: {oldKey}";
                     _recordingHotkeyMode = null;
                     return;
@@ -1195,8 +1206,8 @@ namespace Assistant.UI
                 SaveShortcutForMode(_recordingHotkeyMode, hotkey);
 
                 string finalLabelPrefix = _recordingHotkeyMode == "Accent"
-                    ? (AiAssistantController.Settings.ActionEnricherEnabled ? "Accent & Action Enricher Shortcut" : "Accent Shortcut")
-                    : $"{_recordingHotkeyMode} Shortcut";
+                    ? (AiAssistantController.Settings.ActionEnricherEnabled ? "Accent & Enricher" : "Accent")
+                    : (_recordingHotkeyMode == "Correct" ? "Auto-Correct" : "Translate");
                 GetButtonForMode(_recordingHotkeyMode).Content = $"{finalLabelPrefix}: {hotkey}";
                 _recordingHotkeyMode = null;
             }
@@ -1217,9 +1228,44 @@ namespace Assistant.UI
             AiAssistantController.SaveSettings();
         }
 
+        private void AiFiveMOnlyEnabled_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = AiFiveMOnlyEnabled.IsChecked == true;
+            AiAssistantController.Settings.FiveMOnly = isChecked;
+            KeyboardHookManager.FiveMOnly = isChecked;
+            AiAssistantController.SaveSettings();
+        }
+
         private void AiPhoneticEnabled_CheckedChanged(object sender, RoutedEventArgs e)
         {
             AiAssistantController.Settings.PhoneticEnabled = AiPhoneticEnabled.IsChecked == true;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiAccentEnabled_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = AiAccentEnabled.IsChecked == true;
+            AiAssistantController.Settings.AccentEnabled = isChecked;
+            KeyboardHookManager.AccentEnabled = isChecked;
+            RecordAccentHotkeyBtn.IsEnabled = isChecked;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiTranslateEnabled_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = AiTranslateEnabled.IsChecked == true;
+            AiAssistantController.Settings.TranslateEnabled = isChecked;
+            KeyboardHookManager.TranslateEnabled = isChecked;
+            RecordTranslateHotkeyBtn.IsEnabled = isChecked;
+            AiAssistantController.SaveSettings();
+        }
+
+        private void AiCorrectEnabled_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = AiCorrectEnabled.IsChecked == true;
+            AiAssistantController.Settings.CorrectEnabled = isChecked;
+            KeyboardHookManager.CorrectEnabled = isChecked;
+            RecordCorrectHotkeyBtn.IsEnabled = isChecked;
             AiAssistantController.SaveSettings();
         }
 
@@ -1227,8 +1273,8 @@ namespace Assistant.UI
         {
             if (RecordAccentHotkeyBtn == null || AiAssistantController.Settings == null) return;
             string prefix = AiAssistantController.Settings.ActionEnricherEnabled
-                ? "Accent & Action Enricher Shortcut"
-                : "Accent Shortcut";
+                ? "Accent & Enricher"
+                : "Accent";
             RecordAccentHotkeyBtn.Content = $"{prefix}: {AiAssistantController.Settings.ShortcutAccent}";
         }
 
