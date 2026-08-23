@@ -179,6 +179,8 @@ namespace Shared.Tests
         [Fact]
         public void CapturedLineReceived_FiresWhenLinesAppended()
         {
+            string sessionFile = FiveMChatCaptureService.SessionFilePath;
+            string? originalContent = File.Exists(sessionFile) ? File.ReadAllText(sessionFile) : null;
             CapturedChatLine? received = null;
             void Handler(CapturedChatLine line) => received = line;
 
@@ -192,6 +194,14 @@ namespace Shared.Tests
             finally
             {
                 FiveMChatCaptureService.CapturedLineReceived -= Handler;
+                if (originalContent != null)
+                {
+                    File.WriteAllText(sessionFile, originalContent);
+                }
+                else if (File.Exists(sessionFile))
+                {
+                    File.Delete(sessionFile);
+                }
             }
         }
     }
