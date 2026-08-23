@@ -93,10 +93,37 @@ namespace Assistant.UI
             _document.PagePadding = new Thickness(0);
             TailRich.Document = _document;
             _isInitialized = true;
+            ApplyThemeStyling();
+        }
+
+        private void ApplyThemeStyling()
+        {
+            if (TailContainer == null) return;
+
+            if (StyleController.DarkMode)
+            {
+                // Deep sleek dark for Dark Mode
+                TailContainer.Background = FreezeBrush("#18191C");
+                try
+                {
+                    TailContainer.BorderBrush = (Brush)FindResource("MahApps.Brushes.Gray7");
+                }
+                catch
+                {
+                    TailContainer.BorderBrush = FreezeBrush("#383C44");
+                }
+            }
+            else
+            {
+                // Softer, balanced slate charcoal for Light Mode (Nord/Slate #2B303A)
+                TailContainer.Background = FreezeBrush("#2B303A");
+                TailContainer.BorderBrush = FreezeBrush("#C4CBD5");
+            }
         }
 
         private void LiveTail_Loaded(object sender, RoutedEventArgs e)
         {
+            ApplyThemeStyling();
             if (!_isWatching)
             {
                 StartWatching();

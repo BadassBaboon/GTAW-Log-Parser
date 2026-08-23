@@ -95,11 +95,14 @@
         </Grid>
 
         <!-- Main Formatted Rich Log Viewer -->
-        <RichTextBox x:Name="TailRich" IsReadOnly="True" AcceptsReturn="False" IsUndoEnabled="False"
-                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                     FontFamily="Consolas" FontSize="12" Padding="8,6"
-                     Background="{DynamicResource MahApps.Brushes.Control.Background}"
-                     Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}"
-                     BorderThickness="1" SelectionChanged="TailRich_SelectionChanged"/>
+        <Border x:Name="TailContainer" BorderBrush="{DynamicResource MahApps.Brushes.Gray7}" BorderThickness="1" CornerRadius="4" Background="#18191C">
+            <RichTextBox x:Name="TailRich" IsReadOnly="True" AcceptsReturn="False" IsUndoEnabled="False"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                         FontFamily="Consolas" FontSize="12" Padding="10,8"
+                         Background="Transparent"
+                         Foreground="#FFFFFF"
+                         CaretBrush="#FFFFFF"
+                         BorderThickness="0" SelectionChanged="TailRich_SelectionChanged"/>
+        </Border>
     </DockPanel>
 </Controls:MetroWindow>
