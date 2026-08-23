@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -19,7 +20,7 @@ namespace Assistant.UI
     public partial class LiveTailWindow
     {
         private const int MaxLineBuffer = 5000;
-        private readonly List<string> _rawLines = new List<string>();
+        private readonly List<CapturedChatLine> _capturedLines = new List<CapturedChatLine>();
         private readonly FlowDocument _document = new FlowDocument();
         private readonly List<TextRange> _searchMatches = new List<TextRange>();
         private int _currentMatchIndex = -1;
@@ -28,25 +29,32 @@ namespace Assistant.UI
 
         // Frozen Brushes for performance
         private static readonly SolidColorBrush TimestampBrush = FreezeBrush("#7F8C8D");
-        private static readonly SolidColorBrush DefaultTextBrush = FreezeBrush("#DCDCDC");
+        private static readonly SolidColorBrush DefaultTextBrush = FreezeBrush("#FFFFFF");
         private static readonly SolidColorBrush SearchMatchBgBrush = FreezeBrush("#665500");
         private static readonly SolidColorBrush SearchActiveMatchBgBrush = FreezeBrush("#E67E22");
         private static readonly SolidColorBrush SearchActiveMatchFgBrush = FreezeBrush("#FFFFFF");
 
+        private static readonly ConcurrentDictionary<string, SolidColorBrush> DynamicBrushCache =
+            new ConcurrentDictionary<string, SolidColorBrush>(StringComparer.OrdinalIgnoreCase);
+
         private static readonly Dictionary<ChatLineCategory, SolidColorBrush> CategoryBrushes = new Dictionary<ChatLineCategory, SolidColorBrush>
         {
-            { ChatLineCategory.Emote,      FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Emote)) },
-            { ChatLineCategory.Action,     FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Action)) },
-            { ChatLineCategory.ICSpeech,   FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.ICSpeech)) },
-            { ChatLineCategory.ICWhisper,  FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.ICWhisper)) },
-            { ChatLineCategory.ICShout,    FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.ICShout)) },
-            { ChatLineCategory.OOC,        FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.OOC)) },
-            { ChatLineCategory.PM,         FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.PM)) },
-            { ChatLineCategory.Radio,      FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Radio)) },
-            { ChatLineCategory.Ads,        FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Ads)) },
-            { ChatLineCategory.Phone,      FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Phone)) },
-            { ChatLineCategory.SystemInfo, FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.SystemInfo)) },
-            { ChatLineCategory.Default,    DefaultTextBrush }
+            { ChatLineCategory.Emote,         FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Emote)) },
+            { ChatLineCategory.Action,        FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Action)) },
+            { ChatLineCategory.ICSpeech,      FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.ICSpeech)) },
+            { ChatLineCategory.ICWhisper,     FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.ICWhisper)) },
+            { ChatLineCategory.ICShout,       FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.ICShout)) },
+            { ChatLineCategory.OOC,           FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.OOC)) },
+            { ChatLineCategory.PM,            FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.PM)) },
+            { ChatLineCategory.Radio,         FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Radio)) },
+            { ChatLineCategory.Ads,           FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Ads)) },
+            { ChatLineCategory.Phone,         FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Phone)) },
+            { ChatLineCategory.SystemInfo,    FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.SystemInfo)) },
+            { ChatLineCategory.Success,       FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Success)) },
+            { ChatLineCategory.Warning,       FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Warning)) },
+            { ChatLineCategory.Error,         FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.Error)) },
+            { ChatLineCategory.SessionHeader, FreezeBrush(ChatLineClassifier.GetHexColor(ChatLineCategory.SessionHeader)) },
+            { ChatLineCategory.Default,       DefaultTextBrush }
         };
 
         private static SolidColorBrush FreezeBrush(string hex)
@@ -54,6 +62,27 @@ namespace Assistant.UI
             var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
             brush.Freeze();
             return brush;
+        }
+
+        private static SolidColorBrush GetOrCreateBrush(string? hex)
+        {
+            if (string.IsNullOrWhiteSpace(hex))
+                return DefaultTextBrush;
+
+            string cleanHex = hex.Trim();
+            return DynamicBrushCache.GetOrAdd(cleanHex, h =>
+            {
+                try
+                {
+                    var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(h));
+                    brush.Freeze();
+                    return brush;
+                }
+                catch
+                {
+                    return DefaultTextBrush;
+                }
+            });
         }
 
         public LiveTailWindow()
@@ -91,22 +120,34 @@ namespace Assistant.UI
                 return;
 
             FiveMChatCaptureService.Initialize();
-            FiveMChatCaptureService.LineReceived += OnLineReceived;
+            FiveMChatCaptureService.CapturedLineReceived += OnCapturedLineReceived;
             _isWatching = true;
 
             // Load existing chat from current session
-            string existing = FiveMChatCaptureService.ReadCapturedChat(false);
-            _rawLines.Clear();
+            IReadOnlyList<CapturedChatLine> richLines = FiveMChatCaptureService.SessionRichLines;
+            _capturedLines.Clear();
 
-            if (!string.IsNullOrWhiteSpace(existing))
+            if (richLines != null && richLines.Count > 0)
             {
-                string[] lines = existing.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string l in lines)
+                foreach (CapturedChatLine line in richLines)
                 {
-                    string trimmed = l.Trim();
-                    if (!string.IsNullOrWhiteSpace(trimmed))
+                    _capturedLines.Add(line);
+                }
+            }
+            else
+            {
+                // Fallback to reading disk file if buffer is empty
+                string existing = FiveMChatCaptureService.ReadCapturedChat(false);
+                if (!string.IsNullOrWhiteSpace(existing))
+                {
+                    string[] lines = existing.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string l in lines)
                     {
-                        _rawLines.Add(trimmed);
+                        string trimmed = l.Trim();
+                        if (!string.IsNullOrWhiteSpace(trimmed))
+                        {
+                            _capturedLines.Add(new CapturedChatLine(trimmed));
+                        }
                     }
                 }
             }
@@ -124,7 +165,7 @@ namespace Assistant.UI
         {
             if (_isWatching)
             {
-                FiveMChatCaptureService.LineReceived -= OnLineReceived;
+                FiveMChatCaptureService.CapturedLineReceived -= OnCapturedLineReceived;
                 _isWatching = false;
             }
 
@@ -135,25 +176,24 @@ namespace Assistant.UI
             Log.Information("Live tail stopped");
         }
 
-        private void OnLineReceived(string line)
+        private void OnCapturedLineReceived(CapturedChatLine line)
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                string trimmed = line.Trim();
-                if (string.IsNullOrWhiteSpace(trimmed))
+                if (line == null || string.IsNullOrWhiteSpace(line.Text))
                     return;
 
-                _rawLines.Add(trimmed);
-                if (_rawLines.Count > MaxLineBuffer)
+                _capturedLines.Add(line);
+                if (_capturedLines.Count > MaxLineBuffer)
                 {
-                    _rawLines.RemoveAt(0);
+                    _capturedLines.RemoveAt(0);
                     if (_document.Blocks.FirstBlock != null)
                     {
                         _document.Blocks.Remove(_document.Blocks.FirstBlock);
                     }
                 }
 
-                Paragraph p = CreateLineParagraph(trimmed, RemoveTimestamps.IsChecked == true, ColoredText.IsChecked == true);
+                Paragraph p = CreateLineParagraph(line, RemoveTimestamps.IsChecked == true, ColoredText.IsChecked == true);
                 _document.Blocks.Add(p);
 
                 UpdateCounter();
@@ -170,7 +210,7 @@ namespace Assistant.UI
             }));
         }
 
-        private Paragraph CreateLineParagraph(string rawLine, bool hideTimestamps, bool useColors)
+        private Paragraph CreateLineParagraph(CapturedChatLine line, bool hideTimestamps, bool useColors)
         {
             Paragraph p = new Paragraph
             {
@@ -178,7 +218,7 @@ namespace Assistant.UI
                 LineHeight = 16
             };
 
-            var (timestamp, content) = ChatLineClassifier.SplitTimestamp(rawLine);
+            var (timestamp, content) = ChatLineClassifier.SplitTimestamp(line.Text);
 
             if (!hideTimestamps && !string.IsNullOrEmpty(timestamp))
             {
@@ -189,16 +229,102 @@ namespace Assistant.UI
                 p.Inlines.Add(tsRun);
             }
 
-            ChatLineCategory category = ChatLineClassifier.Classify(content);
-            SolidColorBrush textBrush = useColors && CategoryBrushes.TryGetValue(category, out var brush)
-                ? brush
-                : DefaultTextBrush;
-
-            Run contentRun = new Run(content)
+            if (!useColors)
             {
-                Foreground = textBrush
+                Run contentRun = new Run(content)
+                {
+                    Foreground = DefaultTextBrush
+                };
+                p.Inlines.Add(contentRun);
+                return p;
+            }
+
+            // Per-span coloring if detailed spans are available from NUI DOM
+            if (line.Spans != null && line.Spans.Count > 0)
+            {
+                bool firstSpan = true;
+                int runsAdded = 0;
+
+                foreach (CapturedChatSpan span in line.Spans)
+                {
+                    if (string.IsNullOrEmpty(span.Text))
+                        continue;
+
+                    string spanText = span.Text;
+                    if (firstSpan)
+                    {
+                        firstSpan = false;
+                        if (!string.IsNullOrEmpty(timestamp) && spanText.StartsWith(timestamp, StringComparison.Ordinal))
+                        {
+                            spanText = spanText.Substring(timestamp.Length);
+                        }
+                        else if (spanText.StartsWith("[") && spanText.IndexOf(']') > 0)
+                        {
+                            int endBracket = spanText.IndexOf(']');
+                            string potentialTs = spanText.Substring(0, endBracket + 1);
+                            if (ChatLineClassifier.SplitTimestamp(potentialTs + " ").Timestamp.Length > 0)
+                            {
+                                spanText = spanText.Substring(endBracket + 1).TrimStart(' ');
+                            }
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(spanText))
+                        continue;
+
+                    SolidColorBrush spanBrush = GetOrCreateBrush(span.Color);
+                    Run spanRun = new Run(spanText)
+                    {
+                        Foreground = spanBrush
+                    };
+                    p.Inlines.Add(spanRun);
+                    runsAdded++;
+                }
+
+                if (runsAdded > 0)
+                {
+                    return p;
+                }
+            }
+
+            // Dominant color if provided and not default
+            if (!string.IsNullOrWhiteSpace(line.DominantColor) &&
+                !string.Equals(line.DominantColor, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(line.DominantColor, "#DCDCDC", StringComparison.OrdinalIgnoreCase))
+            {
+                SolidColorBrush dominantBrush = GetOrCreateBrush(line.DominantColor);
+                Run contentRun = new Run(content)
+                {
+                    Foreground = dominantBrush
+                };
+                p.Inlines.Add(contentRun);
+                return p;
+            }
+
+            // Fallback: Rich per-span pattern parsing
+            List<CapturedChatSpan> fallbackSpans = ChatLineClassifier.ParseSpans(content);
+            if (fallbackSpans != null && fallbackSpans.Count > 0)
+            {
+                foreach (CapturedChatSpan span in fallbackSpans)
+                {
+                    if (string.IsNullOrEmpty(span.Text))
+                        continue;
+
+                    SolidColorBrush spanBrush = GetOrCreateBrush(span.Color);
+                    Run spanRun = new Run(span.Text)
+                    {
+                        Foreground = spanBrush
+                    };
+                    p.Inlines.Add(spanRun);
+                }
+                return p;
+            }
+
+            Run fallbackRun = new Run(content)
+            {
+                Foreground = DefaultTextBrush
             };
-            p.Inlines.Add(contentRun);
+            p.Inlines.Add(fallbackRun);
 
             return p;
         }
@@ -212,7 +338,7 @@ namespace Assistant.UI
             bool hideTimestamps = RemoveTimestamps?.IsChecked == true;
             bool useColors = ColoredText?.IsChecked == true;
 
-            foreach (string line in _rawLines)
+            foreach (CapturedChatLine line in _capturedLines)
             {
                 Paragraph p = CreateLineParagraph(line, hideTimestamps, useColors);
                 _document.Blocks.Add(p);
@@ -236,11 +362,11 @@ namespace Assistant.UI
             if (Counter == null)
                 return;
 
-            int lineCount = _rawLines.Count;
+            int lineCount = _capturedLines.Count;
             int charCount = 0;
-            for (int i = 0; i < _rawLines.Count; i++)
+            for (int i = 0; i < _capturedLines.Count; i++)
             {
-                charCount += _rawLines[i].Length;
+                charCount += _capturedLines[i].Text.Length;
             }
             Counter.Text = $"{charCount:N0} characters and {lineCount:N0} lines";
         }
@@ -259,7 +385,7 @@ namespace Assistant.UI
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
-            _rawLines.Clear();
+            _capturedLines.Clear();
             _document.Blocks.Clear();
             ClearHighlights();
             _searchMatches.Clear();

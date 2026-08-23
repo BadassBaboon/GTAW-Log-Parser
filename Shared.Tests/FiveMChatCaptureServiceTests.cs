@@ -124,5 +124,55 @@ namespace Shared.Tests
             Assert.DoesNotContain("\r\r\n", normalized);
             Assert.Equal("[12:00:00] First\n[12:00:01] Second", normalized);
         }
+
+        [Fact]
+        public void CapturedChatLine_SerializationRoundTrip()
+        {
+            string json = @"[
+                {
+                    ""t"": ""[18:36:46] Welcome to GTA World."",
+                    ""c"": ""#FFFF00"",
+                    ""s"": [
+                        { ""t"": ""Welcome to "", ""c"": ""#FFFFFF"" },
+                        { ""t"": ""GTA World"", ""c"": ""#FFFF00"" },
+                        { ""t"": ""."", ""c"": ""#FFFFFF"" }
+                    ]
+                }
+            ]";
+
+            var list = System.Text.Json.JsonSerializer.Deserialize<List<CapturedChatLine>>(json);
+            Assert.NotNull(list);
+            Assert.Single(list);
+
+            var line = list[0];
+            Assert.Equal("[18:36:46] Welcome to GTA World.", line.Text);
+            Assert.Equal("#FFFF00", line.DominantColor);
+            Assert.Equal(3, line.Spans.Count);
+            Assert.Equal("Welcome to ", line.Spans[0].Text);
+            Assert.Equal("#FFFFFF", line.Spans[0].Color);
+            Assert.Equal("GTA World", line.Spans[1].Text);
+            Assert.Equal("#FFFF00", line.Spans[1].Color);
+            Assert.Equal(".", line.Spans[2].Text);
+            Assert.Equal("#FFFFFF", line.Spans[2].Color);
+        }
+
+        [Fact]
+        public void CapturedLineReceived_FiresWhenLinesAppended()
+        {
+            CapturedChatLine? received = null;
+            void Handler(CapturedChatLine line) => received = line;
+
+            FiveMChatCaptureService.CapturedLineReceived += Handler;
+            try
+            {
+                FiveMChatCaptureService.AppendLinesToSession(new List<string> { "Test line for event" });
+                Assert.NotNull(received);
+                Assert.Contains("Test line for event", received.Text);
+            }
+            finally
+            {
+                FiveMChatCaptureService.CapturedLineReceived -= Handler;
+            }
+        }
     }
 }

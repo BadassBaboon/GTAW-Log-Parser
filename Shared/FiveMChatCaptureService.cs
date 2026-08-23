@@ -44,13 +44,23 @@ namespace GTAWParser.Shared
         private static bool _wasFiveMRunning;
         private static DateTime _sessionStartedAt;
         private static List<string> _previousVisibleLines = new List<string>();
+        private static readonly List<CapturedChatLine> _sessionRichLines = new List<CapturedChatLine>();
         private static readonly Regex TimestampPrefix = new Regex(@"^\[(?<time>\d{1,2}:\d{2}:\d{2})\]\s+", RegexOptions.Compiled);
         private static FiveMChatCaptureState _captureState = FiveMChatCaptureState.WaitingForFiveM;
 
         public static event Action<FiveMChatCaptureState>? StateChanged;
         public static event Action<string>? LineReceived;
+        public static event Action<CapturedChatLine>? CapturedLineReceived;
 
         public static DateTime SessionStartedAt => _sessionStartedAt == DateTime.MinValue ? DateTime.Now : _sessionStartedAt;
+
+        public static IReadOnlyList<CapturedChatLine> SessionRichLines
+        {
+            get
+            {
+                lock (SyncRoot) return _sessionRichLines.ToList();
+            }
+        }
 
         public static FiveMChatCaptureState CaptureState
         {
@@ -147,6 +157,14 @@ namespace GTAWParser.Shared
             return await Reader.GetChatLinesAsync(token).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Captures a direct, on-demand snapshot of visible chat lines with full color and span data from FiveM NUI.
+        /// </summary>
+        public static async Task<List<CapturedChatLine>> GetCapturedChatLinesAsync(CancellationToken token = default)
+        {
+            return await Reader.GetCapturedChatLinesAsync(token).ConfigureAwait(false);
+        }
+
         private static async Task CaptureWorkerAsync(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -178,26 +196,30 @@ namespace GTAWParser.Shared
                             _sessionStartedAt = DateTime.MinValue;
                             _previousVisibleLines.Clear();
 
-                            if (File.Exists(SessionFilePath) && new FileInfo(SessionFilePath).Length > 0)
+                            if (File.Exists(SessionFilePath))
                             {
-                                string previousSessionFile = Path.Combine(SessionDirectory, "previous-session.txt");
+                                string backupFile = Path.Combine(SessionDirectory, "previous-session.txt");
                                 try
                                 {
-                                    File.Copy(SessionFilePath, previousSessionFile, true);
+                                    File.Copy(SessionFilePath, backupFile, true);
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
-                                    // Non-critical fallback
+                                    Log.Warning(ex, "Failed to copy current-session.txt to previous-session.txt before clearing");
                                 }
                             }
 
                             File.WriteAllText(SessionFilePath, string.Empty, new UTF8Encoding(false));
+                            lock (SyncRoot)
+                            {
+                                _sessionRichLines.Clear();
+                            }
                         }
                         _wasFiveMRunning = true;
                         CaptureState = FiveMChatCaptureState.WaitingForChat;
                     }
 
-                    List<string> visibleLines = await Reader.GetChatLinesAsync(token).ConfigureAwait(false);
+                    List<CapturedChatLine> visibleLines = await Reader.GetCapturedChatLinesAsync(token).ConfigureAwait(false);
                     lock (SyncRoot)
                     {
                         AppendNewLines(visibleLines);
@@ -228,11 +250,10 @@ namespace GTAWParser.Shared
             }
         }
 
-        private static void AppendNewLines(IList<string> visibleLines)
+        private static void AppendNewLines(IList<CapturedChatLine> visibleLines)
         {
-            List<string> current = visibleLines
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .Select(line => line.Trim())
+            List<CapturedChatLine> current = visibleLines
+                .Where(line => !string.IsNullOrWhiteSpace(line.Text))
                 .ToList();
 
             if (current.Count == 0)
@@ -240,16 +261,17 @@ namespace GTAWParser.Shared
 
             CaptureState = FiveMChatCaptureState.Capturing;
 
-            int overlap = FindOverlap(_previousVisibleLines, current);
-            List<string> newLines = current.Skip(overlap).ToList();
+            List<string> currentTexts = current.Select(line => line.Text.Trim()).ToList();
+            int overlap = FindOverlap(_previousVisibleLines, currentTexts);
+            List<CapturedChatLine> newLines = current.Skip(overlap).ToList();
             if (newLines.Count == 0)
             {
-                _previousVisibleLines = current;
+                _previousVisibleLines = currentTexts;
                 return;
             }
 
             DateTime capturedAt = DateTime.Now;
-            DateTime sessionTimestamp = GetTimestamp(newLines[0], capturedAt);
+            DateTime sessionTimestamp = GetTimestamp(newLines[0].Text, capturedAt);
             bool startOfSession = !File.Exists(SessionFilePath) || new FileInfo(SessionFilePath).Length == 0;
 
             using (FileStream stream = new FileStream(SessionFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
@@ -261,15 +283,18 @@ namespace GTAWParser.Shared
                     writer.WriteLine(CreateSessionHeader(sessionTimestamp));
                 }
 
-                foreach (string line in newLines)
+                foreach (CapturedChatLine line in newLines)
                 {
-                    string formatted = AddTimestamp(line, capturedAt);
+                    string formatted = AddTimestamp(line.Text, capturedAt);
+                    line.Text = formatted;
+                    _sessionRichLines.Add(line);
                     writer.WriteLine(formatted);
                     LineReceived?.Invoke(formatted);
+                    CapturedLineReceived?.Invoke(line);
                 }
             }
 
-            _previousVisibleLines = current;
+            _previousVisibleLines = currentTexts;
         }
 
         public static void AppendLinesToSession(IEnumerable<string> lines)
@@ -291,6 +316,7 @@ namespace GTAWParser.Shared
                     string formatted = AddTimestamp(line, capturedAt);
                     writer.WriteLine(formatted);
                     LineReceived?.Invoke(formatted);
+                    CapturedLineReceived?.Invoke(new CapturedChatLine(formatted));
                 }
             }
         }
@@ -357,11 +383,212 @@ namespace GTAWParser.Shared
             private int _contextId;
             private int _requestId;
 
-            public async Task<List<string>> GetChatLinesAsync(CancellationToken token = default)
+            public async Task<List<CapturedChatLine>> GetCapturedChatLinesAsync(CancellationToken token = default)
             {
                 await EnsureConnectedAsync(token).ConfigureAwait(false);
 
-                const string expression = "JSON.stringify(Array.from(document.querySelectorAll('.chat__messages > li'), el => { const text = (el.innerText || '').replace(/\\s+/g, ' ').trim(); if (!text) return ''; const nodes = [el].concat(Array.from(el.querySelectorAll('*'))); let timestamp = ''; for (const node of nodes) { for (const attribute of Array.from(node.attributes || [])) { const match = String(attribute.value).match(/\\b\\d{1,2}:\\d{2}:\\d{2}\\b/); if (match) { timestamp = match[0]; break; } } if (!timestamp) { const match = String(getComputedStyle(node, '::before').content || '').match(/\\b\\d{1,2}:\\d{2}:\\d{2}\\b/); if (match) timestamp = match[0]; } if (timestamp) break; } return (timestamp ? '[' + timestamp + '] ' : '') + text; }).filter(Boolean))";
+                const string expression = @"(() => {
+                    const namedColors = {
+                        'red': '#FF0000',
+                        'green': '#31CB31',
+                        'blue': '#1E90FF',
+                        'yellow': '#FFFF00',
+                        'white': '#FFFFFF',
+                        'black': '#000000',
+                        'orange': '#FFA500',
+                        'purple': '#C2A2DA',
+                        'gray': '#A6ACAF',
+                        'grey': '#A6ACAF',
+                        'dodgerblue': '#1E90FF',
+                        'gold': '#FFFF00',
+                        'lime': '#31CB31',
+                        'teal': '#48C9B0'
+                    };
+
+                    const tildeMap = {
+                        '~r~': '#FF0000',
+                        '~g~': '#31CB31',
+                        '~b~': '#1E90FF',
+                        '~y~': '#FFFF00',
+                        '~p~': '#C2A2DA',
+                        '~q~': '#FF69B4',
+                        '~o~': '#FFA500',
+                        '~c~': '#A6ACAF',
+                        '~m~': '#666666',
+                        '~u~': '#000000',
+                        '~w~': '#FFFFFF',
+                        '~s~': '#FFFFFF'
+                    };
+
+                    function parseHex(c) {
+                        if (!c) return '';
+                        c = String(c).trim().toLowerCase();
+                        if (namedColors[c]) return namedColors[c];
+                        const rgb = c.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+                        if (rgb) {
+                            const r = parseInt(rgb[1], 10).toString(16).padStart(2, '0');
+                            const g = parseInt(rgb[2], 10).toString(16).padStart(2, '0');
+                            const b = parseInt(rgb[3], 10).toString(16).padStart(2, '0');
+                            return ('#' + r + g + b).toUpperCase();
+                        }
+                        if (c.startsWith('#')) {
+                            if (c.length === 4) {
+                                return ('#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3]).toUpperCase();
+                            }
+                            if (c.length === 7) {
+                                return c.toUpperCase();
+                            }
+                        }
+                        return '';
+                    }
+
+                    function getNodeColor(node, rootEl) {
+                        let p = node.nodeType === 1 ? node : node.parentElement;
+                        while (p && p !== rootEl.parentElement) {
+                            if (p.getAttribute) {
+                                const attrColor = p.getAttribute('color');
+                                if (attrColor) {
+                                    const c = parseHex(attrColor);
+                                    if (c) return c;
+                                }
+                            }
+                            if (p.color) {
+                                const c = parseHex(p.color);
+                                if (c) return c;
+                            }
+                            if (p.style && p.style.color) {
+                                const c = parseHex(p.style.color);
+                                if (c) return c;
+                            }
+                            if (p.getAttribute) {
+                                const styleAttr = p.getAttribute('style');
+                                if (styleAttr) {
+                                    const m = styleAttr.match(/color\s*:\s*([^;]+)/i);
+                                    if (m) {
+                                        const c = parseHex(m[1]);
+                                        if (c) return c;
+                                    }
+                                }
+                                const dataColor = p.getAttribute('data-color');
+                                if (dataColor) {
+                                    const c = parseHex(dataColor);
+                                    if (c) return c;
+                                }
+                            }
+                            p = p.parentElement;
+                        }
+                        const target = node.nodeType === 1 ? node : node.parentElement;
+                        if (target) {
+                            try {
+                                const comp = window.getComputedStyle(target);
+                                if (comp && comp.color) {
+                                    const c = parseHex(comp.color);
+                                    if (c && c !== '#FFFFFF' && c !== '#DCDCDC' && c !== '#F0F0F0' && c !== '#000000' && c !== 'TRANSPARENT') {
+                                        return c;
+                                    }
+                                }
+                            } catch (e) {}
+                        }
+                        return '#FFFFFF';
+                    }
+
+                    function parseTextCodes(rawText, baseColor) {
+                        if (!rawText) return [];
+                        const pattern = /(~[rgbypqocmuws]~)|(\{!?(?:#)?([0-9a-fA-F]{6})\})/g;
+                        let lastIndex = 0;
+                        let currentColor = baseColor || '#FFFFFF';
+                        const subSpans = [];
+                        let match;
+
+                        while ((match = pattern.exec(rawText)) !== null) {
+                            if (match.index > lastIndex) {
+                                const segment = rawText.substring(lastIndex, match.index);
+                                if (segment) subSpans.push({ t: segment, c: currentColor });
+                            }
+                            if (match[1]) {
+                                currentColor = tildeMap[match[1].toLowerCase()] || currentColor;
+                            } else if (match[3]) {
+                                currentColor = '#' + match[3].toUpperCase();
+                            }
+                            lastIndex = pattern.lastIndex;
+                        }
+
+                        if (lastIndex < rawText.length) {
+                            const segment = rawText.substring(lastIndex);
+                            if (segment) subSpans.push({ t: segment, c: currentColor });
+                        }
+
+                        return subSpans.length > 0 ? subSpans : [{ t: rawText, c: baseColor || '#FFFFFF' }];
+                    }
+
+                    const items = Array.from(document.querySelectorAll('.chat__messages > li'));
+                    const results = [];
+
+                    for (const el of items) {
+                        const fullText = (el.innerText || '').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+                        if (!fullText) continue;
+
+                        const nodes = [el].concat(Array.from(el.querySelectorAll('*')));
+                        let timestamp = '';
+                        for (const node of nodes) {
+                            for (const attribute of Array.from(node.attributes || [])) {
+                                const match = String(attribute.value).match(/\b\d{1,2}:\d{2}:\d{2}\b/);
+                                if (match) { timestamp = match[0]; break; }
+                            }
+                            if (!timestamp) {
+                                try {
+                                    const match = String(window.getComputedStyle(node, '::before').content || '').match(/\b\d{1,2}:\d{2}:\d{2}\b/);
+                                    if (match) timestamp = match[0];
+                                } catch (e) {}
+                            }
+                            if (timestamp) break;
+                        }
+
+                        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+                        const rawSpans = [];
+                        let curr = walker.nextNode();
+                        while (curr) {
+                            const val = curr.nodeValue;
+                            if (val && val.length > 0) {
+                                const color = getNodeColor(curr, el);
+                                const parsedSubSpans = parseTextCodes(val, color);
+                                for (const sub of parsedSubSpans) {
+                                    rawSpans.push(sub);
+                                }
+                            }
+                            curr = walker.nextNode();
+                        }
+
+                        const mergedSpans = [];
+                        for (const s of rawSpans) {
+                            if (mergedSpans.length > 0 && mergedSpans[mergedSpans.length - 1].c === s.c) {
+                                mergedSpans[mergedSpans.length - 1].t += s.t;
+                            } else {
+                                mergedSpans.push({ t: s.t, c: s.c });
+                            }
+                        }
+
+                        let dominantColor = '#FFFFFF';
+                        for (const s of mergedSpans) {
+                            if (s.c && s.c !== '#FFFFFF' && s.c !== '#DCDCDC' && s.c !== '#F0F0F0' && s.c !== '#000000') {
+                                dominantColor = s.c;
+                                break;
+                            }
+                        }
+
+                        const lineWithTs = (timestamp && !fullText.startsWith('[' + timestamp + ']'))
+                            ? ('[' + timestamp + '] ' + fullText)
+                            : fullText;
+
+                        results.push({
+                            t: lineWithTs,
+                            c: dominantColor,
+                            s: mergedSpans
+                        });
+                    }
+
+                    return JSON.stringify(results);
+                })()";
 
                 using JsonDocument result = await SendCdpRequestAsync("Runtime.evaluate", new
                 {
@@ -375,11 +602,17 @@ namespace GTAWParser.Shared
                     valElem.ValueKind == JsonValueKind.String)
                 {
                     string jsonString = valElem.GetString() ?? "[]";
-                    List<string>? lines = JsonSerializer.Deserialize<List<string>>(jsonString);
-                    return lines?.Where(l => !string.IsNullOrWhiteSpace(l)).ToList() ?? new List<string>();
+                    List<CapturedChatLine>? lines = JsonSerializer.Deserialize<List<CapturedChatLine>>(jsonString);
+                    return lines?.Where(l => !string.IsNullOrWhiteSpace(l.Text)).ToList() ?? new List<CapturedChatLine>();
                 }
 
-                return new List<string>();
+                return new List<CapturedChatLine>();
+            }
+
+            public async Task<List<string>> GetChatLinesAsync(CancellationToken token = default)
+            {
+                var captured = await GetCapturedChatLinesAsync(token).ConfigureAwait(false);
+                return captured.Select(c => c.Text).Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
             }
 
             public void Close()
