@@ -177,6 +177,20 @@ namespace GTAWParser.Shared
                         {
                             _sessionStartedAt = DateTime.MinValue;
                             _previousVisibleLines.Clear();
+
+                            if (File.Exists(SessionFilePath) && new FileInfo(SessionFilePath).Length > 0)
+                            {
+                                string previousSessionFile = Path.Combine(SessionDirectory, "previous-session.txt");
+                                try
+                                {
+                                    File.Copy(SessionFilePath, previousSessionFile, true);
+                                }
+                                catch
+                                {
+                                    // Non-critical fallback
+                                }
+                            }
+
                             File.WriteAllText(SessionFilePath, string.Empty, new UTF8Encoding(false));
                         }
                         _wasFiveMRunning = true;
