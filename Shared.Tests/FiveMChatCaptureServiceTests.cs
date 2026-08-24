@@ -271,6 +271,26 @@ namespace Shared.Tests
         }
 
         [Fact]
+        public void ServerTimezoneHelper_Auto_CalibratesFromMinimapHudClock()
+        {
+            DateTime utc = new DateTime(2026, 8, 24, 10, 56, 0, DateTimeKind.Utc);
+
+            // In-game minimap HUD .wxTime "10:56" -> Offset 0
+            ServerTimezoneHelper.UpdateAutoDetectedClock("10:56", utc);
+            Assert.Equal(0, ServerTimezoneHelper.DetectedOffsetHours);
+            DateTime serverTime = ServerTimezoneHelper.GetServerTime("Auto", utc);
+            Assert.Equal(10, serverTime.Hour);
+            Assert.Equal(56, serverTime.Minute);
+
+            // Turkish server in-game HUD "13:56" -> Offset +3
+            ServerTimezoneHelper.UpdateAutoDetectedClock("13:56", utc);
+            Assert.Equal(3, ServerTimezoneHelper.DetectedOffsetHours);
+            serverTime = ServerTimezoneHelper.GetServerTime("Auto", utc);
+            Assert.Equal(13, serverTime.Hour);
+            Assert.Equal(56, serverTime.Minute);
+        }
+
+        [Fact]
         public void ServerTimezoneHelper_Auto_HandlesDayWrapAround()
         {
             // 23:50 UTC, but Turkish server is 02:50 (+3 hours, next day)

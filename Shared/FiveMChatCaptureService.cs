@@ -719,12 +719,45 @@ namespace GTAWParser.Shared
 
                     let serverClock = null;
                     try {
-                        const ls = (typeof citFrames !== 'undefined') ? citFrames['loadingScreen'] : null;
-                        if (ls) {
-                            const lsDoc = ls.contentDocument || ls.contentWindow.document;
-                            const clockEl = lsDoc && (lsDoc.getElementById('clock') || lsDoc.querySelector('.gtawPillClock'));
-                            if (clockEl && clockEl.innerText) {
-                                serverClock = clockEl.innerText.trim();
+                        if (typeof citFrames !== 'undefined') {
+                            // 1. Primary In-Game HUD: Check .wxTime above the minimap inside 'client'
+                            const clientFrame = citFrames['client'];
+                            if (clientFrame) {
+                                const clientDoc = clientFrame.contentDocument || clientFrame.contentWindow.document;
+                                const wxTimeEl = clientDoc && (clientDoc.querySelector('.wxTime') || clientDoc.querySelector('.wxBar'));
+                                if (wxTimeEl && wxTimeEl.innerText) {
+                                    const m = wxTimeEl.innerText.match(/\b\d{1,2}:\d{2}\b/);
+                                    if (m) serverClock = m[0];
+                                }
+                            }
+
+                            // 2. Pre-Spawn Login Screen: Check #clock inside 'loadingScreen'
+                            if (!serverClock) {
+                                const ls = citFrames['loadingScreen'];
+                                if (ls) {
+                                    const lsDoc = ls.contentDocument || ls.contentWindow.document;
+                                    const clockEl = lsDoc && (lsDoc.getElementById('clock') || lsDoc.querySelector('.gtawPillClock'));
+                                    if (clockEl && clockEl.innerText) {
+                                        const m = clockEl.innerText.match(/\b\d{1,2}:\d{2}\b/);
+                                        if (m) serverClock = m[0];
+                                    }
+                                }
+                            }
+
+                            // 3. Fallback: Scan all active frames for .wxTime or #clock
+                            if (!serverClock) {
+                                for (let k in citFrames) {
+                                    try {
+                                        const doc = citFrames[k].contentDocument || citFrames[k].contentWindow.document;
+                                        if (doc) {
+                                            const el = doc.querySelector('.wxTime, #clock, .gtawPillClock');
+                                            if (el && el.innerText) {
+                                                const m = el.innerText.match(/\b\d{1,2}:\d{2}\b/);
+                                                if (m) { serverClock = m[0]; break; }
+                                            }
+                                        }
+                                    } catch(e) {}
+                                }
                             }
                         }
                     } catch (e) {}
