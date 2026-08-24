@@ -9,9 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Automatic & Multi-Region GTA World Server Timezone Support (`ServerTimezoneHelper.cs`, `FiveMChatCaptureService.cs`, `ProgramSettingsWindow.xaml`, `ProgramSettingsWindow.xaml.cs`)**:
-  - **Live Auto-Detection (`Auto-Detect Server Timezone (Recommended)`)**: Automatically extracts the live server clock from `#clock` inside the `loadingScreen` NUI frame upon connecting to any GTA World server (and syncs with in-game timestamps), instantly calibrating the server timezone offset before character selection and chat even open.
-  - **Manual Regional Overrides**: Added a dedicated `Server Timezone` selector dropdown in Program Settings with full support for all regional GTA World servers:
-    - **`Auto-Detect Server Timezone (Recommended)`** — *Default*
+  - **Live Auto-Detection (`Auto-detect server timezone`)**: Added an `"Auto-detect server timezone"` checkbox (enabled by default) that automatically extracts the live server clock from `#clock` inside the `loadingScreen` NUI frame upon connecting to any GTA World server (and syncs with in-game timestamps), instantly calibrating the server timezone offset before character selection and chat even open.
+  - **Manual Regional Overrides**: When unticked, unlocks the dedicated `Server Timezone` selector dropdown in Program Settings with full support for all regional GTA World servers:
     - **`GTA World English (UTC / Server Time)`** (UTC+0)
     - **`GTA World Türkiye (Istanbul / UTC+3)`** (TRT / UTC+3)
     - **`GTA World Korea (Seoul / UTC+9)`** (KST / UTC+9)
