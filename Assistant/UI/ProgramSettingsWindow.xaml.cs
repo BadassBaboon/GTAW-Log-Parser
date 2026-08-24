@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using Assistant.Controllers;
 using Assistant.Localization;
+using GTAWParser.Shared;
 
 namespace Assistant.UI
 {
@@ -11,6 +12,20 @@ namespace Assistant.UI
     public partial class ProgramSettingsWindow
     {
         private readonly MainWindow _mainWindow;
+
+        private sealed class TimezoneItem
+        {
+            public string Key { get; }
+            public string DisplayName { get; }
+
+            public TimezoneItem(string key, string displayName)
+            {
+                Key = key;
+                DisplayName = displayName;
+            }
+
+            public override string ToString() => DisplayName;
+        }
 
         /// <summary>
         /// Focuses back on this window if
@@ -62,6 +77,12 @@ namespace Assistant.UI
             Properties.Settings.Default.AlwaysCloseToTray = AlwaysCloseToTray.IsChecked == true;
             Properties.Settings.Default.StartWithWindows = StartWithWindows.IsChecked == true;
 
+            if (ServerTimezone.SelectedItem is TimezoneItem tzItem)
+            {
+                Properties.Settings.Default.ServerTimezone = tzItem.Key;
+                ServerTimezoneHelper.CurrentTimezoneSetting = tzItem.Key;
+            }
+
             StyleController.DarkMode = ToggleDarkMode.IsChecked == true;
             string selectedStyle = Themes.SelectedItem?.ToString() ?? "Default (GTA World)";
             StyleController.Style = selectedStyle == "Default (GTA World)" ? "Default" : selectedStyle;
@@ -103,7 +124,37 @@ namespace Assistant.UI
 
             Themes.IsEnabled = !Properties.Settings.Default.FollowSystemColor;
             UpdateThemeSwitcher();
+            UpdateServerTimezoneSwitcher();
             UpdateRollbackStatus();
+        }
+
+        private void UpdateServerTimezoneSwitcher()
+        {
+            ServerTimezone.Items.Clear();
+            string current = Properties.Settings.Default.ServerTimezone;
+            TimezoneItem? selected = null;
+
+            foreach (var (key, displayName) in ServerTimezoneHelper.SupportedTimezones)
+            {
+                var item = new TimezoneItem(key, displayName);
+                ServerTimezone.Items.Add(item);
+                if (string.Equals(key, current, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    selected = item;
+                }
+            }
+
+            ServerTimezone.SelectedItem = selected ?? (ServerTimezone.Items.Count > 0 ? ServerTimezone.Items[0] : null);
+        }
+
+        private void ServerTimezone_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (ServerTimezone.SelectedItem is TimezoneItem item)
+            {
+                Properties.Settings.Default.ServerTimezone = item.Key;
+                ServerTimezoneHelper.CurrentTimezoneSetting = item.Key;
+                Properties.Settings.Default.Save();
+            }
         }
 
         private void UpdateRollbackStatus()
@@ -161,6 +212,9 @@ namespace Assistant.UI
 
             StyleController.DarkMode = AppController.CanFollowSystemMode && StyleController.GetAppMode();
             StyleController.Style = "Default";
+
+            Properties.Settings.Default.ServerTimezone = "Auto";
+            ServerTimezoneHelper.CurrentTimezoneSetting = "Auto";
 
             Properties.Settings.Default.Save();
         }

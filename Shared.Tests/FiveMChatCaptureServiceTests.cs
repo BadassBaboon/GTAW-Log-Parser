@@ -204,5 +204,103 @@ namespace Shared.Tests
                 }
             }
         }
+
+        [Fact]
+        public void ServerTimezoneHelper_Utc_MatchesUtc()
+        {
+            DateTime utc = new DateTime(2026, 8, 24, 13, 30, 0, DateTimeKind.Utc);
+            DateTime serverTime = ServerTimezoneHelper.GetServerTime("UTC", utc);
+
+            Assert.Equal(13, serverTime.Hour);
+            Assert.Equal(30, serverTime.Minute);
+        }
+
+        [Fact]
+        public void ServerTimezoneHelper_TR_MatchesUtcPlusThree()
+        {
+            DateTime utc = new DateTime(2026, 8, 24, 13, 30, 0, DateTimeKind.Utc);
+            DateTime serverTime = ServerTimezoneHelper.GetServerTime("TR", utc);
+
+            Assert.Equal(16, serverTime.Hour);
+            Assert.Equal(30, serverTime.Minute);
+        }
+
+        [Fact]
+        public void ServerTimezoneHelper_KR_MatchesUtcPlusNine()
+        {
+            DateTime utc = new DateTime(2026, 8, 24, 13, 30, 0, DateTimeKind.Utc);
+            DateTime serverTime = ServerTimezoneHelper.GetServerTime("KR", utc);
+
+            Assert.Equal(22, serverTime.Hour);
+            Assert.Equal(30, serverTime.Minute);
+        }
+
+        [Fact]
+        public void ServerTimezoneHelper_RU_MatchesUtcPlusThree()
+        {
+            DateTime utc = new DateTime(2026, 8, 24, 13, 30, 0, DateTimeKind.Utc);
+            DateTime serverTime = ServerTimezoneHelper.GetServerTime("RU", utc);
+
+            Assert.Equal(16, serverTime.Hour);
+            Assert.Equal(30, serverTime.Minute);
+        }
+
+        [Fact]
+        public void ServerTimezoneHelper_Auto_CalibratesFromLoadingScreenClock()
+        {
+            DateTime utc = new DateTime(2026, 8, 24, 10, 5, 0, DateTimeKind.Utc);
+            
+            // GTAW English Clock "10:05" -> Offset 0
+            ServerTimezoneHelper.UpdateAutoDetectedClock("10:05", utc);
+            Assert.Equal(0, ServerTimezoneHelper.DetectedOffsetHours);
+            DateTime serverTime = ServerTimezoneHelper.GetServerTime("Auto", utc);
+            Assert.Equal(10, serverTime.Hour);
+            Assert.Equal(5, serverTime.Minute);
+
+            // GTAW TR Clock "13:05" -> Offset +3
+            ServerTimezoneHelper.UpdateAutoDetectedClock("13:05", utc);
+            Assert.Equal(3, ServerTimezoneHelper.DetectedOffsetHours);
+            serverTime = ServerTimezoneHelper.GetServerTime("Auto", utc);
+            Assert.Equal(13, serverTime.Hour);
+
+            // GTAW KR Clock "19:05" -> Offset +9
+            ServerTimezoneHelper.UpdateAutoDetectedClock("19:05", utc);
+            Assert.Equal(9, ServerTimezoneHelper.DetectedOffsetHours);
+            serverTime = ServerTimezoneHelper.GetServerTime("Auto", utc);
+            Assert.Equal(19, serverTime.Hour);
+        }
+
+        [Fact]
+        public void ServerTimezoneHelper_Auto_HandlesDayWrapAround()
+        {
+            // 23:50 UTC, but Turkish server is 02:50 (+3 hours, next day)
+            DateTime utc = new DateTime(2026, 8, 24, 23, 50, 0, DateTimeKind.Utc);
+            ServerTimezoneHelper.UpdateAutoDetectedClock("02:50", utc);
+            Assert.Equal(3, ServerTimezoneHelper.DetectedOffsetHours);
+
+            DateTime serverTime = ServerTimezoneHelper.GetServerTime("Auto", utc);
+            Assert.Equal(2, serverTime.Hour);
+            Assert.Equal(25, serverTime.Day); // Advanced to next day!
+        }
+
+        [Fact]
+        public void ServerTimezoneHelper_AddTimestamp_PreservesNativeTimestamp()
+        {
+            DateTime serverTime = new DateTime(2026, 8, 24, 18, 0, 0);
+            string lineWithNative = "[17:18:02] John Doe says: Hello";
+            string formatted = FiveMChatCaptureService.AddTimestamp(lineWithNative, serverTime);
+
+            Assert.Equal("[17:18:02] John Doe says: Hello", formatted);
+        }
+
+        [Fact]
+        public void ServerTimezoneHelper_AddTimestamp_InjectsServerTimeWhenMissing()
+        {
+            DateTime serverTime = new DateTime(2026, 8, 24, 18, 5, 23);
+            string lineWithoutTs = "John Doe says: Hello";
+            string formatted = FiveMChatCaptureService.AddTimestamp(lineWithoutTs, serverTime);
+
+            Assert.Equal("[18:05:23] John Doe says: Hello", formatted);
+        }
     }
 }

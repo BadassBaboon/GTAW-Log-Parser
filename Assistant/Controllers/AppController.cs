@@ -9,7 +9,7 @@ namespace Assistant.Controllers
 {
     public static class AppController
     {
-        public const string AssemblyVersion = "6.3.0";
+        public const string AssemblyVersion = "6.3.1";
         public static readonly string Version = $"v{AssemblyVersion}";
         public static bool IsBetaVersion => false;
         public static bool CanFollowSystemColor = false;
@@ -36,6 +36,11 @@ namespace Assistant.Controllers
         /// </summary>
         public static void InitializeServerIp()
         {
+            string tz = Properties.Settings.Default.ServerTimezone;
+            if (!string.IsNullOrEmpty(tz))
+            {
+                ServerTimezoneHelper.CurrentTimezoneSetting = tz;
+            }
             FiveMChatCaptureService.Initialize();
         }
 

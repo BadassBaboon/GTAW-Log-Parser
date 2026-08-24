@@ -291,7 +291,16 @@ namespace GTAWParser.Shared
                 return;
             }
 
-            DateTime capturedAt = DateTime.Now;
+            foreach (CapturedChatLine line in current)
+            {
+                var (ts, _) = ChatLineClassifier.SplitTimestamp(line.Text);
+                if (!string.IsNullOrEmpty(ts))
+                {
+                    ServerTimezoneHelper.UpdateAutoDetectedClock(ts);
+                }
+            }
+
+            DateTime capturedAt = ServerTimezoneHelper.GetServerTime();
             DateTime sessionTimestamp = GetTimestamp(newLines[0].Text, capturedAt);
             Directory.CreateDirectory(SessionDirectory);
             bool startOfSession = !File.Exists(SessionFilePath) || new FileInfo(SessionFilePath).Length == 0;
@@ -322,7 +331,7 @@ namespace GTAWParser.Shared
         public static void AppendLinesToSession(IEnumerable<string> lines)
         {
             if (lines == null) return;
-            DateTime capturedAt = DateTime.Now;
+            DateTime capturedAt = ServerTimezoneHelper.GetServerTime();
             Directory.CreateDirectory(SessionDirectory);
             bool startOfSession = !File.Exists(SessionFilePath) || new FileInfo(SessionFilePath).Length == 0;
 
@@ -708,7 +717,19 @@ namespace GTAWParser.Shared
                         });
                     }
 
-                    return JSON.stringify(results);
+                    let serverClock = null;
+                    try {
+                        const ls = (typeof citFrames !== 'undefined') ? citFrames['loadingScreen'] : null;
+                        if (ls) {
+                            const lsDoc = ls.contentDocument || ls.contentWindow.document;
+                            const clockEl = lsDoc && (lsDoc.getElementById('clock') || lsDoc.querySelector('.gtawPillClock'));
+                            if (clockEl && clockEl.innerText) {
+                                serverClock = clockEl.innerText.trim();
+                            }
+                        }
+                    } catch (e) {}
+
+                    return JSON.stringify({ lines: results, clock: serverClock });
                 })();";
 
                 using JsonDocument result = await SendCdpRequestAsync("Runtime.evaluate", new
@@ -722,9 +743,23 @@ namespace GTAWParser.Shared
                     resultObj.TryGetProperty("value", out JsonElement valElem) &&
                     valElem.ValueKind == JsonValueKind.String)
                 {
-                    string jsonString = valElem.GetString() ?? "[]";
-                    List<CapturedChatLine>? lines = JsonSerializer.Deserialize<List<CapturedChatLine>>(jsonString);
-                    return lines?.Where(l => !string.IsNullOrWhiteSpace(l.Text)).ToList() ?? new List<CapturedChatLine>();
+                    string jsonString = valElem.GetString() ?? "{}";
+                    using JsonDocument payloadDoc = JsonDocument.Parse(jsonString);
+                    if (payloadDoc.RootElement.TryGetProperty("clock", out JsonElement clockProp) &&
+                        clockProp.ValueKind == JsonValueKind.String)
+                    {
+                        string? clockStr = clockProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(clockStr))
+                        {
+                            ServerTimezoneHelper.UpdateAutoDetectedClock(clockStr);
+                        }
+                    }
+
+                    if (payloadDoc.RootElement.TryGetProperty("lines", out JsonElement linesProp))
+                    {
+                        List<CapturedChatLine>? lines = JsonSerializer.Deserialize<List<CapturedChatLine>>(linesProp.GetRawText());
+                        return lines?.Where(l => !string.IsNullOrWhiteSpace(l.Text)).ToList() ?? new List<CapturedChatLine>();
+                    }
                 }
 
                 return new List<CapturedChatLine>();

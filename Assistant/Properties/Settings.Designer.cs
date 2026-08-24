@@ -571,5 +571,17 @@ namespace Assistant.Properties {
                 this["BackupFormat"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
+        public string ServerTimezone {
+            get {
+                return ((string)(this["ServerTimezone"]));
+            }
+            set {
+                this["ServerTimezone"] = value;
+            }
+        }
     }
 }

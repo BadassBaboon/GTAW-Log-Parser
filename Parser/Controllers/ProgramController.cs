@@ -9,7 +9,7 @@ namespace Parser.Controllers
 {
     public static class ProgramController
     {
-        public const string AssemblyVersion = "6.3.0";
+        public const string AssemblyVersion = "6.3.1";
         public static readonly string Version = $"v{AssemblyVersion}";
         public static bool IsBetaVersion => false;
         public const string ParameterPrefix = "--";
@@ -38,7 +38,7 @@ namespace Parser.Controllers
                 if (lines.Count == 0)
                     throw new System.IO.IOException("No chat lines captured.");
 
-                DateTime capturedAt = DateTime.Now;
+                DateTime capturedAt = ServerTimezoneHelper.GetServerTime();
                 DateTime sessionTimestamp = FiveMChatCaptureService.GetTimestamp(lines[0], capturedAt);
                 string log = FiveMChatCaptureService.CreateSessionHeader(sessionTimestamp) + "\n" +
                              string.Join("\n", lines.Select(line => FiveMChatCaptureService.AddTimestamp(line, capturedAt)));
