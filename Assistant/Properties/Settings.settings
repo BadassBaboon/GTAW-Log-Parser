@@ -146,5 +146,41 @@
     <Setting Name="ServerTimezone" Type="System.String" Scope="User">
       <Value Profile="(Default)">UTC</Value>
     </Setting>
+    <Setting Name="ScreenshotFontFamily" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Arial</Value>
+    </Setting>
+    <Setting Name="ScreenshotFontSize" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">14</Value>
+    </Setting>
+    <Setting Name="ScreenshotLineSpacing" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">4</Value>
+    </Setting>
+    <Setting Name="ScreenshotOutlineWidth" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">1.2</Value>
+    </Setting>
+    <Setting Name="ScreenshotFontBold" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ScreenshotDropShadow" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ScreenshotEnableBgBox" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="ScreenshotBgBoxOpacity" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">0.45</Value>
+    </Setting>
+    <Setting Name="ScreenshotChatX" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">30</Value>
+    </Setting>
+    <Setting Name="ScreenshotChatY" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">30</Value>
+    </Setting>
+    <Setting Name="ScreenshotCanvasWidth" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1300</Value>
+    </Setting>
+    <Setting Name="ScreenshotCanvasHeight" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">730</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

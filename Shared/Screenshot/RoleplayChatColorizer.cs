@@ -129,5 +129,28 @@ namespace GTAWParser.Shared.Screenshot
             }
             return result;
         }
+
+        /// <summary>
+        /// Comprehensive list of GTA World roleplay colors for the Screenshot Editor palette picker.
+        /// </summary>
+        public static readonly IReadOnlyList<RoleplayPaletteSwatch> EditorSwatches = new List<RoleplayPaletteSwatch>
+        {
+            new RoleplayPaletteSwatch("/me", "#C2A3DA", "/me emote (#C2A3DA)"),
+            new RoleplayPaletteSwatch("/do", "#C2A3DA", "/do action (#C2A3DA)"),
+            new RoleplayPaletteSwatch("Your Speech", "#F1F1F1", "Your character talking (#F1F1F1)"),
+            new RoleplayPaletteSwatch("Other Speech", "#C8C8C8", "Other characters talking (#C8C8C8)"),
+            new RoleplayPaletteSwatch("Whisper", "#EDA841", "Whisper / low speech (#EDA841)"),
+            new RoleplayPaletteSwatch("Phone Call", "#FBF724", "Phone call / SMS (#FBF724)"),
+            new RoleplayPaletteSwatch("Radio", "#1E90FF", "Radio communication (#1E90FF)"),
+            new RoleplayPaletteSwatch("Item Given", "#56D64B", "Item given / transferred (#56D64B)"),
+            new RoleplayPaletteSwatch("Money Paid", "#56D64B", "Money paid / transaction (#56D64B)"),
+            new RoleplayPaletteSwatch("CK Blue", "#3896F3", "CK blue / system info (#3896F3)"),
+            new RoleplayPaletteSwatch("CK Red / Admin", "#F00000", "CK red / admin error (#F00000)"),
+            new RoleplayPaletteSwatch("Inventory", "#FFFF00", "Item in inventory / warning (#FFFF00)"),
+            new RoleplayPaletteSwatch("OOC", "#A6ACAF", "Out of character (( )) (#A6ACAF)"),
+            new RoleplayPaletteSwatch("Advertisement", "#2ECC71", "Advertisement / news (#2ECC71)"),
+        };
     }
+
+    public record RoleplayPaletteSwatch(string Label, string Hex, string Tooltip);
 }

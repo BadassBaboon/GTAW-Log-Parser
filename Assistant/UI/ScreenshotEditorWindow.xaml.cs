@@ -14,6 +14,7 @@ using Assistant.Controllers;
 using GTAWParser.Shared;
 using GTAWParser.Shared.Screenshot;
 using MahApps.Metro.Controls;
+using MahApps.Metro.IconPacks;
 using Microsoft.Win32;
 using Serilog;
 
@@ -88,7 +89,7 @@ namespace Assistant.UI
         public string SourceTooltip =>
             NuiSpans != null
                 ? "Colour captured live from the game"
-                : $"Detected as {ChatLineClassifier.DescribeCategory(Category)}";
+                : $"Detected as {ChatLineClassifier.DescribeCategory(Category)} ({ColorHex})";
 
         /// <summary>
         /// Colour spans captured straight from the FiveM NUI. When present these are ground truth
@@ -144,18 +145,14 @@ namespace Assistant.UI
                 _colorOverride = value;
                 Reclassify();
                 Raise(nameof(ColorOverride));
-                Raise(nameof(TypeLabel));
                 Raise(nameof(SourceTooltip));
             }
         }
 
-        public override string TypeLabel =>
-            _colorOverride != null ? "SET" : ChatLineClassifier.GetShortLabel(Category);
-
         public string SourceTooltip =>
-            _colorOverride != null ? $"Manual colour {_colorOverride}"
-            : NuiSpans != null ? "Colour captured live from the game"
-            : $"Detected as {ChatLineClassifier.DescribeCategory(Category)} — click a swatch to override";
+            _colorOverride != null ? $"Custom colour {_colorOverride} (Click square to change)"
+            : NuiSpans != null ? "Colour captured live from the game (Click square to change)"
+            : $"Detected as {ChatLineClassifier.DescribeCategory(Category)} — {ColorHex} (Click square to change)";
 
         public void Reclassify()
         {
@@ -193,15 +190,6 @@ namespace Assistant.UI
         }
     }
 
-    /// <summary>One swatch in the colour picker, sourced from the canonical palette.</summary>
-    public class PaletteSwatch
-    {
-        public string Label { get; set; } = string.Empty;
-        public string Hex { get; set; } = "#FFFFFF";
-        public string Tooltip => $"{Label} — {Hex}";
-        public SolidColorBrush SwatchBrush { get; set; } = Brushes.White;
-    }
-
     public partial class ScreenshotEditorWindow : MetroWindow
     {
         private BitmapSource? _backgroundImage;
@@ -237,6 +225,7 @@ namespace Assistant.UI
             _placedLines.CollectionChanged += (_, __) => UpdatePlacedCount();
 
             Loaded += ScreenshotEditorWindow_Loaded;
+            Closing += (_, __) => SaveSettings();
         }
 
         private void ScreenshotEditorWindow_Loaded(object sender, RoutedEventArgs e)
@@ -248,9 +237,112 @@ namespace Assistant.UI
             if (ChatSourceCombo.SelectedIndex < 0) ChatSourceCombo.SelectedIndex = 0;
 
             PopulateResolutionPresets();
-            PopulatePalette();
+            LoadSavedSettings();
             LoadLiveSessionChat();
             UpdateCanvas();
+        }
+
+        private void LoadSavedSettings()
+        {
+            _isUpdatingUi = true;
+            try
+            {
+                var s = Properties.Settings.Default;
+
+                if (!string.IsNullOrWhiteSpace(s.ScreenshotFontFamily))
+                {
+                    foreach (ComboBoxItem item in FontFamilyCombo.Items)
+                    {
+                        if (string.Equals(item.Content?.ToString(), s.ScreenshotFontFamily, StringComparison.OrdinalIgnoreCase))
+                        {
+                            FontFamilyCombo.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+
+                if (s.ScreenshotFontSize >= FontSizeSlider.Minimum && s.ScreenshotFontSize <= FontSizeSlider.Maximum)
+                {
+                    FontSizeSlider.Value = s.ScreenshotFontSize;
+                    FontSizeValText.Text = Math.Round(s.ScreenshotFontSize).ToString();
+                }
+
+                if (s.ScreenshotLineSpacing >= LineSpacingSlider.Minimum && s.ScreenshotLineSpacing <= LineSpacingSlider.Maximum)
+                {
+                    LineSpacingSlider.Value = s.ScreenshotLineSpacing;
+                    LineSpacingValText.Text = Math.Round(s.ScreenshotLineSpacing).ToString();
+                }
+
+                if (s.ScreenshotOutlineWidth >= OutlineWidthSlider.Minimum && s.ScreenshotOutlineWidth <= OutlineWidthSlider.Maximum)
+                {
+                    OutlineWidthSlider.Value = s.ScreenshotOutlineWidth;
+                    OutlineWidthValText.Text = s.ScreenshotOutlineWidth.ToString("0.0");
+                }
+
+                FontBoldCheck.IsChecked = s.ScreenshotFontBold;
+                DropShadowCheck.IsChecked = s.ScreenshotDropShadow;
+                EnableBgBoxCheck.IsChecked = s.ScreenshotEnableBgBox;
+
+                if (s.ScreenshotBgBoxOpacity >= BgBoxOpacitySlider.Minimum && s.ScreenshotBgBoxOpacity <= BgBoxOpacitySlider.Maximum)
+                {
+                    BgBoxOpacitySlider.Value = s.ScreenshotBgBoxOpacity;
+                    BgBoxOpacityValText.Text = s.ScreenshotBgBoxOpacity.ToString("0.00");
+                }
+
+                _chatX = s.ScreenshotChatX > 0 ? s.ScreenshotChatX : 30;
+                _chatY = s.ScreenshotChatY > 0 ? s.ScreenshotChatY : 30;
+                ChatXTextBox.Text = Math.Round(_chatX).ToString();
+                ChatYTextBox.Text = Math.Round(_chatY).ToString();
+
+                if (s.ScreenshotCanvasWidth >= 100 && s.ScreenshotCanvasHeight >= 100)
+                {
+                    CanvasWidthTextBox.Text = s.ScreenshotCanvasWidth.ToString();
+                    CanvasHeightTextBox.Text = s.ScreenshotCanvasHeight.ToString();
+                    var match = ResolutionPreset.DefaultPresets.FirstOrDefault(p => p.Width == s.ScreenshotCanvasWidth && p.Height == s.ScreenshotCanvasHeight);
+                    if (match != null)
+                    {
+                        ResolutionPresetCombo.SelectedItem = match;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to load screenshot editor settings.");
+            }
+            finally
+            {
+                _isUpdatingUi = false;
+            }
+        }
+
+        private void SaveSettings()
+        {
+            if (!_isLoaded || _isUpdatingUi) return;
+            try
+            {
+                var s = Properties.Settings.Default;
+                s.ScreenshotFontFamily = (FontFamilyCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Arial";
+                s.ScreenshotFontSize = FontSizeSlider.Value;
+                s.ScreenshotLineSpacing = LineSpacingSlider.Value;
+                s.ScreenshotOutlineWidth = OutlineWidthSlider.Value;
+                s.ScreenshotFontBold = FontBoldCheck.IsChecked == true;
+                s.ScreenshotDropShadow = DropShadowCheck.IsChecked == true;
+                s.ScreenshotEnableBgBox = EnableBgBoxCheck.IsChecked == true;
+                s.ScreenshotBgBoxOpacity = BgBoxOpacitySlider.Value;
+                s.ScreenshotChatX = _chatX;
+                s.ScreenshotChatY = _chatY;
+
+                if (int.TryParse(CanvasWidthTextBox.Text, out int w) && w >= 100)
+                    s.ScreenshotCanvasWidth = w;
+                if (int.TryParse(CanvasHeightTextBox.Text, out int h) && h >= 100)
+                    s.ScreenshotCanvasHeight = h;
+
+                s.Save();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to save screenshot editor settings.");
+            }
         }
 
         private static SolidColorBrush FreezeBrush(string hex)
@@ -306,31 +398,37 @@ namespace Assistant.UI
             _isUpdatingUi = false;
         }
 
-        /// <summary>
-        /// Builds the colour picker from <see cref="ChatLineClassifier.Palette"/> rather than from
-        /// hard-coded XAML, so a swatch can never offer a colour the renderer would not produce.
-        /// </summary>
-        private void PopulatePalette()
+
+        private void ZoomSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            var swatches = new List<PaletteSwatch>();
-            foreach (var entry in ChatLineClassifier.Palette)
-            {
-                string hex = ChatLineClassifier.GetHexColor(entry.Category);
-                Color c = Colors.White;
-                try
-                {
-                    var converted = ColorConverter.ConvertFromString(hex);
-                    if (converted != null) c = (Color)converted;
-                }
-                catch { }
+            if (!_isLoaded || _isUpdatingUi) return;
+            if (_backgroundImage == null) return;
 
-                var brush = new SolidColorBrush(c);
-                brush.Freeze();
+            double newScale = ZoomSlider.Value / 100.0;
+            if (Math.Abs(newScale - _imageScale) < 0.001) return;
 
-                swatches.Add(new PaletteSwatch { Label = entry.Label, Hex = hex, SwatchBrush = brush });
-            }
+            var (canvasW, canvasH) = GetCanvasSize();
+            double centerX = canvasW / 2.0;
+            double centerY = canvasH / 2.0;
 
-            PaletteItems.ItemsSource = swatches;
+            _imageOffsetX = centerX - (centerX - _imageOffsetX) * (newScale / _imageScale);
+            _imageOffsetY = centerY - (centerY - _imageOffsetY) * (newScale / _imageScale);
+            _imageScale = newScale;
+
+            if (ZoomValText != null)
+                ZoomValText.Text = $"{(int)Math.Round(_imageScale * 100)}%";
+
+            UpdateCanvas();
+        }
+
+        private void SyncZoomSlider()
+        {
+            if (ZoomSlider == null || ZoomValText == null) return;
+            bool wasUpdating = _isUpdatingUi;
+            _isUpdatingUi = true;
+            ZoomSlider.Value = Math.Clamp(Math.Round(_imageScale * 100.0), ZoomSlider.Minimum, ZoomSlider.Maximum);
+            ZoomValText.Text = $"{(int)Math.Round(_imageScale * 100)}%";
+            _isUpdatingUi = wasUpdating;
         }
 
         // ==========================================
@@ -570,6 +668,7 @@ namespace Assistant.UI
 
             CanvasStatsText.Text = $"{options.CanvasWidth} × {options.CanvasHeight}   ·   zoom {Math.Round(_imageScale * 100)}%   ·   chat {Math.Round(_chatX)}, {Math.Round(_chatY)}";
 
+            SyncZoomSlider();
             UpdateChatOutline();
         }
 
@@ -732,12 +831,14 @@ namespace Assistant.UI
             CanvasHeightTextBox.Text = preset.Height.ToString();
             _isUpdatingUi = false;
             UpdateCanvas();
+            SaveSettings();
         }
 
         private void CanvasDimensions_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!_isLoaded) return;
             UpdateCanvas();
+            SaveSettings();
         }
 
         // ==========================================
@@ -1000,31 +1101,118 @@ namespace Assistant.UI
             SetStatus("Canvas cleared.");
         }
 
-        private void SetColorPreset_Click(object sender, RoutedEventArgs e)
+        private void LineColorSquare_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button { Tag: string hex }) return;
+            if (sender is not FrameworkElement elem || elem.DataContext is not PlacedChatLine line) return;
 
-            if (PlacedLinesListBox.SelectedItem is not PlacedChatLine selected)
+            var menu = new ContextMenu
             {
-                SetStatus("Select a placed line first, then choose a colour.");
-                return;
+                PlacementTarget = elem,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom
+            };
+
+            foreach (var swatch in RoleplayChatColorizer.EditorSwatches)
+            {
+                var item = new MenuItem
+                {
+                    Header = swatch.Label,
+                    ToolTip = swatch.Tooltip,
+                    Icon = new Border
+                    {
+                        Width = 14,
+                        Height = 14,
+                        CornerRadius = new CornerRadius(3),
+                        Background = FreezeBrush(swatch.Hex),
+                        BorderBrush = FreezeBrush("#55FFFFFF"),
+                        BorderThickness = new Thickness(1),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    }
+                };
+
+                string hex = swatch.Hex;
+                string label = swatch.Label;
+                item.Click += (_, __) =>
+                {
+                    line.ColorOverride = hex;
+                    UpdateCanvas();
+                    SetStatus($"Line colour set to {label} ({hex}).");
+                };
+
+                menu.Items.Add(item);
             }
 
-            selected.ColorOverride = hex;
-            UpdateCanvas();
-        }
+            menu.Items.Add(new Separator());
 
-        private void ResetLineColorBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (PlacedLinesListBox.SelectedItem is not PlacedChatLine selected)
+            var autoItem = new MenuItem
             {
-                SetStatus("Select a placed line first.");
-                return;
-            }
+                Header = "Auto (Detected Colour)",
+                ToolTip = "Reset to default detected roleplay colour",
+                Icon = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.AutoFix,
+                    Width = 13,
+                    Height = 13,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+            autoItem.Click += (_, __) =>
+            {
+                line.ColorOverride = null;
+                UpdateCanvas();
+                SetStatus("Line colour reset to detected colour.");
+            };
+            menu.Items.Add(autoItem);
 
-            selected.ColorOverride = null;
-            UpdateCanvas();
-            SetStatus("Line colour reset to the detected colour.");
+            var customItem = new MenuItem
+            {
+                Header = "Custom Colour...",
+                ToolTip = "Choose any custom colour from palette",
+                Icon = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.Palette,
+                    Width = 13,
+                    Height = 13,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+            customItem.Click += (_, __) =>
+            {
+                try
+                {
+                    using var dlg = new System.Windows.Forms.ColorDialog
+                    {
+                        AllowFullOpen = true,
+                        AnyColor = true,
+                        FullOpen = true
+                    };
+
+                    if (!string.IsNullOrEmpty(line.ColorHex))
+                    {
+                        try
+                        {
+                            var wpfColor = (Color)ColorConverter.ConvertFromString(line.ColorHex);
+                            dlg.Color = System.Drawing.Color.FromArgb(wpfColor.R, wpfColor.G, wpfColor.B);
+                        }
+                        catch { }
+                    }
+
+                    if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        string customHex = $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
+                        line.ColorOverride = customHex;
+                        UpdateCanvas();
+                        SetStatus($"Line colour set to custom ({customHex}).");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to open custom colour dialog.");
+                }
+            };
+            menu.Items.Add(customItem);
+
+            menu.IsOpen = true;
         }
 
         // ==========================================
@@ -1056,6 +1244,7 @@ namespace Assistant.UI
 
             SyncPositionInputs();
             UpdateCanvas();
+            SaveSettings();
         }
 
         private void SyncPositionInputs()
@@ -1073,12 +1262,14 @@ namespace Assistant.UI
             double.TryParse(ChatXTextBox.Text, out _chatX);
             double.TryParse(ChatYTextBox.Text, out _chatY);
             UpdateCanvas();
+            SaveSettings();
         }
 
         private void Styling_Changed(object sender, RoutedEventArgs e)
         {
             if (!_isLoaded) return;
             UpdateCanvas();
+            SaveSettings();
         }
 
         private void StylingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -1091,6 +1282,7 @@ namespace Assistant.UI
             BgBoxOpacityValText.Text = BgBoxOpacitySlider.Value.ToString("0.00");
 
             UpdateCanvas();
+            SaveSettings();
         }
 
         // ==========================================

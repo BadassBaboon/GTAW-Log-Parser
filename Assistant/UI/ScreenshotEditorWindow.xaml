@@ -139,6 +139,19 @@
                             <Button x:Name="ResetViewBtn" Click="ResetViewBtn_Click" Content="Reset" Height="25" Padding="9,0" FontSize="11.5" ToolTip="Reset pan and zoom to 100%"/>
                         </StackPanel>
                     </Border>
+
+                    <Border Style="{StaticResource ToolbarSegment}" Padding="7,3">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <iconPacks:PackIconMaterial Kind="Magnify" Width="13" Height="13" Margin="0,0,6,0"
+                                                        Foreground="{DynamicResource MahApps.Brushes.Gray3}" VerticalAlignment="Center"/>
+                            <Slider x:Name="ZoomSlider" Minimum="10" Maximum="400" Value="100" Width="85" Height="20"
+                                    VerticalAlignment="Center" Margin="0,0,6,0"
+                                    ValueChanged="ZoomSlider_ValueChanged"
+                                    ToolTip="Zoom image manually (10% to 400%)"/>
+                            <TextBlock x:Name="ZoomValText" Text="100%" Width="36" FontSize="11" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource MahApps.Brushes.Gray3}" TextAlignment="Right"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
@@ -336,12 +349,11 @@
 
                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="2,0,7,0"/>
 
-                                            <Border Grid.Column="1" Background="{Binding BadgeBackground}"
-                                                    CornerRadius="2" Padding="4,1" Margin="0,0,7,0" VerticalAlignment="Center" MinWidth="32"
-                                                    ToolTip="{Binding SourceTooltip}">
-                                                <TextBlock Text="{Binding TypeLabel}" Foreground="{Binding ColorBrush}"
-                                                           FontSize="9" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                            </Border>
+                                            <!-- Color indicator square -->
+                                            <Border Grid.Column="1" Width="13" Height="13" CornerRadius="3"
+                                                    Background="{Binding ColorBrush}" BorderBrush="#55FFFFFF" BorderThickness="1"
+                                                    Margin="0,0,7,0" VerticalAlignment="Center"
+                                                    ToolTip="{Binding SourceTooltip}"/>
 
                                             <TextBlock Grid.Column="2" TextWrapping="Wrap" FontSize="11.5"
                                                        VerticalAlignment="Center" Margin="0,1"
@@ -387,7 +399,6 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,7">
@@ -417,7 +428,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <Border Grid.Row="1" Style="{StaticResource PaneBody}" Margin="0,0,0,7">
+                    <Border Grid.Row="1" Style="{StaticResource PaneBody}">
                         <Grid>
                             <ListBox x:Name="PlacedLinesListBox" SelectionChanged="PlacedLinesListBox_SelectionChanged"
                                      Background="{DynamicResource ScreenshotChatSurface}" BorderThickness="0" Padding="2"
@@ -437,12 +448,14 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
-                                            <Border Grid.Column="0" Background="{Binding BadgeBackground}" CornerRadius="2"
-                                                    Padding="4,1" Margin="1,0,6,0" VerticalAlignment="Center" MinWidth="32"
-                                                    ToolTip="{Binding SourceTooltip}">
-                                                <TextBlock Text="{Binding TypeLabel}" Foreground="{Binding ColorBrush}"
-                                                           FontSize="9" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                            </Border>
+                                            <!-- Clickable Color Square with Dropdown -->
+                                            <Button Grid.Column="0" Click="LineColorSquare_Click"
+                                                    Width="20" Height="20" Margin="1,0,6,0" Padding="0"
+                                                    ToolTip="{Binding SourceTooltip}"
+                                                    Cursor="Hand" Style="{DynamicResource MahApps.Styles.Button.Flat}">
+                                                <Border Width="15" Height="15" CornerRadius="3" Background="{Binding ColorBrush}"
+                                                        BorderBrush="#66FFFFFF" BorderThickness="1"/>
+                                            </Button>
 
                                             <TextBox Grid.Column="1" Text="{Binding RawText, UpdateSourceTrigger=PropertyChanged}"
                                                      TextChanged="PlacedLineText_Changed"
@@ -466,39 +479,6 @@
                                        Text="Nothing placed yet.&#x0a;Tick lines above and press Add to canvas."/>
                         </Grid>
                     </Border>
-
-                    <!-- Colour override. Swatches are generated from ChatLineClassifier.Palette at
-                         runtime, so this can never advertise a colour the renderer would not use. -->
-                    <StackPanel Grid.Row="2">
-                        <Grid Margin="0,0,0,5">
-                            <TextBlock Text="Colour of selected line" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
-                            <Button x:Name="ResetLineColorBtn" Click="ResetLineColorBtn_Click" HorizontalAlignment="Right"
-                                    Height="20" Padding="7,0" FontSize="10.5"
-                                    Style="{DynamicResource MahApps.Styles.Button.Flat}"
-                                    Content="Auto" ToolTip="Drop the manual override and use the colour the game used"/>
-                        </Grid>
-                        <ItemsControl x:Name="PaletteItems">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Click="SetColorPreset_Click" Tag="{Binding Hex}" ToolTip="{Binding Tooltip}"
-                                            Margin="0,0,4,4" Padding="0" Height="24"
-                                            Style="{DynamicResource MahApps.Styles.Button.Flat}">
-                                        <Border Background="{DynamicResource MahApps.Brushes.Gray9}" BorderBrush="{DynamicResource MahApps.Brushes.Separator}" BorderThickness="1" CornerRadius="3" Padding="6,2">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Border Width="9" Height="9" CornerRadius="2" Background="{Binding SwatchBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                <TextBlock Text="{Binding Label}" FontSize="10.5" VerticalAlignment="Center" Foreground="{DynamicResource MahApps.Brushes.Text}"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
                 </Grid>
 
                 <!-- STEP 3 : STYLE — collapsed by default; it is tuned once, not per line. -->

@@ -595,5 +595,149 @@ namespace Assistant.Properties {
                 this["ServerTimezone"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Arial")]
+        public string ScreenshotFontFamily {
+            get {
+                return ((string)(this["ScreenshotFontFamily"]));
+            }
+            set {
+                this["ScreenshotFontFamily"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("14")]
+        public double ScreenshotFontSize {
+            get {
+                return ((double)(this["ScreenshotFontSize"]));
+            }
+            set {
+                this["ScreenshotFontSize"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("4")]
+        public double ScreenshotLineSpacing {
+            get {
+                return ((double)(this["ScreenshotLineSpacing"]));
+            }
+            set {
+                this["ScreenshotLineSpacing"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1.2")]
+        public double ScreenshotOutlineWidth {
+            get {
+                return ((double)(this["ScreenshotOutlineWidth"]));
+            }
+            set {
+                this["ScreenshotOutlineWidth"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ScreenshotFontBold {
+            get {
+                return ((bool)(this["ScreenshotFontBold"]));
+            }
+            set {
+                this["ScreenshotFontBold"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ScreenshotDropShadow {
+            get {
+                return ((bool)(this["ScreenshotDropShadow"]));
+            }
+            set {
+                this["ScreenshotDropShadow"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ScreenshotEnableBgBox {
+            get {
+                return ((bool)(this["ScreenshotEnableBgBox"]));
+            }
+            set {
+                this["ScreenshotEnableBgBox"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.45")]
+        public double ScreenshotBgBoxOpacity {
+            get {
+                return ((double)(this["ScreenshotBgBoxOpacity"]));
+            }
+            set {
+                this["ScreenshotBgBoxOpacity"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public double ScreenshotChatX {
+            get {
+                return ((double)(this["ScreenshotChatX"]));
+            }
+            set {
+                this["ScreenshotChatX"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public double ScreenshotChatY {
+            get {
+                return ((double)(this["ScreenshotChatY"]));
+            }
+            set {
+                this["ScreenshotChatY"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1300")]
+        public int ScreenshotCanvasWidth {
+            get {
+                return ((int)(this["ScreenshotCanvasWidth"]));
+            }
+            set {
+                this["ScreenshotCanvasWidth"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("730")]
+        public int ScreenshotCanvasHeight {
+            get {
+                return ((int)(this["ScreenshotCanvasHeight"]));
+            }
+            set {
+                this["ScreenshotCanvasHeight"] = value;
+            }
+        }
     }
 }

@@ -266,5 +266,35 @@ namespace GTAWParser.Shared.Tests
             thread.Start();
             thread.Join(5000);
         }
+
+        [Fact]
+        public void EditorSwatches_ContainsVerifiedRoleplayColors()
+        {
+            var swatches = RoleplayChatColorizer.EditorSwatches;
+            Assert.NotEmpty(swatches);
+
+            Assert.Contains(swatches, s => s.Label == "/me" && s.Hex.Equals("#C2A3DA", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "/do" && s.Hex.Equals("#C2A3DA", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Your Speech" && s.Hex.Equals("#F1F1F1", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Other Speech" && s.Hex.Equals("#C8C8C8", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Whisper" && s.Hex.Equals("#EDA841", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Phone Call" && s.Hex.Equals("#FBF724", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Radio" && s.Hex.Equals("#1E90FF", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Item Given" && s.Hex.Equals("#56D64B", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Money Paid" && s.Hex.Equals("#56D64B", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "CK Blue" && s.Hex.Equals("#3896F3", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "CK Red / Admin" && s.Hex.Equals("#F00000", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Inventory" && s.Hex.Equals("#FFFF00", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "OOC" && s.Hex.Equals("#A6ACAF", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Advertisement" && s.Hex.Equals("#2ECC71", StringComparison.OrdinalIgnoreCase));
+
+            foreach (var s in swatches)
+            {
+                Assert.False(string.IsNullOrWhiteSpace(s.Label));
+                Assert.False(string.IsNullOrWhiteSpace(s.Tooltip));
+                Assert.StartsWith("#", s.Hex);
+                Assert.Equal(7, s.Hex.Length);
+            }
+        }
     }
 }
