@@ -1033,28 +1033,20 @@ namespace Assistant.UI
                 {
                     Log.Debug("AI Shortcut triggered. Mode: {Mode}", mode);
 
-                    // Wait a tiny fraction of a second for the hotkey hook to complete, then release modifiers.
-                    Thread.Sleep(10);
+                    // Wait a moment for the hotkey hook to complete, then release modifiers.
+                    Thread.Sleep(15);
                     KeyboardHookManager.ReleaseAllModifiers();
-
-                    string oldClipboard = string.Empty;
-                    Dispatcher.Invoke(() =>
-                    {
-                        oldClipboard = SafeGetClipboardText();
-                    });
 
                     Dispatcher.Invoke(() => { try { Clipboard.Clear(); } catch { } });
 
                     Log.Debug("Simulating initial Copy to check for highlighted text...");
                     KeyboardHookManager.SimulateCopy();
 
-                    // Poll clipboard: check every 2ms, up to a maximum of 50ms (25 attempts).
-                    // This is extremely lightweight (zero CPU overhead) and completes instantly (under 5-10ms)
-                    // on responsive systems.
+                    // Poll clipboard: check every 5ms, up to 150ms (30 attempts).
                     string capturedText = string.Empty;
-                    for (int i = 0; i < 25; i++)
+                    for (int i = 0; i < 30; i++)
                     {
-                        Thread.Sleep(2);
+                        Thread.Sleep(5);
                         Dispatcher.Invoke(() =>
                         {
                             capturedText = SafeGetClipboardText();
@@ -1070,16 +1062,16 @@ namespace Assistant.UI
                     {
                         Log.Debug("No text was highlighted. Simulating Select All...");
                         KeyboardHookManager.SimulateSelectAll();
-                        Thread.Sleep(20); // Short delay (approx 1 frame) for target app layout update
+                        Thread.Sleep(30); // Allow target app layout/selection update
 
                         Dispatcher.Invoke(() => { try { Clipboard.Clear(); } catch { } });
                         Log.Debug("Simulating Copy of selected text...");
                         KeyboardHookManager.SimulateCopy();
 
-                        // Poll clipboard for up to 50ms
-                        for (int i = 0; i < 25; i++)
+                        // Poll clipboard for up to 150ms
+                        for (int i = 0; i < 30; i++)
                         {
-                            Thread.Sleep(2);
+                            Thread.Sleep(5);
                             Dispatcher.Invoke(() =>
                             {
                                 capturedText = SafeGetClipboardText();
@@ -1092,11 +1084,7 @@ namespace Assistant.UI
 
                     if (string.IsNullOrWhiteSpace(capturedText))
                     {
-                        Log.Warning("No text captured after select all attempt. Restoring clipboard and aborting.");
-                        Dispatcher.Invoke(() =>
-                        {
-                            SafeSetClipboardText(oldClipboard);
-                        });
+                        Log.Warning("No text captured after select all attempt. Aborting.");
                         PlaySound(false);
                         return;
                     }
@@ -1105,6 +1093,13 @@ namespace Assistant.UI
                     Log.Debug("Processing text via Groq...");
                     string result = await AiAssistantController.ProcessTextAsync(capturedText, mode);
                     Log.Debug("Groq processing completed. Result length: {Length}", result.Length);
+
+                    if (string.IsNullOrWhiteSpace(result))
+                    {
+                        Log.Warning("Processed result was empty. Aborting.");
+                        PlaySound(false);
+                        return;
+                    }
 
                     Dispatcher.Invoke(() =>
                     {
@@ -1115,17 +1110,15 @@ namespace Assistant.UI
                     {
                         Log.Debug("Simulating Select All before pasting rewritten text...");
                         KeyboardHookManager.SimulateSelectAll();
-                        Thread.Sleep(20); // Short delay for target app layout update
+                        Thread.Sleep(30); // Allow target app layout update
                     }
 
                     Log.Debug("Simulating Paste...");
                     KeyboardHookManager.SimulatePaste();
-                    Thread.Sleep(40); // Safe delay for target app to read clipboard and complete paste
 
-                    Dispatcher.Invoke(() =>
-                    {
-                        SafeSetClipboardText(oldClipboard);
-                    });
+                    // Note: We deliberately KEEP `result` on the clipboard.
+                    // Prematurely overwriting the clipboard with empty/stale text 40ms later created a race condition
+                    // where FiveM CEF handled Ctrl+V after the clipboard was already wiped, pasting empty nothingness.
 
                     Log.Debug("AI Shortcut processing completed successfully.");
                     PlaySound(true);

@@ -39,6 +39,11 @@ namespace GTAWParser.Shared.Tests
         [InlineData("The person nods in agreement.", "nods in agreement.")]
         [InlineData("He takes a deep breath.", "takes a deep breath.")]
         [InlineData("pulls out his phone.", "pulls out his phone.")]
+        [InlineData("* Tony Soprano slides a thick wad of cash from the inner pocket of his jacket.", "slides a thick wad of cash from the inner pocket of his jacket.")]
+        [InlineData("Tony Soprano slides a thick wad of cash from the inner pocket of his jacket.", "slides a thick wad of cash from the inner pocket of his jacket.")]
+        [InlineData("* slides a thick wad of cash from the inner pocket of his jacket.", "slides a thick wad of cash from the inner pocket of his jacket.")]
+        [InlineData("* He slides a thick wad of cash from the inner pocket of his jacket.", "slides a thick wad of cash from the inner pocket of his jacket.")]
+        [InlineData("John Doe reaches into the glovebox.", "reaches into the glovebox.")]
         public void SanitizeResult_MeCommand_StripsThirdPersonPronounsAndEnforcesVerbFirst(string input, string expected)
         {
             string result = AiTextSanitizer.SanitizeResult(input, "/me ", "pulls out wallet");
@@ -51,6 +56,8 @@ namespace GTAWParser.Shared.Tests
         [InlineData("Their gaze shifts toward the doorway.", "gaze shifts toward the doorway.")]
         [InlineData("The jaw clenches tightly.", "jaw clenches tightly.")]
         [InlineData("heart races uncontrollably.", "heart races uncontrollably.")]
+        [InlineData("* Tony Soprano's eyes widen in shock.", "eyes widen in shock.")]
+        [InlineData("Tony Soprano's hands tremble.", "hands tremble.")]
         public void SanitizeResult_MyCommand_StripsPossessivePronouns(string input, string expected)
         {
             string result = AiTextSanitizer.SanitizeResult(input, "/my ", "hands tremble");
@@ -75,6 +82,15 @@ namespace GTAWParser.Shared.Tests
             string result = AiTextSanitizer.SanitizeResult(rawGptOutput, "/me ", "pulls out id");
 
             Assert.Equal("pulls out his driver's license and hands it over.", result);
+        }
+
+        [Fact]
+        public void SanitizeResult_HandlesTonySopranoAsteriskOutput()
+        {
+            string rawOutput = "* Tony Soprano slides a thick wad of cash from the inner pocket of his jacket.";
+            string result = AiTextSanitizer.SanitizeResult(rawOutput, "/me ", "pulls a large wad of cash out of his jacket’s inner pocket.");
+
+            Assert.Equal("slides a thick wad of cash from the inner pocket of his jacket.", result);
         }
     }
 }

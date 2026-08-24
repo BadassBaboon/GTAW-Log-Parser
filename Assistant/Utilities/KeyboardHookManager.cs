@@ -375,32 +375,35 @@ namespace Assistant.Utilities
 
         public static void SimulateCopy()
         {
-            SendKeys(
-                (VK_LCONTROL, true),
-                (0x43, true),   // C down
-                (0x43, false),  // C up
-                (VK_LCONTROL, false)
-            );
+            SendKeys((VK_LCONTROL, true));
+            Thread.Sleep(8);
+            SendKeys((0x43, true));   // C down
+            Thread.Sleep(8);
+            SendKeys((0x43, false));  // C up
+            Thread.Sleep(8);
+            SendKeys((VK_LCONTROL, false));
         }
 
         public static void SimulateSelectAll()
         {
-            SendKeys(
-                (VK_LCONTROL, true),
-                (0x41, true),   // A down
-                (0x41, false),  // A up
-                (VK_LCONTROL, false)
-            );
+            SendKeys((VK_LCONTROL, true));
+            Thread.Sleep(8);
+            SendKeys((0x41, true));   // A down
+            Thread.Sleep(8);
+            SendKeys((0x41, false));  // A up
+            Thread.Sleep(8);
+            SendKeys((VK_LCONTROL, false));
         }
 
         public static void SimulatePaste()
         {
-            SendKeys(
-                (VK_LCONTROL, true),
-                (0x56, true),   // V down
-                (0x56, false),  // V up
-                (VK_LCONTROL, false)
-            );
+            SendKeys((VK_LCONTROL, true));
+            Thread.Sleep(8);
+            SendKeys((0x56, true));   // V down
+            Thread.Sleep(8);
+            SendKeys((0x56, false));  // V up
+            Thread.Sleep(8);
+            SendKeys((VK_LCONTROL, false));
         }
 
         /// <summary>

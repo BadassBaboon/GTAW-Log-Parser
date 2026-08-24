@@ -319,9 +319,12 @@ namespace Assistant.Controllers
             string textToProcess = text;
             string systemPrompt = "";
             string activeMode = overrideMode ?? Settings.Mode;
+            string actPrefix = "";
+            string actPayload = "";
+            bool isActionEnricher = Settings.ActionEnricherEnabled && IsActionCommand(text, out actPrefix, out actPayload);
 
             // Check if this is a roleplay action command (/me, /do, /melow, etc.) and Action Enricher is enabled
-            if (Settings.ActionEnricherEnabled && IsActionCommand(text, out string actPrefix, out string actPayload))
+            if (isActionEnricher)
             {
                 commandPrefix = actPrefix;
                 textToProcess = actPayload;
@@ -340,11 +343,11 @@ namespace Assistant.Controllers
                 string prefixCasingInstruction = "";
                 if (cmdLower.StartsWith("/me") || cmdLower.StartsWith("/ame") || cmdLower.StartsWith("/melow") || cmdLower.StartsWith("/melong"))
                 {
-                    prefixCasingInstruction = "CRITICAL: The output will follow the character's name directly in GTA World chat (e.g. '* Firstname Lastname <action>'). The output MUST start with a lowercase letter and begin directly with a verb or action (e.g. 'side steps...', 'reaches under...'). DO NOT start with 'The figure', 'He', 'She', or any capitalized words.\n";
+                    prefixCasingInstruction = "CRITICAL /me FORMATTING RULE: The output will follow the character's name directly in GTA World chat (e.g. '* PlayerName <action>'). The output MUST start with a lowercase letter and begin directly with a verb or action (e.g. 'pulls out...', 'reaches under...'). DO NOT include character names, asterisks (*), 'The figure', 'He', 'She', or any capitalized words at the beginning.\n";
                 }
                 else if (cmdLower.StartsWith("/my") || cmdLower.StartsWith("/amy") || cmdLower.StartsWith("/mylow") || cmdLower.StartsWith("/mylong"))
                 {
-                    prefixCasingInstruction = "CRITICAL: The output will follow the character's name possessive directly in GTA World chat (e.g. '* Firstname Lastname's <body part/item action>'). The output MUST start with a lowercase letter and begin directly with the possessive noun/body part (e.g. 'wrist is deeply lacerated...', 'eyes widen...'). DO NOT start with 'The', 'His', 'Her', or any capitalized words.\n";
+                    prefixCasingInstruction = "CRITICAL /my FORMATTING RULE: The output will follow the character's name possessive directly in GTA World chat (e.g. '* PlayerName's <body part/item action>'). The output MUST start with a lowercase letter and begin directly with the possessive noun/body part (e.g. 'wrist is deeply lacerated...', 'eyes widen...'). DO NOT include character names, asterisks (*), 'The', 'His', 'Her', or any capitalized words at the beginning.\n";
                 }
 
                 string rpQuestionInstruction = "";
@@ -362,7 +365,8 @@ namespace Assistant.Controllers
                                "2. Use standard English spelling and grammar (do NOT apply accent phonetics or slang to action descriptions).\n" +
                                "3. Return ONLY the enriched action description.\n" +
                                "4. Do not include conversational preambles, explanations, or quotes.\n" +
-                               "5. DO NOT use em-dashes (— or --).\n" +
+                               "5. DO NOT use curly apostrophes or smart quotes (such as '’', '‘', '“', '”'). Always use standard ASCII straight apostrophes (') and straight quotes (\").\n" +
+                               "6. DO NOT use em-dashes (— or --) or en-dashes (–).\n" +
                                "7. Always end the action description with proper sentence-ending punctuation (a period '.', '?', or '!').\n" +
                                "8. CRITICAL ANTI-HALLUCINATION RULE: DO NOT invent unstated physical details, injuries, bloodstains, damage, clothing conditions (e.g., 'tattered', 'blood-stained', 'worn'), specific objects, or unstated facts not present in the original input. Only refine the phrasing, vocabulary, structure, and atmospheric delivery of the EXACT facts and items provided.\n" +
                                constraintRules;
@@ -517,7 +521,11 @@ namespace Assistant.Controllers
                 try
                 {
                     string userPromptContent = "";
-                    if (activeMode == "Accent")
+                    if (isActionEnricher)
+                    {
+                        userPromptContent = $"Action: {textToProcess}\nEnriched Action:";
+                    }
+                    else if (activeMode == "Accent")
                     {
                         userPromptContent = $"Style: {Settings.TargetAccent}\nOriginal: {textToProcess}\nTranslation:";
                     }
