@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.3.1] - 2026-08-24
+
+### Added
+- **Automatic & Multi-Region GTA World Server Timezone Support (`ServerTimezoneHelper.cs`, `FiveMChatCaptureService.cs`, `ProgramSettingsWindow.xaml`, `ProgramSettingsWindow.xaml.cs`)**:
+  - **Live Auto-Detection (`Auto-Detect Server Timezone (Recommended)`)**: Automatically extracts the live server clock from `#clock` inside the `loadingScreen` NUI frame upon connecting to any GTA World server (and syncs with in-game timestamps), instantly calibrating the server timezone offset before character selection and chat even open.
+  - **Manual Regional Overrides**: Added a dedicated `Server Timezone` selector dropdown in Program Settings with full support for all regional GTA World servers:
+    - **`Auto-Detect Server Timezone (Recommended)`** — *Default*
+    - **`GTA World English (UTC / Server Time)`** (UTC+0)
+    - **`GTA World Türkiye (Istanbul / UTC+3)`** (TRT / UTC+3)
+    - **`GTA World Korea (Seoul / UTC+9)`** (KST / UTC+9)
+    - **`GTA World Russia (St. Petersburg / UTC+3)`** (MSK / UTC+3)
+    - **`GTA World France (Paris / CET)`** (CET/CEST)
+    - **`GTA World Spain (Madrid / CET)`** (CET/CEST)
+    - **`Local PC Time (System Clock)`** (Client OS local timezone)
+  - Log parsing, Live Tail streaming, and automated backup exports now calculate session headers and missing timestamps against the accurate GTA World server clock, eliminating timezone skew for players who play with in-game `/timestamp` turned off.
+
+### Changed
+- **Theme-Adaptive Live Tail Viewport (`LiveTailWindow.xaml`, `LiveTailWindow.xaml.cs`)**:
+  - Replaced high-contrast stark black viewport background in Light Mode with a soft, balanced Nord slate charcoal surface (`#2B303A`) with a subtle slate silver border (`#C4CBD5`), preserving AAA contrast for white and yellow text while smoothly blending into the light application window.
+
 ## [6.3.0] - 2026-08-24
 
 ### Added
