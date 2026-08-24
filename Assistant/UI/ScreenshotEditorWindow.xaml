@@ -50,6 +50,30 @@
             <Setter Property="Margin" Value="0,0,10,0"/>
         </Style>
 
+        <!-- Standard transparency checkerboard. Two 8px squares in a 16px tile; the tones are
+             swapped at runtime for light mode so the pattern stays legible either way. -->
+        <DrawingBrush x:Key="CheckerboardBrush" TileMode="Tile"
+                      Viewport="0,0,16,16" ViewportUnits="Absolute"
+                      Stretch="None" RenderOptions.CachingHint="Cache">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="{DynamicResource ScreenshotCheckerLight}">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="0,0,16,16"/>
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                    <GeometryDrawing Brush="{DynamicResource ScreenshotCheckerDark}">
+                        <GeometryDrawing.Geometry>
+                            <GeometryGroup>
+                                <RectangleGeometry Rect="0,0,8,8"/>
+                                <RectangleGeometry Rect="8,8,8,8"/>
+                            </GeometryGroup>
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
         <Style x:Key="PaneBody" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Gray10}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Separator}"/>
@@ -153,17 +177,25 @@
             </Grid.ColumnDefinitions>
 
             <!-- CANVAS VIEWPORT -->
-            <Grid Grid.Column="0" Background="#121212" ClipToBounds="True"
+            <Grid x:Name="ViewportSurface" Grid.Column="0" ClipToBounds="True"
                   MouseDown="Viewport_MouseDown" MouseMove="Viewport_MouseMove"
                   MouseUp="Viewport_MouseUp" MouseWheel="Viewport_MouseWheel">
 
                 <Grid x:Name="ViewportGrid" HorizontalAlignment="Center" VerticalAlignment="Center"
                       SizeChanged="ViewportGrid_SizeChanged">
-                    <Border Background="#0A0A0A" CornerRadius="3" Margin="-6">
+                    <Border x:Name="CanvasFrame" CornerRadius="3" Margin="-6">
                         <Border.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="26" ShadowDepth="5" Opacity="0.7"/>
                         </Border.Effect>
                     </Border>
+
+                    <!-- Sits behind the rendered bitmap and is exactly its size, so any canvas the
+                         image no longer covers reads as transparent rather than as black padding. -->
+                    <Rectangle x:Name="CheckerboardLayer" Fill="{StaticResource CheckerboardBrush}"
+                               Width="{Binding ActualWidth, ElementName=CanvasPreviewImage}"
+                               Height="{Binding ActualHeight, ElementName=CanvasPreviewImage}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsHitTestVisible="False"/>
 
                     <Image x:Name="CanvasPreviewImage" Stretch="Uniform"
                            RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -173,7 +205,7 @@
                     <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False" ClipToBounds="True">
                         <Rectangle x:Name="ChatBlockOutline" Visibility="Collapsed"
                                    Stroke="{DynamicResource MahApps.Brushes.Accent}" StrokeThickness="1"
-                                   Fill="#14FFFFFF" RadiusX="2" RadiusY="2">
+                                   Fill="{DynamicResource ScreenshotSelectionFill}" RadiusX="2" RadiusY="2">
                             <Rectangle.StrokeDashArray>
                                 <DoubleCollection>3 2</DoubleCollection>
                             </Rectangle.StrokeDashArray>
@@ -183,22 +215,22 @@
 
                 <!-- Empty state: says what to do, instead of showing a blank black rectangle. -->
                 <Border x:Name="EmptyStateHint" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Background="#CC1B1B1B" BorderBrush="#28FFFFFF" BorderThickness="1"
+                        Background="{DynamicResource ScreenshotOverlayFill}" BorderBrush="{DynamicResource ScreenshotOverlayBorder}" BorderThickness="1"
                         CornerRadius="8" Padding="26,20" IsHitTestVisible="False">
                     <StackPanel HorizontalAlignment="Center">
                         <iconPacks:PackIconMaterial Kind="ImagePlus" Width="26" Height="26" HorizontalAlignment="Center"
-                                                    Foreground="#7A7A7A" Margin="0,0,0,10"/>
+                                                    Foreground="{DynamicResource ScreenshotOverlayMuted}" Margin="0,0,0,10"/>
                         <TextBlock Text="Drop in a screenshot to begin" FontSize="13" FontWeight="SemiBold"
-                                   Foreground="#CFCFCF" HorizontalAlignment="Center"/>
+                                   Foreground="{DynamicResource ScreenshotOverlayText}" HorizontalAlignment="Center"/>
                         <TextBlock Text="Open, or paste with Ctrl+V" FontSize="11.5"
-                                   Foreground="#8A8A8A" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                   Foreground="{DynamicResource ScreenshotOverlayMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
-                        Background="#CC1E1E1E" BorderBrush="#2EFFFFFF" BorderThickness="1"
+                        Background="{DynamicResource ScreenshotOverlayFill}" BorderBrush="{DynamicResource ScreenshotOverlayBorder}" BorderThickness="1"
                         CornerRadius="5" Padding="8,5" IsHitTestVisible="False">
-                    <TextBlock x:Name="ViewportHintText" FontSize="11" Foreground="#C8C8C8"
+                    <TextBlock x:Name="ViewportHintText" FontSize="11" Foreground="{DynamicResource ScreenshotOverlayText}"
                                Text="Drag the chat block to move it · Right-drag to pan · Wheel to zoom"/>
                 </Border>
             </Grid>
@@ -268,12 +300,12 @@
                             </UniformGrid>
                         </Grid>
                         <Border x:Name="ColorSourceBanner" Margin="0,7,0,0"
-                                Background="#1E2A33" BorderBrush="#2F4A5A" BorderThickness="1" CornerRadius="4"
+                                Background="{DynamicResource ScreenshotBannerFill}" BorderBrush="{DynamicResource ScreenshotBannerBorder}" BorderThickness="1" CornerRadius="4"
                                 Padding="7,4" Visibility="Collapsed">
                             <StackPanel Orientation="Horizontal">
                                 <iconPacks:PackIconMaterial x:Name="ColorSourceIcon" Kind="InformationOutline" Width="12" Height="12"
-                                                            Foreground="#5FA8D3" VerticalAlignment="Top" Margin="0,2,7,0"/>
-                                <TextBlock x:Name="ColorSourceText" FontSize="11" Foreground="#B9C6CE"
+                                                            VerticalAlignment="Top" Margin="0,2,7,0"/>
+                                <TextBlock x:Name="ColorSourceText" FontSize="11" Foreground="{DynamicResource MahApps.Brushes.Text}"
                                            TextWrapping="Wrap" MaxWidth="330"/>
                             </StackPanel>
                         </Border>
@@ -286,7 +318,7 @@
                             <ListBox x:Name="ChatLinesListBox" SelectionMode="Extended"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      VirtualizingPanel.IsVirtualizing="True" ScrollViewer.CanContentScroll="True"
-                                     Background="#16171A" BorderThickness="0" Padding="2">
+                                     Background="{DynamicResource ScreenshotChatSurface}" BorderThickness="0" Padding="2">
                                 <ListBox.ItemContainerStyle>
                                     <Style TargetType="ListBoxItem">
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -322,7 +354,7 @@
 
                             <TextBox x:Name="CustomChatTextBox" AcceptsReturn="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Visibility="Collapsed" Padding="7"
-                                     BorderThickness="0" FontSize="12" Background="#16171A"
+                                     BorderThickness="0" FontSize="12" Background="{DynamicResource ScreenshotChatSurface}"
                                      Controls:TextBoxHelper.Watermark="Paste chat lines here — timestamps are stripped automatically."/>
                         </Grid>
                     </Border>
@@ -379,7 +411,7 @@
                                 <iconPacks:PackIconMaterial Kind="Plus" Width="11" Height="11"/>
                             </Button>
                             <Button x:Name="ClearAllPlacedLinesBtn" Click="ClearAllPlacedLinesBtn_Click" Width="26" Height="26" Padding="0"
-                                    Foreground="#E05555" ToolTip="Remove every line from the canvas">
+                                    Foreground="{DynamicResource ScreenshotDanger}" ToolTip="Remove every line from the canvas">
                                 <iconPacks:PackIconMaterial Kind="TrashCanOutline" Width="12" Height="12"/>
                             </Button>
                         </StackPanel>
@@ -388,7 +420,7 @@
                     <Border Grid.Row="1" Style="{StaticResource PaneBody}" Margin="0,0,0,7">
                         <Grid>
                             <ListBox x:Name="PlacedLinesListBox" SelectionChanged="PlacedLinesListBox_SelectionChanged"
-                                     Background="#16171A" BorderThickness="0" Padding="2"
+                                     Background="{DynamicResource ScreenshotChatSurface}" BorderThickness="0" Padding="2"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <ListBox.ItemContainerStyle>
                                     <Style TargetType="ListBoxItem">
@@ -430,7 +462,7 @@
 
                             <TextBlock x:Name="PlacedEmptyHint" IsHitTestVisible="False"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="#6A6A6A" FontSize="11.5" TextAlignment="Center"
+                                       Foreground="{DynamicResource MahApps.Brushes.Gray3}" FontSize="11.5" TextAlignment="Center"
                                        Text="Nothing placed yet.&#x0a;Tick lines above and press Add to canvas."/>
                         </Grid>
                     </Border>
@@ -456,10 +488,10 @@
                                     <Button Click="SetColorPreset_Click" Tag="{Binding Hex}" ToolTip="{Binding Tooltip}"
                                             Margin="0,0,4,4" Padding="0" Height="24"
                                             Style="{DynamicResource MahApps.Styles.Button.Flat}">
-                                        <Border Background="#1E1F22" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="3" Padding="6,2">
+                                        <Border Background="{DynamicResource MahApps.Brushes.Gray9}" BorderBrush="{DynamicResource MahApps.Brushes.Separator}" BorderThickness="1" CornerRadius="3" Padding="6,2">
                                             <StackPanel Orientation="Horizontal">
                                                 <Border Width="9" Height="9" CornerRadius="2" Background="{Binding SwatchBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                <TextBlock Text="{Binding Label}" FontSize="10.5" VerticalAlignment="Center" Foreground="#D8D8D8"/>
+                                                <TextBlock Text="{Binding Label}" FontSize="10.5" VerticalAlignment="Center" Foreground="{DynamicResource MahApps.Brushes.Text}"/>
                                             </StackPanel>
                                         </Border>
                                     </Button>

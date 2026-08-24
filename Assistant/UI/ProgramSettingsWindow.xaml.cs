@@ -125,7 +125,8 @@ namespace Assistant.UI
             ToggleDarkMode.IsEnabled = !Properties.Settings.Default.FollowSystemMode;
             Timeout.Foreground = _mainWindow.UpdateCheckProgress.Foreground = ToggleDarkMode.IsChecked == true ? System.Windows.Media.Brushes.White : System.Windows.Media.Brushes.Black;
 
-            Themes.IsEnabled = !Properties.Settings.Default.FollowSystemColor;
+            UseCustomAccent.IsChecked = StyleController.Style != "Default";
+            UpdateThemeLockState();
             UpdateThemeSwitcher();
 
             AutoDetectServerTimezone.IsChecked = Properties.Settings.Default.AutoDetectServerTimezone;
@@ -194,6 +195,22 @@ namespace Assistant.UI
         /// <summary>
         /// Initializes the Style picker ComboBox
         /// </summary>
+        /// <summary>
+        /// The theme list is editable only when the user has actually opted into a custom accent.
+        ///
+        /// Two things can lock it. "Use system accent color" takes the colour out of the user's
+        /// hands entirely. Otherwise the app sits on the GTA World default theme, which is the
+        /// branding, so the list stays locked until "Use a custom accent color" is ticked --
+        /// that checkbox is the way in, since a locked list could not unlock itself.
+        /// </summary>
+        private void UpdateThemeLockState()
+        {
+            bool followSystem = Properties.Settings.Default.FollowSystemColor;
+
+            UseCustomAccent.IsEnabled = !followSystem;
+            Themes.IsEnabled = !followSystem && UseCustomAccent.IsChecked == true;
+        }
+
         private void UpdateThemeSwitcher()
         {
             Themes.Items.Clear();
@@ -332,11 +349,33 @@ namespace Assistant.UI
         {
             Properties.Settings.Default.FollowSystemColor = FollowSystemColor.IsChecked == true;
 
-            Themes.IsEnabled = FollowSystemColor.IsChecked != true;
-
+            UpdateThemeLockState();
             UpdateThemeSwitcher();
-            if (FollowSystemColor.IsChecked != true)
-                Themes.SelectedItem = "Default";
+
+            // The list stores the default style as "Default (GTA World)"; assigning the bare name
+            // matched no item, which silently blanked the dropdown.
+            if (FollowSystemColor.IsChecked != true && UseCustomAccent.IsChecked != true)
+                Themes.SelectedItem = "Default (GTA World)";
+        }
+
+        /// <summary>
+        /// Unlocks the theme list, or returns the app to the GTA World default theme.
+        /// </summary>
+        private void UseCustomAccent_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            if (UseCustomAccent == null || Themes == null)
+                return;
+
+            UpdateThemeLockState();
+
+            if (UseCustomAccent.IsChecked == true)
+                return;
+
+            // Turning it back off restores the branding rather than leaving the last custom accent
+            // applied but no longer reachable.
+            StyleController.Style = "Default";
+            StyleController.UpdateTheme();
+            UpdateThemeSwitcher();
         }
 
         /// <summary>

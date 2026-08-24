@@ -195,6 +195,33 @@ namespace GTAWParser.Shared.Tests
         }
 
         [Fact]
+        public void Render_TransparentBackground_LeavesUncoveredCanvasTransparent()
+        {
+            var thread = new Thread(() =>
+            {
+                var opaque = new ScreenshotRenderOptions { CanvasWidth = 120, CanvasHeight = 120 };
+                var clear = new ScreenshotRenderOptions { CanvasWidth = 120, CanvasHeight = 120, TransparentBackground = true };
+
+                Assert.Equal(255, AlphaAt(ScreenshotRenderer.Render(null, null, opaque)));
+                Assert.Equal(0, AlphaAt(ScreenshotRenderer.Render(null, null, clear)));
+
+                // Flatten is what PNG-less formats and the clipboard rely on.
+                Assert.Equal(255, AlphaAt(ScreenshotRenderer.Flatten(ScreenshotRenderer.Render(null, null, clear))));
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            Assert.True(thread.Join(5000));
+        }
+
+        private static int AlphaAt(System.Windows.Media.Imaging.BitmapSource bmp)
+        {
+            var pixel = new byte[4];
+            bmp.CopyPixels(new Int32Rect(2, 2, 1, 1), pixel, 4, 0);
+            return pixel[3];
+        }
+
+        [Fact]
         public void ResolutionPreset_HasExpectedCommunityAndStandardPresets()
         {
             var presets = ResolutionPreset.DefaultPresets;

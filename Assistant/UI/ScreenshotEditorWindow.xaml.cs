@@ -242,6 +242,7 @@ namespace Assistant.UI
         private void ScreenshotEditorWindow_Loaded(object sender, RoutedEventArgs e)
         {
             _isLoaded = true;
+            ApplyThemeStyling();
 
             if (FontFamilyCombo.SelectedIndex < 0) FontFamilyCombo.SelectedIndex = 0;
             if (ChatSourceCombo.SelectedIndex < 0) ChatSourceCombo.SelectedIndex = 0;
@@ -250,6 +251,48 @@ namespace Assistant.UI
             PopulatePalette();
             LoadLiveSessionChat();
             UpdateCanvas();
+        }
+
+        private static SolidColorBrush FreezeBrush(string hex)
+        {
+            var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+            brush.Freeze();
+            return brush;
+        }
+
+        /// <summary>
+        /// Resolves the surfaces this window cannot take straight from the MahApps palette.
+        ///
+        /// The canvas viewport and the chat preview lists stay dark in both app modes on purpose:
+        /// they show GTA World chat colours, which are chosen to sit on the game's dark HUD and
+        /// become unreadable on a light ground. Light mode gets the softer slate the Live Tail
+        /// viewport already uses rather than near-black, so the panel still blends into the window.
+        /// Everything else in this window is a DynamicResource off the theme.
+        /// </summary>
+        private void ApplyThemeStyling()
+        {
+            bool dark = StyleController.DarkMode;
+
+            Resources["ScreenshotChatSurface"] = FreezeBrush(dark ? "#16171A" : "#2B303A");
+            Resources["ScreenshotViewportGround"] = FreezeBrush(dark ? "#121212" : "#20242C");
+            Resources["ScreenshotCanvasFrame"] = FreezeBrush(dark ? "#0A0A0A" : "#171A20");
+
+            // The checkerboard has to read as "nothing here" against whichever ground is behind it.
+            Resources["ScreenshotCheckerLight"] = FreezeBrush(dark ? "#3A3A3A" : "#4A505C");
+            Resources["ScreenshotCheckerDark"] = FreezeBrush(dark ? "#2B2B2B" : "#3A404A");
+
+            Resources["ScreenshotOverlayFill"] = FreezeBrush(dark ? "#CC1E1E1E" : "#CC232830");
+            Resources["ScreenshotOverlayBorder"] = FreezeBrush("#2EFFFFFF");
+            Resources["ScreenshotOverlayText"] = FreezeBrush("#C8C8C8");
+            Resources["ScreenshotOverlayMuted"] = FreezeBrush("#8A8A8A");
+            Resources["ScreenshotSelectionFill"] = FreezeBrush("#14FFFFFF");
+
+            Resources["ScreenshotBannerFill"] = FreezeBrush(dark ? "#1E2A33" : "#26333D");
+            Resources["ScreenshotBannerBorder"] = FreezeBrush(dark ? "#2F4A5A" : "#3B5666");
+            Resources["ScreenshotDanger"] = FreezeBrush(dark ? "#E05555" : "#F07070");
+
+            ViewportSurface.Background = (Brush)Resources["ScreenshotViewportGround"];
+            CanvasFrame.Background = (Brush)Resources["ScreenshotCanvasFrame"];
         }
 
         private void PopulateResolutionPresets()
@@ -496,7 +539,11 @@ namespace Assistant.UI
                 OutlineWidth = OutlineWidthSlider.Value,
                 EnableDropShadow = DropShadowCheck.IsChecked == true,
                 EnableBackgroundBox = EnableBgBoxCheck.IsChecked == true,
-                BackgroundBoxOpacity = BgBoxOpacitySlider.Value
+                BackgroundBoxOpacity = BgBoxOpacitySlider.Value,
+
+                // Uncovered canvas stays transparent so the checkerboard behind the preview shows
+                // through, making an image dragged off-axis immediately obvious.
+                TransparentBackground = true
             };
         }
 
@@ -518,6 +565,7 @@ namespace Assistant.UI
             CanvasPreviewImage.Source = ScreenshotRenderer.Render(_backgroundImage, linesSegments, options);
 
             EmptyStateHint.Visibility = _backgroundImage == null ? Visibility.Visible : Visibility.Collapsed;
+            CheckerboardLayer.Visibility = CanvasPreviewImage.Source == null ? Visibility.Collapsed : Visibility.Visible;
             PlacedEmptyHint.Visibility = _placedLines.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
             CanvasStatsText.Text = $"{options.CanvasWidth} × {options.CanvasHeight}   ·   zoom {Math.Round(_imageScale * 100)}%   ·   chat {Math.Round(_chatX)}, {Math.Round(_chatY)}";
@@ -1053,11 +1101,16 @@ namespace Assistant.UI
         {
             if (CanvasPreviewImage.Source is not BitmapSource bmp) return;
 
+            // The clipboard carries a DIB, which does not reliably preserve alpha — pasting a
+            // transparent image into Discord or a forum tends to come out black. Flatten first so
+            // what lands in the paste target is what the editor shows.
+            BitmapSource clipboardImage = ScreenshotRenderer.Flatten(bmp);
+
             for (int attempt = 0; attempt < 5; attempt++)
             {
                 try
                 {
-                    Clipboard.SetImage(bmp);
+                    Clipboard.SetImage(clipboardImage);
                     SetStatus("Image copied to the clipboard.");
                     return;
                 }
@@ -1091,7 +1144,9 @@ namespace Assistant.UI
                 if (jpeg) ScreenshotRenderer.SaveToJpeg(bmp, dialog.FileName, 95);
                 else ScreenshotRenderer.SaveToPng(bmp, dialog.FileName);
 
-                SetStatus($"Saved {Path.GetFileName(dialog.FileName)}");
+                SetStatus(jpeg
+                    ? $"Saved {Path.GetFileName(dialog.FileName)} — JPEG has no transparency, so any uncovered canvas was filled black."
+                    : $"Saved {Path.GetFileName(dialog.FileName)} — uncovered canvas was kept transparent.");
             }
             catch (Exception ex)
             {

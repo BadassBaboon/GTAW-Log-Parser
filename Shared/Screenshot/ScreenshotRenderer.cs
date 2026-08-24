@@ -36,6 +36,13 @@ namespace GTAWParser.Shared.Screenshot
         public double ShadowOffset { get; set; } = 1.0;
         public double ShadowOpacity { get; set; } = 0.8;
 
+        /// <summary>
+        /// Leaves the canvas transparent where neither the image nor the chat covers it, instead of
+        /// filling it black. The editor pairs this with a checkerboard so an image dragged off-axis
+        /// is obvious, and PNG export preserves the alpha. JPEG has no alpha and is flattened.
+        /// </summary>
+        public bool TransparentBackground { get; set; }
+
         // Background Box / Vignette
         public bool EnableBackgroundBox { get; set; } = false;
         public double BackgroundBoxOpacity { get; set; } = 0.45;
@@ -114,8 +121,12 @@ namespace GTAWParser.Shared.Screenshot
             var drawingVisual = new DrawingVisual();
             using (DrawingContext dc = drawingVisual.RenderOpen())
             {
-                // 1. Draw solid dark background fallback
-                dc.DrawRectangle(Brushes.Black, null, new Rect(0, 0, width, height));
+                // 1. Ground the canvas. Left transparent when the caller wants to see through to
+                //    whatever sits behind it, such as the editor's checkerboard.
+                if (!options.TransparentBackground)
+                {
+                    dc.DrawRectangle(Brushes.Black, null, new Rect(0, 0, width, height));
+                }
 
                 // 2. Draw transformed background image
                 if (backgroundImage != null)
@@ -232,6 +243,25 @@ namespace GTAWParser.Shared.Screenshot
         }
 
         /// <summary>
+        /// Composites a possibly-transparent bitmap onto black, for formats that cannot store alpha.
+        /// </summary>
+        public static BitmapSource Flatten(BitmapSource bitmap)
+        {
+            var visual = new DrawingVisual();
+            using (DrawingContext dc = visual.RenderOpen())
+            {
+                var bounds = new Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight);
+                dc.DrawRectangle(Brushes.Black, null, bounds);
+                dc.DrawImage(bitmap, bounds);
+            }
+
+            var flattened = new RenderTargetBitmap(
+                bitmap.PixelWidth, bitmap.PixelHeight, 96, 96, PixelFormats.Pbgra32);
+            flattened.Render(visual);
+            return flattened;
+        }
+
+        /// <summary>
         /// Encodes and saves a BitmapSource to a PNG file.
         /// </summary>
         public static void SaveToPng(BitmapSource bitmap, string filePath)
@@ -250,7 +280,7 @@ namespace GTAWParser.Shared.Screenshot
         public static void SaveToJpeg(BitmapSource bitmap, string filePath, int quality = 95)
         {
             var encoder = new JpegBitmapEncoder { QualityLevel = Math.Clamp(quality, 10, 100) };
-            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            encoder.Frames.Add(BitmapFrame.Create(Flatten(bitmap)));
             using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
                 encoder.Save(stream);
