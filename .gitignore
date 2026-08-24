@@ -348,3 +348,18 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+# ---------------------------------------------------------------------------
+# GTAW Log Parser - project specific
+# ---------------------------------------------------------------------------
+
+# Local publish staging. CI publishes to publish/ (ignored above) with the same
+# parser-fdd / parser-sc / assistant-fdd / assistant-sc layout; publish_temp is
+# the scratch equivalent used when building releases by hand. Hundreds of MB.
+publish_temp/
+[Pp]ublish_[Tt]emp/
+
+# NOTE: the Visual Studio template above ignores *.log, [Ll]og/ and [Ll]ogs/.
+# This is a chat-log parser, so if sample logs are ever added as test fixtures
+# they will be ignored silently. Unignore them explicitly if that happens, e.g.
+#   !Shared.Tests/Fixtures/**
