@@ -637,6 +637,27 @@ namespace Assistant.UI
             fiveMToolsWindow.Activate();
         }
 
+        private static ScreenshotEditorWindow? screenshotEditorWindow;
+        private void ScreenshotEditorToolStripMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (screenshotEditorWindow == null)
+                {
+                    screenshotEditorWindow = new ScreenshotEditorWindow();
+                    screenshotEditorWindow.Owner = this;
+                    screenshotEditorWindow.Closed += (s, args) => screenshotEditorWindow = null;
+                }
+                screenshotEditorWindow.Show();
+                screenshotEditorWindow.Activate();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to open Screenshot Editor window.");
+                MessageBox.Show(this, $"Failed to open Screenshot Editor:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         /// <summary>
         /// Displays some information about the application
         /// </summary>

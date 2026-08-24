@@ -300,7 +300,6 @@ namespace Assistant.UI
                 bool nuiHasColor = line.Spans != null && line.Spans.Count > 0 &&
                     line.Spans.Any(s => !string.IsNullOrEmpty(s.Color) &&
                         !string.Equals(s.Color, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(s.Color, "#DCDCDC", StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals(s.Color, "#F0F0F0", StringComparison.OrdinalIgnoreCase));
 
                 if (nuiHasColor)
@@ -344,8 +343,7 @@ namespace Assistant.UI
                     }
                 }
                 else if (!string.IsNullOrWhiteSpace(line.DominantColor) &&
-                    !string.Equals(line.DominantColor, "#FFFFFF", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(line.DominantColor, "#DCDCDC", StringComparison.OrdinalIgnoreCase))
+                    !string.Equals(line.DominantColor, "#FFFFFF", StringComparison.OrdinalIgnoreCase))
                 {
                     segments.Add(new TextSegment(content, GetOrCreateBrush(line.DominantColor)));
                 }

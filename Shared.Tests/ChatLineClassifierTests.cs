@@ -120,7 +120,7 @@ namespace GTAWParser.Shared.Tests
 
             Assert.NotNull(spans);
             Assert.Single(spans);
-            Assert.Equal("#31CB31", spans[0].Color);
+            Assert.Equal("#32CD32", spans[0].Color);
             Assert.Equal(line, spans[0].Text);
         }
 
@@ -149,11 +149,11 @@ namespace GTAWParser.Shared.Tests
             Assert.Equal("Temperature: ", spans[0].Text);
             Assert.Equal("#FFFFFF", spans[0].Color);
             Assert.Equal("33.3°C", spans[1].Text);
-            Assert.Equal("#31CB31", spans[1].Color);
+            Assert.Equal("#32CD32", spans[1].Color);
             Assert.Equal("91.92F", spans[3].Text);
-            Assert.Equal("#31CB31", spans[3].Color);
+            Assert.Equal("#32CD32", spans[3].Color);
             Assert.Equal("Sunny", spans[5].Text);
-            Assert.Equal("#31CB31", spans[5].Color);
+            Assert.Equal("#32CD32", spans[5].Color);
         }
 
         [Fact]
@@ -192,7 +192,7 @@ namespace GTAWParser.Shared.Tests
             Assert.Equal("1", spans[1].Text);
             Assert.Equal("#1E90FF", spans[1].Color);
             Assert.Equal("$150", spans[3].Text);
-            Assert.Equal("#31CB31", spans[3].Color);
+            Assert.Equal("#32CD32", spans[3].Color);
         }
 
         [Fact]
@@ -203,11 +203,11 @@ namespace GTAWParser.Shared.Tests
 
             Assert.Equal(3, spans.Count);
             Assert.Equal("Refilling ", spans[0].Text);
-            Assert.Equal("#31CB31", spans[0].Color);
+            Assert.Equal("#32CD32", spans[0].Color);
             Assert.Equal("3.17", spans[1].Text);
             Assert.Equal("#FFFFFF", spans[1].Color);
             Assert.Equal(" gallons, please wait... ((9 seconds))", spans[2].Text);
-            Assert.Equal("#31CB31", spans[2].Color);
+            Assert.Equal("#32CD32", spans[2].Color);
         }
 
         [Fact]
@@ -220,7 +220,7 @@ namespace GTAWParser.Shared.Tests
             Assert.Equal("[San Chianski Gas Station]: Filled 3.17 gallons for ", spans[0].Text);
             Assert.Equal("#FFFFFF", spans[0].Color);
             Assert.Equal("$72!", spans[1].Text);
-            Assert.Equal("#31CB31", spans[1].Color);
+            Assert.Equal("#32CD32", spans[1].Color);
         }
 
         [Fact]
@@ -231,7 +231,7 @@ namespace GTAWParser.Shared.Tests
 
             Assert.Equal(3, spans.Count);
             Assert.Equal("Green text ", spans[0].Text);
-            Assert.Equal("#31CB31", spans[0].Color);
+            Assert.Equal("#32CD32", spans[0].Color);
             Assert.Equal("Red text ", spans[1].Text);
             Assert.Equal("#FF0000", spans[1].Color);
             Assert.Equal("White text", spans[2].Text);

@@ -565,7 +565,7 @@ namespace GTAWParser.Shared
                     }
 
                     function isNonDefaultColor(c) {
-                        return c && c !== '#FFFFFF' && c !== '#DCDCDC' && c !== '#F0F0F0' && c !== '#000000';
+                        return c && c !== '#FFFFFF' && c !== '#F0F0F0' && c !== '#000000';
                     }
 
                     const computedColorCache = new WeakMap();

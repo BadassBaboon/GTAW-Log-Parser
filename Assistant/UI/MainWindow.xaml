@@ -74,6 +74,7 @@
             <MenuItem x:Name="FilterChatLogToolStripMenuItem" Header="Filter Chat Log" Click="FilterChatLogToolStripMenuItem_Click"/>
             <MenuItem x:Name="LiveTailToolStripMenuItem" Header="Live Tail" Click="LiveTailToolStripMenuItem_Click"/>
             <MenuItem x:Name="FiveMToolsToolStripMenuItem" Header="FiveM Tools" Click="FiveMToolsToolStripMenuItem_Click"/>
+            <MenuItem x:Name="ScreenshotEditorToolStripMenuItem" Header="Screenshot Editor" Click="ScreenshotEditorToolStripMenuItem_Click"/>
             <MenuItem x:Name="LanguageToolStripMenuItem" Header="Change Server" Visibility="Collapsed"/>
             <MenuItem x:Name="AboutToolStripMenuItem" Header="About" Click="AboutToolStripMenuItem_Click"/>
             <MenuItem x:Name="ExitToolStripMenuItem" Header="Exit" Visibility="Hidden" Click="ExitToolStripMenuItem_Click"/>

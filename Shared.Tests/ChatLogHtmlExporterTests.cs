@@ -33,7 +33,7 @@ namespace GTAWParser.Shared.Tests
             string html = ChatLogHtmlExporter.GenerateHtmlFromText(raw);
 
             Assert.Contains("style=\"color: #1E90FF;\"", html); // Weather forecast
-            Assert.Contains("style=\"color: #31CB31;\"", html); // Temperature / Sunny
+            Assert.Contains("style=\"color: #32CD32;\"", html); // Temperature / Sunny
             Assert.Contains("33.3", html);
         }
 
