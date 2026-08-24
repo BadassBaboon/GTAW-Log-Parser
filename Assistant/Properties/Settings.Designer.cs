@@ -574,7 +574,19 @@ namespace Assistant.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoDetectServerTimezone {
+            get {
+                return ((bool)(this["AutoDetectServerTimezone"]));
+            }
+            set {
+                this["AutoDetectServerTimezone"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("UTC")]
         public string ServerTimezone {
             get {
                 return ((string)(this["ServerTimezone"]));

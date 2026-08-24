@@ -36,6 +36,7 @@ namespace Assistant.Controllers
         /// </summary>
         public static void InitializeServerIp()
         {
+            ServerTimezoneHelper.AutoDetect = Properties.Settings.Default.AutoDetectServerTimezone;
             string tz = Properties.Settings.Default.ServerTimezone;
             if (!string.IsNullOrEmpty(tz))
             {

@@ -77,6 +77,9 @@ namespace Assistant.UI
             Properties.Settings.Default.AlwaysCloseToTray = AlwaysCloseToTray.IsChecked == true;
             Properties.Settings.Default.StartWithWindows = StartWithWindows.IsChecked == true;
 
+            Properties.Settings.Default.AutoDetectServerTimezone = AutoDetectServerTimezone.IsChecked == true;
+            ServerTimezoneHelper.AutoDetect = AutoDetectServerTimezone.IsChecked == true;
+
             if (ServerTimezone.SelectedItem is TimezoneItem tzItem)
             {
                 Properties.Settings.Default.ServerTimezone = tzItem.Key;
@@ -124,12 +127,31 @@ namespace Assistant.UI
 
             Themes.IsEnabled = !Properties.Settings.Default.FollowSystemColor;
             UpdateThemeSwitcher();
+
+            AutoDetectServerTimezone.IsChecked = Properties.Settings.Default.AutoDetectServerTimezone;
+            ServerTimezone.IsEnabled = AutoDetectServerTimezone.IsChecked != true;
+            ServerTimezoneHelper.AutoDetect = AutoDetectServerTimezone.IsChecked == true;
             UpdateServerTimezoneSwitcher();
             UpdateRollbackStatus();
         }
 
+        private void AutoDetectServerTimezone_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            if (AutoDetectServerTimezone == null || ServerTimezone == null)
+                return;
+
+            bool isAuto = AutoDetectServerTimezone.IsChecked == true;
+            ServerTimezone.IsEnabled = !isAuto;
+            Properties.Settings.Default.AutoDetectServerTimezone = isAuto;
+            ServerTimezoneHelper.AutoDetect = isAuto;
+            Properties.Settings.Default.Save();
+        }
+
         private void UpdateServerTimezoneSwitcher()
         {
+            if (ServerTimezone == null)
+                return;
+
             ServerTimezone.Items.Clear();
             string current = Properties.Settings.Default.ServerTimezone;
             TimezoneItem? selected = null;
@@ -149,7 +171,7 @@ namespace Assistant.UI
 
         private void ServerTimezone_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (ServerTimezone.SelectedItem is TimezoneItem item)
+            if (ServerTimezone?.SelectedItem is TimezoneItem item)
             {
                 Properties.Settings.Default.ServerTimezone = item.Key;
                 ServerTimezoneHelper.CurrentTimezoneSetting = item.Key;
@@ -213,8 +235,10 @@ namespace Assistant.UI
             StyleController.DarkMode = AppController.CanFollowSystemMode && StyleController.GetAppMode();
             StyleController.Style = "Default";
 
-            Properties.Settings.Default.ServerTimezone = "Auto";
-            ServerTimezoneHelper.CurrentTimezoneSetting = "Auto";
+            Properties.Settings.Default.AutoDetectServerTimezone = true;
+            ServerTimezoneHelper.AutoDetect = true;
+            Properties.Settings.Default.ServerTimezone = "UTC";
+            ServerTimezoneHelper.CurrentTimezoneSetting = "UTC";
 
             Properties.Settings.Default.Save();
         }

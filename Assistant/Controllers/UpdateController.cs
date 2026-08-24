@@ -61,8 +61,10 @@ namespace Assistant.Controllers
 
                 List<UpdateFile> files = new List<UpdateFile>();
 
-                // Find GTAWAssistant asset
-                ReleaseAsset? assistantAsset = FindAsset(release, AssistantAssetName)
+                // Find GTAWAssistant asset matching current executable flavor first
+                string currentExeName = Path.GetFileName(AppController.ExecutablePath);
+                ReleaseAsset? assistantAsset = FindAsset(release, currentExeName)
+                    ?? FindAsset(release, AssistantAssetName)
                     ?? FindAsset(release, "GTAWAssistant-fdd-win-x64.exe")
                     ?? FindAsset(release, "GTAWAssistant-selfcontained-win-x64.exe");
 
@@ -76,7 +78,9 @@ namespace Assistant.Controllers
                 string miniPath = Path.Combine(directory, MiniAssetName);
                 if (File.Exists(miniPath))
                 {
-                    ReleaseAsset? miniAsset = FindAsset(release, MiniAssetName)
+                    string miniExeName = Path.GetFileName(miniPath);
+                    ReleaseAsset? miniAsset = FindAsset(release, miniExeName)
+                        ?? FindAsset(release, MiniAssetName)
                         ?? FindAsset(release, "ParserMini-fdd-win-x64.exe")
                         ?? FindAsset(release, "ParserMini-selfcontained-win-x64.exe");
 

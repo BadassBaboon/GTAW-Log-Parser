@@ -16,7 +16,7 @@
 
     <Grid>
         <!-- Column Separator -->
-        <Border BorderBrush="#DDDDDD" BorderThickness="1,0,0,0" HorizontalAlignment="Left" Margin="218,15,0,55" Width="1"/>
+        <Border BorderBrush="{DynamicResource MahApps.Brushes.Separator}" BorderThickness="1,0,0,0" HorizontalAlignment="Left" Margin="218,15,0,55" Width="1"/>
 
         <!-- LEFT COLUMN: TITLE BAR ICONS, THEME & SERVER TIMEZONE -->
         <Label Content="Title Bar Icons" HorizontalAlignment="Left" Margin="4,10,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
@@ -37,8 +37,9 @@
         <CheckBox x:Name="FollowSystemMode" IsEnabled="False" Checked="FollowSystemMode_CheckedChanged" Unchecked="FollowSystemMode_CheckedChanged" Content="Follow system app mode" HorizontalAlignment="Left" Margin="10,294,0,0" VerticalAlignment="Top" Width="195"/>
 
         <Label Content="Server Timezone" HorizontalAlignment="Left" Margin="4,320,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>
-        <ComboBox x:Name="ServerTimezone" SelectionChanged="ServerTimezone_SelectionChanged" HorizontalAlignment="Left" Margin="10,346,0,0" VerticalAlignment="Top" Width="195" Height="26" ToolTip="Selects the GTA World server clock used for log timestamps"/>
-        <TextBlock Text="Sets chatlog timestamp clock" HorizontalAlignment="Left" Margin="10,376,0,0" VerticalAlignment="Top" FontSize="10.5" Foreground="Gray"/>
+        <CheckBox x:Name="AutoDetectServerTimezone" Checked="AutoDetectServerTimezone_CheckedChanged" Unchecked="AutoDetectServerTimezone_CheckedChanged" Content="Auto-detect server timezone" HorizontalAlignment="Left" Margin="10,346,0,0" VerticalAlignment="Top" Width="195" ToolTip="Automatically detect the server timezone from the loading screen clock or in-game timestamps"/>
+        <ComboBox x:Name="ServerTimezone" SelectionChanged="ServerTimezone_SelectionChanged" HorizontalAlignment="Left" Margin="10,370,0,0" VerticalAlignment="Top" Width="195" Height="26" ToolTip="Select a manual GTA World regional server clock"/>
+        <TextBlock Text="Sets chatlog timestamp clock" HorizontalAlignment="Left" Margin="10,400,0,0" VerticalAlignment="Top" FontSize="10.5" Foreground="Gray"/>
 
         <!-- RIGHT COLUMN: POPUPS, UPDATES, APPLICATION -->
         <Label Content="Popups &amp; Alerts" HorizontalAlignment="Left" Margin="229,10,0,0" VerticalAlignment="Top" FontSize="14" FontWeight="SemiBold"/>

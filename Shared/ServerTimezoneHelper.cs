@@ -5,13 +5,13 @@ namespace GTAWParser.Shared
 {
     public static class ServerTimezoneHelper
     {
-        public static string CurrentTimezoneSetting { get; set; } = "Auto";
+        public static bool AutoDetect { get; set; } = true;
+        public static string CurrentTimezoneSetting { get; set; } = "UTC";
 
         public static int? DetectedOffsetHours { get; set; }
 
         public static readonly (string Key, string DisplayName)[] SupportedTimezones = new[]
         {
-            ("Auto", "Auto-Detect Server Timezone (Recommended)"),
             ("UTC", "GTA World English (UTC / Server Time)"),
             ("TR", "GTA World Türkiye (Istanbul / UTC+3)"),
             ("KR", "GTA World Korea (Seoul / UTC+9)"),
@@ -54,16 +54,26 @@ namespace GTAWParser.Shared
 
         public static DateTime GetServerTime(string? timezoneKey = null, DateTime? utcBase = null)
         {
-            string key = timezoneKey ?? CurrentTimezoneSetting;
             DateTime utc = utcBase ?? DateTime.UtcNow;
 
-            if (string.Equals(key, "Auto", StringComparison.OrdinalIgnoreCase))
+            // If auto-detection is enabled and no explicit manual key was passed, use auto offset
+            if (timezoneKey == null && AutoDetect)
             {
                 if (DetectedOffsetHours.HasValue)
                 {
                     return utc.AddHours(DetectedOffsetHours.Value);
                 }
                 return utc; // Default to UTC until clock is sampled
+            }
+
+            string key = timezoneKey ?? CurrentTimezoneSetting;
+            if (string.Equals(key, "Auto", StringComparison.OrdinalIgnoreCase))
+            {
+                if (DetectedOffsetHours.HasValue)
+                {
+                    return utc.AddHours(DetectedOffsetHours.Value);
+                }
+                return utc;
             }
 
             return key switch
