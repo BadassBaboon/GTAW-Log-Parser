@@ -374,99 +374,119 @@ namespace Assistant.Controllers
                 {
                     commandPrefix = "/" + match.Groups[1].Value + " ";
                     textToProcess = match.Groups[2].Value;
+                }                string commandSpecificRule = "";
+                string cmdLowerPrefix = commandPrefix.Trim().ToLower();
+                if (AiTextSanitizer.IsMeCommand(cmdLowerPrefix))
+                {
+                    commandSpecificRule = "CRITICAL /me FORMATTING RULE: The text is a GTA World roleplay action command (/me) that automatically follows a player name in game (e.g. '* PlayerName <action>'). The output MUST begin directly with a lowercase present-tense verb (e.g. 'pulls out...', 'steps back...', 'glances around...'). DO NOT include third-person pronouns ('He', 'She', 'They', 'The man') or character names at the beginning.\n";
+                }
+                else if (AiTextSanitizer.IsMyCommand(cmdLowerPrefix))
+                {
+                    commandSpecificRule = "CRITICAL /my FORMATTING RULE: The text is a GTA World roleplay action command (/my) that follows a player name possessive in game (e.g. '* PlayerName's <body part/item>'). The output MUST begin directly with a lowercase noun or body part (e.g. 'eyes widen...', 'hands tremble...'). DO NOT start with 'His', 'Her', 'Their', or 'The'.\n";
                 }
 
                 if (activeMode == "Accent")
-            {
-                string constraintRules = "";
-                if (Settings.LengthConstraint == "Similar")
                 {
-                    constraintRules = "Maintain similar length. ";
-                }
-                else if (Settings.LengthConstraint == "Concise")
-                {
-                    constraintRules = "Keep it short and punchy. ";
-                }
-
-                string phoneticInstruction = "";
-                if (Settings.PhoneticEnabled)
-                {
-                    phoneticInstruction = "Apply spelling conventions and slang words (e.g., dropping ending 'g' on 'ing' words, writing contractions, and using regional slang) directly to the rewritten statement. ";
-                }
-                else
-                {
-                    phoneticInstruction = "Use standard English spelling. Do not write words phonetically (like writing accent sounds, e.g. 'dat' or 'ova' unless explicitly instructed). Adjust vocabulary, phrasing, and syntax. ";
-                }
-
-                // Look for custom profiles matching the target accent name
-                CustomAccentProfile? matchedProfile = null;
-                if (Settings.CustomProfiles != null && Settings.TargetAccent != null)
-                {
-                    foreach (var profile in Settings.CustomProfiles)
+                    string constraintRules = "";
+                    if (Settings.LengthConstraint == "Similar")
                     {
-                        if (!string.IsNullOrEmpty(profile.TargetAccent) &&
-                            Settings.TargetAccent.IndexOf(profile.TargetAccent, StringComparison.OrdinalIgnoreCase) >= 0)
+                        constraintRules = "Maintain similar length. ";
+                    }
+                    else if (Settings.LengthConstraint == "Concise")
+                    {
+                        constraintRules = "Keep it short and punchy. ";
+                    }
+
+                    string phoneticInstruction = "";
+                    if (Settings.PhoneticEnabled)
+                    {
+                        phoneticInstruction = "Apply spelling conventions and slang words (e.g., dropping ending 'g' on 'ing' words, writing contractions, and using regional slang) directly to the rewritten statement. ";
+                    }
+                    else
+                    {
+                        phoneticInstruction = "Use standard English spelling. Do not write words phonetically (like writing accent sounds, e.g. 'dat' or 'ova' unless explicitly instructed). Adjust vocabulary, phrasing, and syntax. ";
+                    }
+
+                    // Look for custom profiles matching the target accent name
+                    CustomAccentProfile? matchedProfile = null;
+                    if (Settings.CustomProfiles != null && Settings.TargetAccent != null)
+                    {
+                        foreach (var profile in Settings.CustomProfiles)
                         {
-                            matchedProfile = profile;
-                            break;
+                            if (!string.IsNullOrEmpty(profile.TargetAccent) &&
+                                Settings.TargetAccent.IndexOf(profile.TargetAccent, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                matchedProfile = profile;
+                                break;
+                            }
                         }
                     }
-                }
 
-                string profileDirectives = "";
-                if (matchedProfile != null && !string.IsNullOrEmpty(matchedProfile.CustomDirectives))
-                {
-                    profileDirectives = $"Specific speech guidelines for {matchedProfile.TargetAccent}: {matchedProfile.CustomDirectives} ";
-                }
+                    string profileDirectives = "";
+                    if (matchedProfile != null && !string.IsNullOrEmpty(matchedProfile.CustomDirectives))
+                    {
+                        profileDirectives = $"Specific speech guidelines for {matchedProfile.TargetAccent}: {matchedProfile.CustomDirectives} ";
+                    }
 
-                systemPrompt = $"Rewrite the text in the requested style. " +
-                               $"RULES: DO NOT write conversational replies. " +
-                               $"DO NOT start with 'Whaddaya mean' or caricature phrases like 'Fuggedaboutit'. " +
-                               $"DO NOT add introductory questions or conversational preambles (e.g. 'You're telling me', 'Are you saying', 'Listen here') unless they correspond directly to words in the original text. " +
-                               $"DO NOT use em-dashes (— or --) under any circumstances. " +
-                               $"Paraphrase deeply to match how the character would express the underlying thought in a realistic conversation. " +
-                               $"Use natural profanity or complaints (like headaches/stress) if it fits. " +
-                               constraintRules +
-                               phoneticInstruction +
-                               profileDirectives +
-                               $"No AI slop, no flowery language.";
-            }
-            else if (activeMode == "Translate")
-            {
-                string constraintRules = "";
-                if (Settings.LengthConstraint == "Similar")
-                {
-                    constraintRules = "Keep translation close to original length. ";
+                    systemPrompt = $"Rewrite the text in the requested style.\n" +
+                                   $"RULES:\n" +
+                                   commandSpecificRule +
+                                   $"DO NOT write conversational replies.\n" +
+                                   $"DO NOT start with 'Whaddaya mean' or caricature phrases like 'Fuggedaboutit'.\n" +
+                                   $"DO NOT add introductory questions or conversational preambles (e.g. 'You're telling me', 'Are you saying', 'Listen here') unless they correspond directly to words in the original text.\n" +
+                                   $"DO NOT use curly apostrophes or smart quotes (such as '’', '‘', '“', '”'). Always use standard ASCII straight apostrophes (') and straight quotes (\").\n" +
+                                   $"DO NOT use em-dashes (— or --) or en-dashes (–).\n" +
+                                   $"Paraphrase deeply to match how the character would express the underlying thought in a realistic conversation.\n" +
+                                   $"Use natural profanity or complaints (like headaches/stress) if it fits.\n" +
+                                   constraintRules + "\n" +
+                                   phoneticInstruction + "\n" +
+                                   profileDirectives + "\n" +
+                                   $"No AI slop, no flowery language.";
                 }
-                else if (Settings.LengthConstraint == "Concise")
+                else if (activeMode == "Translate")
                 {
-                    constraintRules = "Keep translation as short as possible. ";
-                }
+                    string constraintRules = "";
+                    if (Settings.LengthConstraint == "Similar")
+                    {
+                        constraintRules = "Keep translation close to original length. ";
+                    }
+                    else if (Settings.LengthConstraint == "Concise")
+                    {
+                        constraintRules = "Keep translation as short as possible. ";
+                    }
 
-                systemPrompt = $"Translate the text into the requested language. " +
-                               $"RULES: Return ONLY the translation. " +
-                               $"Do not explain or add commentary. " +
-                               constraintRules +
-                               $"Sound natural to a native speaker.";
-            }
-            else // Correct
-            {
-                string constraintRules = "";
-                if (Settings.LengthConstraint == "Similar")
-                {
-                    constraintRules = "Keep corrected text same length. ";
+                    systemPrompt = $"Translate the text into the requested language.\n" +
+                                   $"RULES:\n" +
+                                   commandSpecificRule +
+                                   $"Return ONLY the translation.\n" +
+                                   $"DO NOT use curly apostrophes or smart quotes (such as '’', '‘', '“', '”'). Always use standard ASCII straight apostrophes (') and straight quotes (\").\n" +
+                                   $"DO NOT use em-dashes (— or --) or en-dashes (–).\n" +
+                                   $"Do not explain or add commentary.\n" +
+                                   constraintRules + "\n" +
+                                   $"Sound natural to a native speaker.";
                 }
-                else if (Settings.LengthConstraint == "Concise")
+                else // Correct
                 {
-                    constraintRules = "Make corrected text concise. ";
-                }
+                    string constraintRules = "";
+                    if (Settings.LengthConstraint == "Similar")
+                    {
+                        constraintRules = "Keep corrected text same length. ";
+                    }
+                    else if (Settings.LengthConstraint == "Concise")
+                    {
+                        constraintRules = "Make corrected text concise. ";
+                    }
 
-                systemPrompt = $"Correct grammar and spelling errors in the text while keeping tone and style identical. " +
-                               $"RULES: Return ONLY the corrected text. " +
-                               $"If there are no errors, return the text exactly as-is. " +
-                               constraintRules +
-                               $"Do not explain.";
-            }
+                    systemPrompt = $"Correct grammar and spelling errors in the text while keeping tone and style identical.\n" +
+                                   $"RULES:\n" +
+                                   commandSpecificRule +
+                                   $"Return ONLY the corrected text.\n" +
+                                   $"If there are no errors, return the text exactly as-is.\n" +
+                                   $"DO NOT use curly apostrophes or smart quotes (such as '’', '‘', '“', '”'). Always use standard ASCII straight apostrophes (') and straight quotes (\").\n" +
+                                   $"DO NOT use em-dashes (— or --) or en-dashes (–).\n" +
+                                   constraintRules + "\n" +
+                                   $"Do not explain.";
+                }
             }
 
             // 3. Request Loop with Key Rotation
@@ -550,59 +570,10 @@ namespace Assistant.Controllers
                                         SaveSettingsLocked();
                                     }
 
-                                    string cleanedResult = content.Trim();
-
-                                    // Strip reasoning/thinking tags (e.g. <think>...</think>) from Qwen/DeepSeek reasoning models
-                                    cleanedResult = System.Text.RegularExpressions.Regex.Replace(
-                                        cleanedResult,
-                                        @"<think>[\s\S]*?</think>",
-                                        string.Empty).Trim();
-
-                                    // Fallback if there is an unclosed <think> tag
-                                    if (cleanedResult.Contains("<think>"))
-                                    {
-                                        int idx = cleanedResult.IndexOf("<think>");
-                                        cleanedResult = cleanedResult.Substring(0, idx).Trim();
-                                    }
-
-                                    // Remove em-dashes
-                                    cleanedResult = cleanedResult.Replace("—", " ").Replace("--", " ");
-
-                                    // Remove enclosing quotes if model incorrectly added them
-                                    if (cleanedResult.StartsWith("\"") && cleanedResult.EndsWith("\""))
-                                    {
-                                        cleanedResult = cleanedResult.Substring(1, cleanedResult.Length - 2).Trim();
-                                    }
-
+                                    string cleanedResult = AiTextSanitizer.SanitizeResult(content, commandPrefix, textToProcess);
                                     if (string.IsNullOrWhiteSpace(cleanedResult))
                                     {
                                         return text;
-                                    }
-
-                                    // Enforce finishing period / punctuation for action commands
-                                    if (!string.IsNullOrWhiteSpace(commandPrefix))
-                                    {
-                                        if (textToProcess.Trim().EndsWith("?") && !cleanedResult.EndsWith("?"))
-                                        {
-                                            if (cleanedResult.EndsWith("."))
-                                                cleanedResult = cleanedResult.Substring(0, cleanedResult.Length - 1) + "?";
-                                            else
-                                                cleanedResult += "?";
-                                        }
-                                        else if (cleanedResult.Length > 0 && !cleanedResult.EndsWith(".") && !cleanedResult.EndsWith("?") && !cleanedResult.EndsWith("!"))
-                                        {
-                                            cleanedResult += ".";
-                                        }
-                                    }
-
-                                    // For /me and /my variants, enforce lowercase first character
-                                    string lowerCmdPrefix = commandPrefix.Trim().ToLower();
-                                    if (lowerCmdPrefix.StartsWith("/me") || lowerCmdPrefix.StartsWith("/ame") || lowerCmdPrefix.StartsWith("/my") || lowerCmdPrefix.StartsWith("/amy"))
-                                    {
-                                        if (cleanedResult.Length > 0 && char.IsUpper(cleanedResult[0]))
-                                        {
-                                            cleanedResult = char.ToLower(cleanedResult[0]) + cleanedResult.Substring(1);
-                                        }
                                     }
 
                                     return commandPrefix + cleanedResult;
