@@ -21,7 +21,6 @@ namespace GTAWParser.Shared.Screenshot
         // Chat overlay settings
         public double ChatX { get; set; } = 30;
         public double ChatY { get; set; } = 30;
-        public double ChatMaxWidth { get; set; } = 1200;
 
         // Typography
         public string FontFamily { get; set; } = "Arial";

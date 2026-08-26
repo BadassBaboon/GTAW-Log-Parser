@@ -22,14 +22,15 @@ using Serilog;
 
 namespace Assistant.UI
 {
-    /// <summary>
-    /// Shared colour/badge presentation for a chat line in either inspector list.
-    /// </summary>
-    public abstract class ChatLineViewModel : INotifyPropertyChanged
+    /// <summary>A line placed on the canvas.</summary>
+    public class PlacedChatLine : INotifyPropertyChanged
     {
         private string _colorHex = "#FFFFFF";
         private SolidColorBrush _colorBrush = Brushes.White;
         private SolidColorBrush _badgeBackground = Brushes.Transparent;
+        private string _rawText = string.Empty;
+        private string? _colorOverride;
+        private List<ChatStyledSegment> _segments = new List<ChatStyledSegment>();
 
         public ChatLineCategory Category { get; set; } = ChatLineCategory.Default;
 
@@ -50,75 +51,7 @@ namespace Assistant.UI
 
         public SolidColorBrush ColorBrush => _colorBrush;
         public SolidColorBrush BadgeBackground => _badgeBackground;
-
-        public virtual string TypeLabel => ChatLineClassifier.GetShortLabel(Category);
-
-        protected void RebuildBrushes()
-        {
-            Color c = Colors.White;
-            try
-            {
-                var converted = ColorConverter.ConvertFromString(_colorHex);
-                if (converted != null) c = (Color)converted;
-            }
-            catch { }
-
-            _colorBrush = new SolidColorBrush(c);
-            _colorBrush.Freeze();
-
-            _badgeBackground = new SolidColorBrush(Color.FromArgb(38, c.R, c.G, c.B));
-            _badgeBackground.Freeze();
-        }
-
-        protected void Raise(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-    }
-
-    /// <summary>A line offered in the source list, waiting to be picked.</summary>
-    public class ChatSelectableItem : ChatLineViewModel
-    {
-        private bool _isSelected;
-
-        public string RawText { get; set; } = string.Empty;
-        public string CleanedText { get; set; } = string.Empty;
-        public string DisplayText => CleanedText;
-
-        public List<ChatStyledSegment> Segments { get; set; } = new List<ChatStyledSegment>();
-
-        /// <summary>
-        /// Explains where this line's colour came from. For an imported log with no captured
-        /// colours this is the only signal the user has that the colour was inferred.
-        /// </summary>
-        public string SourceTooltip =>
-            NuiSpans != null
-                ? "Colour captured live from the game"
-                : $"Detected as {ChatLineClassifier.DescribeCategory(Category)} ({ColorHex})";
-
-        /// <summary>
-        /// Colour spans captured straight from the FiveM NUI. When present these are ground truth
-        /// and are carried through to the canvas untouched.
-        /// </summary>
-        public List<CapturedChatSpan>? NuiSpans { get; set; }
-
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                if (_isSelected == value) return;
-                _isSelected = value;
-                Raise(nameof(IsSelected));
-            }
-        }
-    }
-
-    /// <summary>A line placed on the canvas.</summary>
-    public class PlacedChatLine : ChatLineViewModel
-    {
-        private string _rawText = string.Empty;
-        private string? _colorOverride;
-        private List<ChatStyledSegment> _segments = new List<ChatStyledSegment>();
+        public string TypeLabel => ChatLineClassifier.GetShortLabel(Category);
 
         public List<CapturedChatSpan>? NuiSpans { get; set; }
 
@@ -225,42 +158,27 @@ namespace Assistant.UI
 
             return segments;
         }
-    }
 
-    public static class ChatInlinesHelper
-    {
-        public static readonly DependencyProperty SegmentsProperty =
-            DependencyProperty.RegisterAttached(
-                "Segments",
-                typeof(IEnumerable<ChatStyledSegment>),
-                typeof(ChatInlinesHelper),
-                new PropertyMetadata(null, OnSegmentsChanged));
-
-        public static IEnumerable<ChatStyledSegment>? GetSegments(DependencyObject obj) =>
-            (IEnumerable<ChatStyledSegment>?)obj.GetValue(SegmentsProperty);
-
-        public static void SetSegments(DependencyObject obj, IEnumerable<ChatStyledSegment>? value) =>
-            obj.SetValue(SegmentsProperty, value);
-
-        private static void OnSegmentsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private void RebuildBrushes()
         {
-            if (d is not TextBlock tb) return;
-            tb.Inlines.Clear();
-
-            if (e.NewValue is IEnumerable<ChatStyledSegment> segments)
+            Color c = Colors.White;
+            try
             {
-                foreach (var seg in segments)
-                {
-                    if (string.IsNullOrEmpty(seg.Text)) continue;
-                    tb.Inlines.Add(new Run(seg.Text)
-                    {
-                        Foreground = ScreenshotEditorWindow.FreezeBrush(seg.ColorHex),
-                        FontWeight = seg.IsBold ? FontWeights.Bold : FontWeights.Normal,
-                        FontStyle = seg.IsItalic ? FontStyles.Italic : FontStyles.Normal
-                    });
-                }
+                var converted = ColorConverter.ConvertFromString(_colorHex);
+                if (converted != null) c = (Color)converted;
             }
+            catch { }
+
+            _colorBrush = new SolidColorBrush(c);
+            _colorBrush.Freeze();
+
+            _badgeBackground = new SolidColorBrush(Color.FromArgb(38, c.R, c.G, c.B));
+            _badgeBackground.Freeze();
         }
+
+        private void Raise(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 
     public static class RichChatLineHelper
@@ -1179,8 +1097,6 @@ namespace Assistant.UI
             UpdateCanvas();
             SetStatus($"Added {linesToAdd.Count} line{(linesToAdd.Count == 1 ? "" : "s")} to the canvas.");
         }
-
-        private void PlacedLinesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
 
         private void PlacedLinesListBox_KeyDown(object sender, KeyEventArgs e)
         {

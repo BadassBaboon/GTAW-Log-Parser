@@ -300,7 +300,7 @@
 
                     <Border Grid.Row="2" Style="{StaticResource PaneBody}">
                         <Grid>
-                            <ListBox x:Name="PlacedLinesListBox" SelectionChanged="PlacedLinesListBox_SelectionChanged"
+                            <ListBox x:Name="PlacedLinesListBox"
                                      AllowDrop="True"
                                      KeyDown="PlacedLinesListBox_KeyDown"
                                      PreviewMouseMove="PlacedLinesListBox_PreviewMouseMove"
