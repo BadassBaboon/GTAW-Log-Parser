@@ -500,10 +500,10 @@ namespace Assistant.UI
         }
 
         /// <summary>Redaction bar fill, matching what the renderer bakes into the image.</summary>
-        internal static SolidColorBrush CensorFillBrush { get; } = CensorFillBrush;
+        internal static SolidColorBrush CensorFillBrush { get; } = FreezeBrush("#050505");
 
         /// <summary>Muted text shown inside a redaction bar while the line is being edited.</summary>
-        internal static SolidColorBrush CensorTextBrush { get; } = CensorTextBrush;
+        internal static SolidColorBrush CensorTextBrush { get; } = FreezeBrush("#888888");
 
         /// <summary>Hairline around a colour swatch, so it stays visible on any swatch colour.</summary>
         internal static SolidColorBrush SwatchBorderBrush { get; } = FreezeBrush("#55FFFFFF");
