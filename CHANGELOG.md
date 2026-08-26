@@ -37,6 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **1-Click Clipboard Export**: `Ctrl+Shift+C` and "Copy image" button for instant sharing to Discord, forums, or image hosts.
 
 ### Fixed
+- **Screenshot Editor Chat Dragging Pegged The CPU (`ScreenshotRenderer.cs`, `ScreenshotEditorWindow.xaml.cs`)**:
+  - Every mouse move re-rasterised the entire chat block, and the eight-pass glyph outline made that roughly 85% of the frame: a 120-line block measured **68 ms per frame**, so mouse events arrived faster than frames could be produced. Dragging changes the block position but not one pixel of its content, so it is now rendered once to its own bitmap at drag start and composited each frame: **68 ms to 8.6 ms**, and the cost no longer grows with line count. Image panning benefits identically. The cache is discarded on mouse-up and on lost mouse capture, so the exported image is always a full render.
+- **Old Backups Kept Their Doubled Line Spacing (`BackupController.cs`)**:
+  - `WriteBackupFileWithDeduplication` decided whether to replace a backup by comparing byte length. A correctly normalised file is *shorter* than the same log written with the old `
+` spacing, so the corrected content was discarded and the corrupted file kept indefinitely. The check now compares content: an identical log is rewritten when only its line endings differ, and the truncation guard counts lines instead of bytes.
+- **Screenshot Editor Palette Drift (`RoleplayChatColorizer.cs`)**:
+  - The `/me & /do` swatch was `#C2A3DA` while the classifier and the live game both use `#C2A2DA`, so an auto-coloured emote and a manually-swatched one stored different values in the same screenshot. Unified on the measured `#C2A2DA`.
+  - Removed the last literal colors from the Screenshot Editor (swatch hairline, rich-text caret and foreground, redaction fill and text); every color in the window now resolves through the theme block.
+
 - **Theme Selector Unlocked Regardless Of Settings (`ProgramSettingsWindow.xaml`, `ProgramSettingsWindow.xaml.cs`)**:
   - The theme dropdown's only lock condition was `Use system accent color`. While on the GTA World default theme the list now stays disabled, and a `Use a custom accent color` checkbox enables customization without stranding unreachable accents.
   - Fixed blank theme dropdown caused by mismatched string identifier when unticking system accent.
