@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using GTAWParser.Shared.Screenshot;
@@ -273,7 +274,7 @@ namespace GTAWParser.Shared.Tests
             var swatches = RoleplayChatColorizer.EditorSwatches;
             Assert.NotEmpty(swatches);
 
-            Assert.Contains(swatches, s => s.Label == "/me & /do" && s.Hex.Equals("#C2A3DA", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "/me & /do" && s.Hex.Equals("#C2A2DA", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(swatches, s => s.Label == "Your Speech" && s.Hex.Equals("#FFFFFF", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(swatches, s => s.Label == "Other Speech" && s.Hex.Equals("#C8C8C8", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(swatches, s => s.Label == "Whisper" && s.Hex.Equals("#EDA841", StringComparison.OrdinalIgnoreCase));
@@ -321,12 +322,12 @@ namespace GTAWParser.Shared.Tests
                 new ChatStyledSegment("Part 2", "#FFFFFF")
             };
 
-            var recolored = RoleplayChatColorizer.Recolor(orig, "#C2A3DA");
+            var recolored = RoleplayChatColorizer.Recolor(orig, "#C2A2DA");
             Assert.Equal(2, recolored.Count);
             Assert.Equal("Part 1 ", recolored[0].Text);
-            Assert.Equal("#C2A3DA", recolored[0].ColorHex);
+            Assert.Equal("#C2A2DA", recolored[0].ColorHex);
             Assert.Equal("Part 2", recolored[1].Text);
-            Assert.Equal("#C2A3DA", recolored[1].ColorHex);
+            Assert.Equal("#C2A2DA", recolored[1].ColorHex);
         }
 
         [Fact]
@@ -466,7 +467,7 @@ namespace GTAWParser.Shared.Tests
 
                 var lines = new List<List<ChatStyledSegment>>
                 {
-                    new List<ChatStyledSegment> { new ChatStyledSegment("* Character inspects the surroundings.", "#C2A3DA") },
+                    new List<ChatStyledSegment> { new ChatStyledSegment("* Character inspects the surroundings.", "#C2A2DA") },
                     new List<ChatStyledSegment> { new ChatStyledSegment("Character says: Everything checks out.", "#FFFFFF") }
                 };
 
@@ -486,6 +487,26 @@ namespace GTAWParser.Shared.Tests
             thread.Start();
             thread.Join(5000);
         }
+
+
+        [Fact]
+        public void EditorSwatches_AreWellFormedAndUnique()
+        {
+            var swatches = RoleplayChatColorizer.EditorSwatches;
+            Assert.NotEmpty(swatches);
+
+            foreach (var sw in swatches)
+            {
+                Assert.Matches("^#[0-9A-Fa-f]{6}$", sw.Hex);
+                Assert.False(string.IsNullOrWhiteSpace(sw.Label));
+                // The tooltip quotes the hex, so a typo in one would contradict the other.
+                Assert.Contains(sw.Hex, sw.Tooltip, StringComparison.OrdinalIgnoreCase);
+            }
+
+            Assert.Equal(swatches.Count, swatches.Select(sw => sw.Hex).Distinct().Count());
+            Assert.Equal(swatches.Count, swatches.Select(sw => sw.Label).Distinct().Count());
+        }
+
     }
 }
 

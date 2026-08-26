@@ -389,7 +389,7 @@
                                                     <ControlTemplate TargetType="Button">
                                                         <Border Width="13" Height="13" CornerRadius="3"
                                                                 Background="{Binding ColorBrush}"
-                                                                BorderBrush="#55FFFFFF" BorderThickness="1"/>
+                                                                BorderBrush="{DynamicResource ScreenshotSwatchBorder}" BorderThickness="1"/>
                                                     </ControlTemplate>
                                                 </Button.Template>
                                             </Button>
@@ -402,8 +402,8 @@
                                                          Margin="0,0,4,0"
                                                          VerticalAlignment="Center"
                                                          FontSize="11.5"
-                                                         Foreground="#FFFFFF"
-                                                         CaretBrush="#FFFFFF"
+                                                         Foreground="{DynamicResource ScreenshotChatText}"
+                                                         CaretBrush="{DynamicResource ScreenshotChatText}"
                                                          IsInactiveSelectionHighlightEnabled="True"
                                                          AcceptsReturn="False"
                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"

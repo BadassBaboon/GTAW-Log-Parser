@@ -153,6 +153,115 @@ namespace GTAWParser.Shared.Screenshot
             return rtb;
         }
 
+        /// <summary>
+        /// Renders only the chat block onto its own transparent bitmap, together with the offset
+        /// from the block origin to that bitmap's top-left corner.
+        ///
+        /// Dragging the chat around the canvas changes its position but not a single pixel of its
+        /// content, yet a naive redraw re-rasterises every glyph -- and the eight-pass outline makes
+        /// that roughly 85% of the frame. Rendering the block once and then compositing it at the new
+        /// position makes a drag cost the same whether there are five lines or five hundred.
+        /// </summary>
+        public static (RenderTargetBitmap Bitmap, Vector Offset) RenderChatBlock(
+            List<List<ChatStyledSegment>>? lines,
+            ScreenshotRenderOptions options)
+        {
+            Rect block = MeasureChatBlock(lines, options);
+
+            // Padding covers the outline, the drop shadow and the optional backing box, all of
+            // which paint outside the measured text bounds.
+            double pad = Math.Ceiling(
+                Math.Max(options.OutlineWidth + options.ShadowOffset,
+                         options.EnableBackgroundBox ? options.BackgroundBoxPadding : 0) + 4);
+
+            int width = Math.Max(1, (int)Math.Ceiling(block.Width + (pad * 2)));
+            int height = Math.Max(1, (int)Math.Ceiling(block.Height + (pad * 2)));
+
+            // Draw with the block moved to the padding origin, so nothing is clipped.
+            var local = CloneForBlockRender(options, pad, pad);
+
+            var visual = new DrawingVisual();
+            using (DrawingContext dc = visual.RenderOpen())
+            {
+                if (lines != null && lines.Count > 0)
+                {
+                    DrawChatOverlay(dc, lines, local);
+                }
+            }
+
+            var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            bitmap.Freeze();
+
+            return (bitmap, new Vector(-pad, -pad));
+        }
+
+        /// <summary>
+        /// Composites a pre-rendered chat block over the background at a new position. Used for the
+        /// interactive drag; the final image is still produced by <see cref="Render"/>.
+        /// </summary>
+        public static RenderTargetBitmap RenderWithChatBlock(
+            BitmapSource? backgroundImage,
+            BitmapSource chatBlock,
+            Point chatBlockTopLeft,
+            ScreenshotRenderOptions options)
+        {
+            int width = Math.Max(100, options.CanvasWidth);
+            int height = Math.Max(100, options.CanvasHeight);
+
+            var visual = new DrawingVisual();
+            using (DrawingContext dc = visual.RenderOpen())
+            {
+                if (!options.TransparentBackground)
+                {
+                    dc.DrawRectangle(Brushes.Black, null, new Rect(0, 0, width, height));
+                }
+
+                dc.PushClip(new RectangleGeometry(new Rect(0, 0, width, height)));
+
+                if (backgroundImage != null)
+                {
+                    dc.DrawImage(backgroundImage, new Rect(
+                        options.ImageOffsetX,
+                        options.ImageOffsetY,
+                        backgroundImage.PixelWidth * options.ImageScale,
+                        backgroundImage.PixelHeight * options.ImageScale));
+                }
+
+                dc.DrawImage(chatBlock, new Rect(
+                    chatBlockTopLeft.X, chatBlockTopLeft.Y, chatBlock.PixelWidth, chatBlock.PixelHeight));
+
+                dc.Pop();
+            }
+
+            var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            rtb.Render(visual);
+            return rtb;
+        }
+
+        private static ScreenshotRenderOptions CloneForBlockRender(ScreenshotRenderOptions o, double x, double y) =>
+            new ScreenshotRenderOptions
+            {
+                CanvasWidth = o.CanvasWidth,
+                CanvasHeight = o.CanvasHeight,
+                ChatX = x,
+                ChatY = y,
+                FontFamily = o.FontFamily,
+                FontSize = o.FontSize,
+                IsBold = o.IsBold,
+                LineSpacing = o.LineSpacing,
+                OutlineWidth = o.OutlineWidth,
+                OutlineColor = o.OutlineColor,
+                EnableDropShadow = o.EnableDropShadow,
+                ShadowOffset = o.ShadowOffset,
+                ShadowOpacity = o.ShadowOpacity,
+                EnableBackgroundBox = o.EnableBackgroundBox,
+                BackgroundBoxOpacity = o.BackgroundBoxOpacity,
+                BackgroundBoxPadding = o.BackgroundBoxPadding,
+                BackgroundBoxCornerRadius = o.BackgroundBoxCornerRadius,
+                TransparentBackground = true
+            };
+
         private static void DrawChatOverlay(
             DrawingContext dc,
             List<List<ChatStyledSegment>> lines,

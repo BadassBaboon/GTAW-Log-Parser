@@ -150,7 +150,7 @@ namespace GTAWParser.Shared.Screenshot
         /// </summary>
         public static readonly IReadOnlyList<RoleplayPaletteSwatch> EditorSwatches = new List<RoleplayPaletteSwatch>
         {
-            new RoleplayPaletteSwatch("/me & /do", "#C2A3DA", "/me emote and /do action (#C2A3DA)"),
+            new RoleplayPaletteSwatch("/me & /do", "#C2A2DA", "/me emote and /do action (#C2A2DA)"),
             new RoleplayPaletteSwatch("Your Speech", "#FFFFFF", "Your character talking (#FFFFFF)"),
             new RoleplayPaletteSwatch("Other Speech", "#C8C8C8", "Other characters talking (#C8C8C8)"),
             new RoleplayPaletteSwatch("Whisper", "#EDA841", "Whisper / [low] speech (#EDA841)"),

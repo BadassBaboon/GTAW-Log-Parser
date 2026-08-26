@@ -215,5 +215,53 @@ namespace GTAWParser.Shared.Tests
             Assert.Equal("[12:00:02] Line 3", split[2]);
             Assert.Equal(string.Empty, split[3]);
         }
+
+        [Theory]
+        [InlineData("Line 1\r\r\nLine 2")]
+        [InlineData("Line 1\r\nLine 2")]
+        [InlineData("Line 1\nLine 2")]
+        [InlineData("Line 1\rLine 2")]
+        [InlineData("Line 1\r\n\r\nLine 2")]
+        [InlineData("Line 1\r\r\r\nLine 2")]
+        [InlineData("\r\n\r\nLine 1\r\n")]
+        [InlineData("no line breaks at all")]
+        public void NormalizeLineEndings_IsIdempotent(string input)
+        {
+            // A backup can be re-read, re-parsed and re-written. If normalising twice differed
+            // from normalising once, spacing would drift further on every save.
+            string once = ChatLogParser.NormalizeLineEndings(input);
+            string twice = ChatLogParser.NormalizeLineEndings(once);
+
+            Assert.Equal(once, twice);
+        }
+
+        [Theory]
+        [InlineData("A\r\r\nB")]
+        [InlineData("A\r\r\r\nB")]
+        [InlineData("A\r\r\r\r\nB")]
+        public void NormalizeLineEndings_CollapsesAnyRunOfCarriageReturns(string input)
+        {
+            // However many stray CRs accumulated, the break is still exactly one line break.
+            string result = ChatLogParser.NormalizeLineEndings(input);
+
+            Assert.Equal($"A{Environment.NewLine}B", result);
+        }
+
+        [Fact]
+        public void NormalizeLineEndings_NeverEmitsABareCarriageReturn()
+        {
+            string messy = "A\r\r\nB\rC\nD\r\nE\r\r\r\nF";
+            string result = ChatLogParser.NormalizeLineEndings(messy);
+
+            // Every CR in the output must be part of a CRLF pair. A stray CR is exactly what an
+            // editor renders as the phantom blank line this fix was about.
+            for (int i = 0; i < result.Length; i++)
+            {
+                if (result[i] != '\r') continue;
+                bool pairedWithLf = i + 1 < result.Length && result[i + 1] == '\n';
+                Assert.True(pairedWithLf, "Found a bare carriage return at index " + i);
+            }
+        }
+
     }
 }

@@ -227,6 +227,18 @@ namespace Assistant.Controllers
             }
         }
 
+        private static int CountLines(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return 0;
+
+            int count = 1;
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (text[i] == (char)10) count++;   // newline
+            }
+            return count;
+        }
+
         private static void WriteBackupFileWithDeduplication(string finalPath, string tempPath, string content)
         {
             if (!File.Exists(finalPath))
@@ -240,10 +252,35 @@ namespace Assistant.Controllers
 
                 File.WriteAllText(tempPath, content, Encoding.UTF8);
 
-                long oldLen = new FileInfo(finalPath).Length;
-                long newLen = new FileInfo(tempPath).Length;
+                // Deciding by byte length alone is wrong in one important case: after the line
+                // ending fix, a correctly normalised file is *shorter* than the same log written
+                // with the old doubled CRLFs, so the good content would be discarded and the
+                // corrupted file kept forever. Compare what the files actually contain instead.
+                bool replace;
+                try
+                {
+                    string existing = File.ReadAllText(finalPath, Encoding.UTF8);
+                    string existingNormalized = ChatLogParser.NormalizeLineEndings(existing);
 
-                if (oldLen < newLen)
+                    if (string.Equals(existingNormalized, content, StringComparison.Ordinal))
+                    {
+                        // Same log. Rewrite only if the file on disk still has the old spacing.
+                        replace = !string.Equals(existing, content, StringComparison.Ordinal);
+                    }
+                    else
+                    {
+                        // Otherwise keep the guard that protects a full backup from being replaced
+                        // by a truncated one, but count lines rather than bytes.
+                        replace = CountLines(content) >= CountLines(existingNormalized);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Could not read existing backup {Path}; falling back to size comparison.", finalPath);
+                    replace = new FileInfo(finalPath).Length < new FileInfo(tempPath).Length;
+                }
+
+                if (replace)
                 {
                     File.Delete(finalPath);
                     File.Move(tempPath, finalPath);

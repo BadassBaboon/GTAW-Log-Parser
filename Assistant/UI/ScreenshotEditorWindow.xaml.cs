@@ -266,8 +266,8 @@ namespace Assistant.UI
 
                 if (seg.IsCensored)
                 {
-                    run.Background = ScreenshotEditorWindow.FreezeBrush("#050505");
-                    run.Foreground = ScreenshotEditorWindow.FreezeBrush("#888888");
+                    run.Background = ScreenshotEditorWindow.CensorFillBrush;
+                    run.Foreground = ScreenshotEditorWindow.CensorTextBrush;
                 }
                 else
                 {
@@ -316,6 +316,16 @@ namespace Assistant.UI
         /// <summary>Where the chat block sits on the canvas, from the last render.</summary>
         private Rect _chatBlockRect = Rect.Empty;
 
+        /// <summary>
+        /// The chat block pre-rendered to its own bitmap while an interactive drag is in progress.
+        /// Its pixels do not change as the block or the image moves, so re-rasterising every glyph
+        /// on each mouse move is pure waste -- and with the eight-pass outline it is most of the
+        /// frame. Non-null only between drag start and drag end.
+        /// </summary>
+        private RenderTargetBitmap? _chatBlockCache;
+        private Vector _chatBlockCacheOffset;
+        private Size _chatBlockCacheSize;
+
         private bool _isLoaded;
         private bool _isUpdatingUi;
 
@@ -352,6 +362,16 @@ namespace Assistant.UI
 
             PopulateResolutionPresets();
             LoadSavedSettings();
+
+            // Alt-tabbing mid-drag drops the capture without a MouseUp, which would otherwise leave
+            // the cached drag bitmap in place and freeze the preview against later edits.
+            ViewportGrid.LostMouseCapture += (_, __) =>
+            {
+                _isDraggingChat = false;
+                _isDraggingImage = false;
+                EndInteractiveDrag();
+            };
+
             _isLoaded = true;
             UpdateCanvas();
         }
@@ -479,6 +499,15 @@ namespace Assistant.UI
             }
         }
 
+        /// <summary>Redaction bar fill, matching what the renderer bakes into the image.</summary>
+        internal static SolidColorBrush CensorFillBrush { get; } = CensorFillBrush;
+
+        /// <summary>Muted text shown inside a redaction bar while the line is being edited.</summary>
+        internal static SolidColorBrush CensorTextBrush { get; } = CensorTextBrush;
+
+        /// <summary>Hairline around a colour swatch, so it stays visible on any swatch colour.</summary>
+        internal static SolidColorBrush SwatchBorderBrush { get; } = FreezeBrush("#55FFFFFF");
+
         public static SolidColorBrush FreezeBrush(string hex)
         {
             var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
@@ -515,6 +544,12 @@ namespace Assistant.UI
             Resources["ScreenshotOverlayText"] = FreezeBrush(dark ? "#C8C8C8" : "#E2E8F0");
             Resources["ScreenshotOverlayMuted"] = FreezeBrush(dark ? "#8A8A8A" : "#94A3B8");
             Resources["ScreenshotSelectionFill"] = FreezeBrush("#14FFFFFF");
+
+            // The chat surface stays dark in both app modes, so its text and the hairline around
+            // a colour swatch are fixed rather than mode-dependent -- but they still live here so
+            // nothing in this window carries a literal colour of its own.
+            Resources["ScreenshotChatText"] = FreezeBrush("#FFFFFF");
+            Resources["ScreenshotSwatchBorder"] = SwatchBorderBrush;
 
             Resources["ScreenshotBannerFill"] = FreezeBrush(dark ? "#1E2A33" : "#26333D");
             Resources["ScreenshotBannerBorder"] = FreezeBrush(dark ? "#2F4A5A" : "#3B5666");
@@ -629,12 +664,41 @@ namespace Assistant.UI
             };
         }
 
-        private void UpdateCanvas()
+        /// <summary>Builds the drag-time chat bitmap, so each move is a composite rather than a redraw.</summary>
+        private void BeginInteractiveDrag()
         {
-            if (!_isLoaded || _isUpdatingUi) return;
+            if (_placedLines.Count == 0)
+            {
+                _chatBlockCache = null;
+                return;
+            }
 
             var options = BuildOptions();
+            var lines = BuildLineSegments();
+            if (lines.Count == 0)
+            {
+                _chatBlockCache = null;
+                return;
+            }
 
+            Rect block = ScreenshotRenderer.MeasureChatBlock(lines, options);
+            _chatBlockCacheSize = new Size(block.Width, block.Height);
+
+            var (bitmap, offset) = ScreenshotRenderer.RenderChatBlock(lines, options);
+            _chatBlockCache = bitmap;
+            _chatBlockCacheOffset = offset;
+        }
+
+        private void EndInteractiveDrag()
+        {
+            if (_chatBlockCache == null) return;
+
+            _chatBlockCache = null;
+            UpdateCanvas();
+        }
+
+        private List<List<ChatStyledSegment>> BuildLineSegments()
+        {
             var linesSegments = new List<List<ChatStyledSegment>>();
             foreach (var placed in _placedLines)
             {
@@ -642,9 +706,31 @@ namespace Assistant.UI
                 var segs = placed.ToSegments();
                 if (segs.Count > 0) linesSegments.Add(segs);
             }
+            return linesSegments;
+        }
 
-            _chatBlockRect = ScreenshotRenderer.MeasureChatBlock(linesSegments, options);
-            CanvasPreviewImage.Source = ScreenshotRenderer.Render(_backgroundImage, linesSegments, options);
+        private void UpdateCanvas()
+        {
+            if (!_isLoaded || _isUpdatingUi) return;
+
+            var options = BuildOptions();
+
+            if (_chatBlockCache != null)
+            {
+                // Mid-drag: the block's pixels and size are already known, only its origin moved.
+                _chatBlockRect = new Rect(options.ChatX, options.ChatY, _chatBlockCacheSize.Width, _chatBlockCacheSize.Height);
+                CanvasPreviewImage.Source = ScreenshotRenderer.RenderWithChatBlock(
+                    _backgroundImage,
+                    _chatBlockCache,
+                    new Point(options.ChatX + _chatBlockCacheOffset.X, options.ChatY + _chatBlockCacheOffset.Y),
+                    options);
+            }
+            else
+            {
+                var linesSegments = BuildLineSegments();
+                _chatBlockRect = ScreenshotRenderer.MeasureChatBlock(linesSegments, options);
+                CanvasPreviewImage.Source = ScreenshotRenderer.Render(_backgroundImage, linesSegments, options);
+            }
 
             EmptyStateHint.Visibility = _backgroundImage == null ? Visibility.Visible : Visibility.Collapsed;
             CheckerboardLayer.Visibility = CanvasPreviewImage.Source == null ? Visibility.Collapsed : Visibility.Visible;
@@ -912,6 +998,7 @@ namespace Assistant.UI
                     _isDraggingChat = true;
                     _dragStartMousePos = e.GetPosition(this);
                     _dragStartChatPos = new Point(_chatX, _chatY);
+                    BeginInteractiveDrag();
                     Mouse.Capture(ViewportGrid);
                     return;
                 }
@@ -919,6 +1006,7 @@ namespace Assistant.UI
                 _isDraggingImage = true;
                 _dragStartMousePos = e.GetPosition(this);
                 _dragStartImageOffset = new Point(_imageOffsetX, _imageOffsetY);
+                BeginInteractiveDrag();
                 Mouse.Capture(ViewportGrid);
             }
             else if (e.RightButton == MouseButtonState.Pressed || e.MiddleButton == MouseButtonState.Pressed)
@@ -926,6 +1014,7 @@ namespace Assistant.UI
                 _isDraggingImage = true;
                 _dragStartMousePos = e.GetPosition(this);
                 _dragStartImageOffset = new Point(_imageOffsetX, _imageOffsetY);
+                BeginInteractiveDrag();
                 Mouse.Capture(ViewportGrid);
             }
         }
@@ -967,6 +1056,7 @@ namespace Assistant.UI
         {
             bool wasDraggingChat = _isDraggingChat;
             _isDraggingChat = false;
+            EndInteractiveDrag();
             _isDraggingImage = false;
             Mouse.Capture(null);
             if (wasDraggingChat)
@@ -1541,7 +1631,7 @@ namespace Assistant.UI
                         Height = 14,
                         CornerRadius = new CornerRadius(3),
                         Background = FreezeBrush(swatch.Hex),
-                        BorderBrush = FreezeBrush("#55FFFFFF"),
+                        BorderBrush = SwatchBorderBrush,
                         BorderThickness = new Thickness(1),
                         VerticalAlignment = VerticalAlignment.Center,
                         HorizontalAlignment = HorizontalAlignment.Center
@@ -1710,8 +1800,8 @@ namespace Assistant.UI
             {
                 if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
                 {
-                    activeSelection.ApplyPropertyValue(TextElement.BackgroundProperty, FreezeBrush("#050505"));
-                    activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush("#888888"));
+                    activeSelection.ApplyPropertyValue(TextElement.BackgroundProperty, CensorFillBrush);
+                    activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, CensorTextBrush);
                     line.ColorOverride = null;
                     SyncRichTextBoxToLine(rtb, line);
                     UpdateCanvas();
@@ -1720,8 +1810,8 @@ namespace Assistant.UI
                 else if (rtb != null)
                 {
                     var wholeDoc = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
-                    wholeDoc.ApplyPropertyValue(TextElement.BackgroundProperty, FreezeBrush("#050505"));
-                    wholeDoc.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush("#888888"));
+                    wholeDoc.ApplyPropertyValue(TextElement.BackgroundProperty, CensorFillBrush);
+                    wholeDoc.ApplyPropertyValue(TextElement.ForegroundProperty, CensorTextBrush);
                     SyncRichTextBoxToLine(rtb, line);
                     UpdateCanvas();
                     SetStatus("Line redacted with black spoiler bar.");
