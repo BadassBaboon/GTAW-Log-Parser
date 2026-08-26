@@ -209,30 +209,46 @@ namespace GTAWParser.Shared.Screenshot
                     var formattedText = Format(seg.Text, typeface, options, segBrush);
                     maxLineHeight = Math.Max(maxLineHeight, formattedText.Height);
 
-                    // 1. Eight-directional outline pass, mimicking the GTA chat font border.
-                    double ow = options.OutlineWidth;
-                    if (ow > 0)
+                    if (seg.IsCensored)
                     {
-                        var outlineFt = Format(seg.Text, typeface, options, outlineBrush);
-                        for (double dx = -ow; dx <= ow; dx += ow)
+                        // Discord-style solid black spoiler redaction bar with subtle rounding
+                        double padX = 1.0;
+                        double padY = 1.0;
+                        var censorRect = new Rect(
+                            currentX - padX,
+                            currentY - padY,
+                            formattedText.Width + (padX * 2),
+                            formattedText.Height + (padY * 2)
+                        );
+                        dc.DrawRoundedRectangle(Brushes.Black, null, censorRect, 2.0, 2.0);
+                    }
+                    else
+                    {
+                        // 1. Eight-directional outline pass, mimicking the GTA chat font border.
+                        double ow = options.OutlineWidth;
+                        if (ow > 0)
                         {
-                            for (double dy = -ow; dy <= ow; dy += ow)
+                            var outlineFt = Format(seg.Text, typeface, options, outlineBrush);
+                            for (double dx = -ow; dx <= ow; dx += ow)
                             {
-                                if (dx == 0 && dy == 0) continue;
-                                dc.DrawText(outlineFt, new Point(currentX + dx, currentY + dy));
+                                for (double dy = -ow; dy <= ow; dy += ow)
+                                {
+                                    if (dx == 0 && dy == 0) continue;
+                                    dc.DrawText(outlineFt, new Point(currentX + dx, currentY + dy));
+                                }
                             }
                         }
-                    }
 
-                    // 2. Soft drop shadow.
-                    if (options.EnableDropShadow && options.ShadowOffset > 0)
-                    {
-                        var shadowFt = Format(seg.Text, typeface, options, shadowBrush);
-                        dc.DrawText(shadowFt, new Point(currentX + options.ShadowOffset, currentY + options.ShadowOffset));
-                    }
+                        // 2. Soft drop shadow.
+                        if (options.EnableDropShadow && options.ShadowOffset > 0)
+                        {
+                            var shadowFt = Format(seg.Text, typeface, options, shadowBrush);
+                            dc.DrawText(shadowFt, new Point(currentX + options.ShadowOffset, currentY + options.ShadowOffset));
+                        }
 
-                    // 3. Draw foreground text
-                    dc.DrawText(formattedText, new Point(currentX, currentY));
+                        // 3. Draw foreground text
+                        dc.DrawText(formattedText, new Point(currentX, currentY));
+                    }
 
                     currentX += formattedText.Width;
                 }

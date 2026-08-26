@@ -182,5 +182,8 @@
     <Setting Name="ScreenshotCanvasHeight" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">730</Value>
     </Setting>
+    <Setting Name="ScreenshotResolutionPreset" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Standard RP Thread</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

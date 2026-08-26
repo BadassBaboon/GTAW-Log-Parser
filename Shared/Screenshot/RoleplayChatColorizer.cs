@@ -10,15 +10,17 @@ namespace GTAWParser.Shared.Screenshot
         public string ColorHex { get; set; } = "#FFFFFF";
         public bool IsBold { get; set; }
         public bool IsItalic { get; set; }
+        public bool IsCensored { get; set; }
 
         public ChatStyledSegment() { }
 
-        public ChatStyledSegment(string text, string colorHex, bool isBold = false, bool isItalic = false)
+        public ChatStyledSegment(string text, string colorHex, bool isBold = false, bool isItalic = false, bool isCensored = false)
         {
             Text = text;
             ColorHex = colorHex;
             IsBold = isBold;
             IsItalic = isItalic;
+            IsCensored = isCensored;
         }
     }
 
@@ -125,7 +127,20 @@ namespace GTAWParser.Shared.Screenshot
             var result = new List<ChatStyledSegment>();
             foreach (var seg in segments)
             {
-                result.Add(new ChatStyledSegment(seg.Text, colorHex, seg.IsBold, seg.IsItalic));
+                result.Add(new ChatStyledSegment(seg.Text, colorHex, seg.IsBold, seg.IsItalic, false));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Marks every segment of a line as censored with a solid black spoiler bar.
+        /// </summary>
+        public static List<ChatStyledSegment> Censor(IEnumerable<ChatStyledSegment> segments)
+        {
+            var result = new List<ChatStyledSegment>();
+            foreach (var seg in segments)
+            {
+                result.Add(new ChatStyledSegment(seg.Text, seg.ColorHex, seg.IsBold, seg.IsItalic, true));
             }
             return result;
         }

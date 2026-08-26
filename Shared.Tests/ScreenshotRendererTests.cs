@@ -328,5 +328,164 @@ namespace GTAWParser.Shared.Tests
             Assert.Equal("Part 2", recolored[1].Text);
             Assert.Equal("#C2A3DA", recolored[1].ColorHex);
         }
+
+        [Fact]
+        public void ChatStyledSegment_Censor_FlagsCorrectly()
+        {
+            var seg = new ChatStyledSegment("Hidden Amount", "#FFFFFF", false, false, true);
+            Assert.True(seg.IsCensored);
+
+            var uncensored = new ChatStyledSegment("Visible", "#FFFFFF");
+            Assert.False(uncensored.IsCensored);
+        }
+
+        [Fact]
+        public void Censor_MarksAllSegmentsAsCensored()
+        {
+            var orig = new List<ChatStyledSegment>
+            {
+                new ChatStyledSegment("$500,000", "#32CD32"),
+                new ChatStyledSegment(" cash", "#FFFFFF")
+            };
+
+            var censored = RoleplayChatColorizer.Censor(orig);
+            Assert.Equal(2, censored.Count);
+            Assert.All(censored, s => Assert.True(s.IsCensored));
+        }
+
+        [Fact]
+        public void Recolor_ClearsCensorship()
+        {
+            var orig = new List<ChatStyledSegment>
+            {
+                new ChatStyledSegment("Secret", "#FFFFFF", false, false, true)
+            };
+
+            var recolored = RoleplayChatColorizer.Recolor(orig, "#1E90FF");
+            Assert.Single(recolored);
+            Assert.False(recolored[0].IsCensored);
+            Assert.Equal("#1E90FF", recolored[0].ColorHex);
+        }
+
+        [Fact]
+        public void Render_WithCensoredSegments_RendersSuccessfully()
+        {
+            var thread = new Thread(() =>
+            {
+                var options = new ScreenshotRenderOptions
+                {
+                    CanvasWidth = 800,
+                    CanvasHeight = 600,
+                    ChatX = 20,
+                    ChatY = 20,
+                    FontSize = 14
+                };
+
+                var lines = new List<List<ChatStyledSegment>>
+                {
+                    new List<ChatStyledSegment>
+                    {
+                        new ChatStyledSegment("Paid ", "#FFFFFF"),
+                        new ChatStyledSegment("$1,000,000", "#32CD32", false, false, true),
+                        new ChatStyledSegment(" to John Doe.", "#FFFFFF")
+                    }
+                };
+
+                var rtb = ScreenshotRenderer.Render(null, lines, options);
+                Assert.NotNull(rtb);
+                Assert.Equal(800, rtb.PixelWidth);
+                Assert.Equal(600, rtb.PixelHeight);
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join(5000);
+        }
+
+        [Fact]
+        public void ResolutionPreset_DefaultPresets_ContainsKeyCommunityPresets()
+        {
+            var presets = ResolutionPreset.DefaultPresets;
+            Assert.NotEmpty(presets);
+
+            var compact = presets.Find(p => p.Name == "Compact RP Thread");
+            Assert.NotNull(compact);
+            Assert.Equal(1150, compact.Width);
+            Assert.Equal(750, compact.Height);
+
+            var standard = presets.Find(p => p.Name == "Standard RP Thread");
+            Assert.NotNull(standard);
+            Assert.Equal(1300, standard.Width);
+            Assert.Equal(730, standard.Height);
+
+            var large = presets.Find(p => p.Name == "Large RP Thread");
+            Assert.NotNull(large);
+            Assert.Equal(1650, large.Width);
+            Assert.Equal(1060, large.Height);
+        }
+
+        [Theory]
+        [InlineData("Compact RP Thread", 1150, 750)]
+        [InlineData("Standard RP Thread", 1300, 730)]
+        [InlineData("1080p FHD", 1920, 1080)]
+        [InlineData("720p HD", 1280, 720)]
+        public void ResolutionPreset_MatchesByNameAndDimensions(string presetName, int expectedW, int expectedH)
+        {
+            var presets = ResolutionPreset.DefaultPresets;
+            var matchByName = presets.Find(p => p.Name.Equals(presetName, StringComparison.OrdinalIgnoreCase));
+            Assert.NotNull(matchByName);
+            Assert.Equal(expectedW, matchByName.Width);
+            Assert.Equal(expectedH, matchByName.Height);
+
+            var matchByDims = presets.Find(p => p.Width == expectedW && p.Height == expectedH);
+            Assert.NotNull(matchByDims);
+            Assert.Equal(presetName, matchByDims.Name);
+        }
+
+        [Fact]
+        public void ScreenshotRenderOptions_WithFullStylingAndPosition_RendersCorrectly()
+        {
+            var thread = new Thread(() =>
+            {
+                var options = new ScreenshotRenderOptions
+                {
+                    CanvasWidth = 1150,
+                    CanvasHeight = 750,
+                    ChatX = 45,
+                    ChatY = 60,
+                    FontFamily = "Segoe UI",
+                    FontSize = 16,
+                    IsBold = true,
+                    LineSpacing = 5,
+                    OutlineWidth = 1.5,
+                    EnableDropShadow = true,
+                    ShadowOffset = 1.5,
+                    EnableBackgroundBox = true,
+                    BackgroundBoxOpacity = 0.5
+                };
+
+                var lines = new List<List<ChatStyledSegment>>
+                {
+                    new List<ChatStyledSegment> { new ChatStyledSegment("* Character inspects the surroundings.", "#C2A3DA") },
+                    new List<ChatStyledSegment> { new ChatStyledSegment("Character says: Everything checks out.", "#FFFFFF") }
+                };
+
+                var block = ScreenshotRenderer.MeasureChatBlock(lines, options);
+                Assert.True(block.Width > 0);
+                Assert.True(block.Height > 0);
+                Assert.Equal(45, block.X);
+                Assert.Equal(60, block.Y);
+
+                var rtb = ScreenshotRenderer.Render(null, lines, options);
+                Assert.NotNull(rtb);
+                Assert.Equal(1150, rtb.PixelWidth);
+                Assert.Equal(750, rtb.PixelHeight);
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join(5000);
+        }
     }
 }
+

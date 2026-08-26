@@ -739,5 +739,17 @@ namespace Assistant.Properties {
                 this["ScreenshotCanvasHeight"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Standard RP Thread")]
+        public string ScreenshotResolutionPreset {
+            get {
+                return ((string)(this["ScreenshotResolutionPreset"]));
+            }
+            set {
+                this["ScreenshotResolutionPreset"] = value;
+            }
+        }
     }
 }

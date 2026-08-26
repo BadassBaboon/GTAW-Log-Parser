@@ -258,12 +258,24 @@ namespace Assistant.UI
             foreach (var seg in segments)
             {
                 if (string.IsNullOrEmpty(seg.Text)) continue;
-                para.Inlines.Add(new Run(seg.Text)
+                var run = new Run(seg.Text)
                 {
-                    Foreground = ScreenshotEditorWindow.FreezeBrush(seg.ColorHex),
                     FontWeight = seg.IsBold ? FontWeights.Bold : FontWeights.Normal,
                     FontStyle = seg.IsItalic ? FontStyles.Italic : FontStyles.Normal
-                });
+                };
+
+                if (seg.IsCensored)
+                {
+                    run.Background = ScreenshotEditorWindow.FreezeBrush("#050505");
+                    run.Foreground = ScreenshotEditorWindow.FreezeBrush("#888888");
+                }
+                else
+                {
+                    run.Background = Brushes.Transparent;
+                    run.Foreground = ScreenshotEditorWindow.FreezeBrush(seg.ColorHex);
+                }
+
+                para.Inlines.Add(run);
             }
 
             if (para.Inlines.Count == 0)
@@ -334,13 +346,13 @@ namespace Assistant.UI
 
         private void ScreenshotEditorWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            _isLoaded = true;
             ApplyThemeStyling();
 
             if (FontFamilyCombo.SelectedIndex < 0) FontFamilyCombo.SelectedIndex = 0;
 
             PopulateResolutionPresets();
             LoadSavedSettings();
+            _isLoaded = true;
             UpdateCanvas();
         }
 
@@ -396,16 +408,27 @@ namespace Assistant.UI
                 ChatXTextBox.Text = Math.Round(_chatX).ToString();
                 ChatYTextBox.Text = Math.Round(_chatY).ToString();
 
-                if (s.ScreenshotCanvasWidth >= 100 && s.ScreenshotCanvasHeight >= 100)
+                int savedWidth = s.ScreenshotCanvasWidth >= 100 ? s.ScreenshotCanvasWidth : 1300;
+                int savedHeight = s.ScreenshotCanvasHeight >= 100 ? s.ScreenshotCanvasHeight : 730;
+                string? savedPreset = s.ScreenshotResolutionPreset;
+
+                CanvasWidthTextBox.Text = savedWidth.ToString();
+                CanvasHeightTextBox.Text = savedHeight.ToString();
+
+                ResolutionPreset? match = null;
+                if (!string.IsNullOrWhiteSpace(savedPreset))
                 {
-                    CanvasWidthTextBox.Text = s.ScreenshotCanvasWidth.ToString();
-                    CanvasHeightTextBox.Text = s.ScreenshotCanvasHeight.ToString();
-                    var match = ResolutionPreset.DefaultPresets.FirstOrDefault(p => p.Width == s.ScreenshotCanvasWidth && p.Height == s.ScreenshotCanvasHeight);
-                    if (match != null)
-                    {
-                        ResolutionPresetCombo.SelectedItem = match;
-                    }
+                    match = ResolutionPreset.DefaultPresets.FirstOrDefault(p =>
+                        string.Equals(p.Name, savedPreset, StringComparison.OrdinalIgnoreCase));
                 }
+
+                if (match == null)
+                {
+                    match = ResolutionPreset.DefaultPresets.FirstOrDefault(p =>
+                        p.Width == savedWidth && p.Height == savedHeight);
+                }
+
+                ResolutionPresetCombo.SelectedItem = match;
             }
             catch (Exception ex)
             {
@@ -438,6 +461,15 @@ namespace Assistant.UI
                     s.ScreenshotCanvasWidth = w;
                 if (int.TryParse(CanvasHeightTextBox.Text, out int h) && h >= 100)
                     s.ScreenshotCanvasHeight = h;
+
+                if (ResolutionPresetCombo.SelectedItem is ResolutionPreset preset)
+                {
+                    s.ScreenshotResolutionPreset = preset.Name;
+                }
+                else
+                {
+                    s.ScreenshotResolutionPreset = "Custom";
+                }
 
                 s.Save();
             }
@@ -520,9 +552,6 @@ namespace Assistant.UI
             _isUpdatingUi = true;
             ResolutionPresetCombo.ItemsSource = ResolutionPreset.DefaultPresets;
             ResolutionPresetCombo.DisplayMemberPath = "DisplayText";
-            ResolutionPresetCombo.SelectedItem =
-                ResolutionPreset.DefaultPresets.FirstOrDefault(p => p.Width == 1300 && p.Height == 730)
-                ?? ResolutionPreset.DefaultPresets.FirstOrDefault();
             _isUpdatingUi = false;
         }
 
@@ -835,7 +864,7 @@ namespace Assistant.UI
 
         private void ResolutionPresetCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_isLoaded) return;
+            if (!_isLoaded || _isUpdatingUi) return;
             if (ResolutionPresetCombo.SelectedItem is not ResolutionPreset preset) return;
 
             _isUpdatingUi = true;
@@ -848,7 +877,7 @@ namespace Assistant.UI
 
         private void CanvasDimensions_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (!_isLoaded) return;
+            if (!_isLoaded || _isUpdatingUi) return;
             UpdateCanvas();
             SaveSettings();
         }
@@ -936,9 +965,14 @@ namespace Assistant.UI
 
         private void Viewport_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            bool wasDraggingChat = _isDraggingChat;
             _isDraggingChat = false;
             _isDraggingImage = false;
             Mouse.Capture(null);
+            if (wasDraggingChat)
+            {
+                SaveSettings();
+            }
         }
 
         private void Viewport_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -1215,9 +1249,19 @@ namespace Assistant.UI
                             {
                                 hex = $"#{scb.Color.R:X2}{scb.Color.G:X2}{scb.Color.B:X2}";
                             }
+
+                            bool isCensored = false;
+                            if (run.Background is SolidColorBrush bg &&
+                                bg.Color.A > 0 &&
+                                bg.Color.R <= 15 && bg.Color.G <= 15 && bg.Color.B <= 15)
+                            {
+                                isCensored = true;
+                            }
+
                             segments.Add(new ChatStyledSegment(run.Text, hex,
                                 run.FontWeight == FontWeights.Bold,
-                                run.FontStyle == FontStyles.Italic));
+                                run.FontStyle == FontStyles.Italic,
+                                isCensored));
                             sb.Append(run.Text);
                         }
                     }
@@ -1510,6 +1554,7 @@ namespace Assistant.UI
                 {
                     if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
                     {
+                        activeSelection.ApplyPropertyValue(TextElement.BackgroundProperty, Brushes.Transparent);
                         activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(hex));
                         line.ColorOverride = null;
                         SyncRichTextBoxToLine(rtb, line);
@@ -1519,6 +1564,7 @@ namespace Assistant.UI
                     else if (rtb != null)
                     {
                         var wholeDoc = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+                        wholeDoc.ApplyPropertyValue(TextElement.BackgroundProperty, Brushes.Transparent);
                         wholeDoc.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(hex));
                         line.ColorOverride = hex;
                         SyncRichTextBoxToLine(rtb, line);
@@ -1555,6 +1601,7 @@ namespace Assistant.UI
             {
                 if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
                 {
+                    activeSelection.ApplyPropertyValue(TextElement.BackgroundProperty, Brushes.Transparent);
                     string defaultColor = ChatLineClassifier.GetHexColor(line.Category);
                     activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(defaultColor));
                     line.ColorOverride = null;
@@ -1612,6 +1659,7 @@ namespace Assistant.UI
                         string customHex = $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
                         if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
                         {
+                            activeSelection.ApplyPropertyValue(TextElement.BackgroundProperty, Brushes.Transparent);
                             activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(customHex));
                             line.ColorOverride = null;
                             SyncRichTextBoxToLine(rtb, line);
@@ -1621,6 +1669,7 @@ namespace Assistant.UI
                         else if (rtb != null)
                         {
                             var wholeDoc = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+                            wholeDoc.ApplyPropertyValue(TextElement.BackgroundProperty, Brushes.Transparent);
                             wholeDoc.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(customHex));
                             line.ColorOverride = customHex;
                             SyncRichTextBoxToLine(rtb, line);
@@ -1641,6 +1690,50 @@ namespace Assistant.UI
                 }
             };
             menu.Items.Add(customItem);
+
+            menu.Items.Add(new Separator());
+
+            var censorItem = new MenuItem
+            {
+                Header = hasSelection ? "Redact selection" : "Redact line",
+                ToolTip = "Redact with a solid black spoiler bar (like Discord) to hide amounts, names, or spoilers",
+                Icon = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.EyeOffOutline,
+                    Width = 13,
+                    Height = 13,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Foreground = (Brush)FindResource("MahApps.Brushes.ThemeForeground")
+                }
+            };
+            censorItem.Click += (_, __) =>
+            {
+                if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
+                {
+                    activeSelection.ApplyPropertyValue(TextElement.BackgroundProperty, FreezeBrush("#050505"));
+                    activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush("#888888"));
+                    line.ColorOverride = null;
+                    SyncRichTextBoxToLine(rtb, line);
+                    UpdateCanvas();
+                    SetStatus("Selection redacted with black spoiler bar.");
+                }
+                else if (rtb != null)
+                {
+                    var wholeDoc = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+                    wholeDoc.ApplyPropertyValue(TextElement.BackgroundProperty, FreezeBrush("#050505"));
+                    wholeDoc.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush("#888888"));
+                    SyncRichTextBoxToLine(rtb, line);
+                    UpdateCanvas();
+                    SetStatus("Line redacted with black spoiler bar.");
+                }
+                else
+                {
+                    foreach (var s in line.Segments) s.IsCensored = true;
+                    UpdateCanvas();
+                    SetStatus("Line redacted with black spoiler bar.");
+                }
+            };
+            menu.Items.Add(censorItem);
 
             menu.IsOpen = true;
         }
@@ -1697,14 +1790,14 @@ namespace Assistant.UI
 
         private void Styling_Changed(object sender, RoutedEventArgs e)
         {
-            if (!_isLoaded) return;
+            if (!_isLoaded || _isUpdatingUi) return;
             UpdateCanvas();
             SaveSettings();
         }
 
         private void StylingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (!_isLoaded) return;
+            if (!_isLoaded || _isUpdatingUi) return;
 
             FontSizeValText.Text = Math.Round(FontSizeSlider.Value).ToString();
             LineSpacingValText.Text = Math.Round(LineSpacingSlider.Value).ToString();
