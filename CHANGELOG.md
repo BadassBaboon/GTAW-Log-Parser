@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.5.0] - 2026-08-26
+
+### Added
+- **GTA World Roleplay Screenshot Editor (`ScreenshotEditorWindow.xaml`, `ScreenshotEditorWindow.xaml.cs`, `ScreenshotRenderer.cs`, `RoleplayChatColorizer.cs`, `ResolutionPreset.cs`)**:
+  - Built-in Roleplay Screenshot Editor accessible from the top menu bar between FiveM Tools and About, dedicated to crafting character showcase and faction thread screenshots:
+    - **Unified Canvas Workspace**: Load background screenshots via file browser, drag-and-drop, or direct clipboard paste (`Ctrl+V`). Interactive canvas pan (click & drag), mouse wheel zoom, Aspect Fit, Aspect Fill, and 100% reset.
+    - **Single Streamlined Chat Lines Section**: Merged the previous multi-step workflow into a single, cohesive workspace. Anything imported, pasted, or typed is immediately rendered on the canvas and available for customization without intermediate steps.
+    - **Drag & Drop Line Reordering**: Added drag handles next to line swatches for smooth reordering of canvas lines.
+    - **Fluid In-Place Editing & Enter Key**: Edit lines directly in the sidebar; pressing Enter inside any line automatically creates a new line below it and focuses its editor.
+    - **Unified Official GTA World Color Swatches**: Cleaned and consolidated color presets against live in-game server palettes (Radio Blue `#1E90FF`, Action Purple `#C2A2DA`, Phone Yellow `#FFFF00`, Cash & Item Green `#32CD32`, Whispers `#DCDCDC`, OOC Grey `#A6ACAF`, and Server Notice Amber `#EE9A00`).
+    - **Line & Selection-Level Recoloring**: Clicking a line's swatch recolors the full line, while selecting/highlighting any substring in a line and choosing a swatch or custom hex code recolors only the selected text.
+    - **Rich HTML Chatlog Importer (`ChatLogHtmlParser.cs`)**:
+      - Strips HTML boilerplate, doctype, `<style>` CSS rule blocks, `<script>` tags, and comments.
+      - Automatically extracts `<div class="chat-line">` lines or falls back to `<p>`, `<div>`, and `<br>` elements from forums and browsers.
+      - Extracts and normalizes inline colors (`#RRGGBB`, `#RGB`, `rgb(r, g, b)`, named colors) and typography (bold, italic).
+      - Automatically strips timestamps (`<span class="timestamp">` and `[HH:MM:SS]`) and decodes HTML entities.
+    - **Prioritized HTML Ground-Truth Colors**: HTML chat logs carry authentic colors captured directly from FiveM's CEF NUI DOM or forum styles. These are strictly prioritized over heuristic regex guessing.
+    - **Auto-Colour Toggle**: Switchable checkbox (enabled by default) that applies roleplay chat color rules, or leaves text plain white when turned off for manual recoloring.
+    - **Prioritized Custom Backup Directory**: Opening **Import chatlog** automatically detects and navigates to the user's custom chatlog backup directory configured in Backup Settings.
+    - **Standard & Community Resolution Presets with Persistent Memory**: Presets for 16:9 (`1920x1080`, `1600x900`, `1280x720`), widescreen (`1680x1050`, `1440x900`, `1200x800`), classic 4:3/5:4 (`1024x768`, `1280x960`, `1280x1024`), square (1:1), and community standards (`1300x730`, `1150x750`, `1650x1060`) with custom resolution inputs. The user's selected preset and canvas dimensions are automatically remembered across sessions so screenshot styles remain consistent.
+    - **Spoiler & Censor Redaction Bars (`IsCensored`)**: Added a censor option in the line and selection color menu to hide sensitive details like money balances, item quantities, and names. Redacts highlighted text or lines with Discord-style solid black spoiler boxes on the rendered screenshot while keeping text legible in the editor sidebar.
+    - **Streamlined 2-Column Style & Position Inspector**:
+      - Compact 2-column inspector eliminating vertical scrolling.
+      - 2x2 corner snap buttons (`↖ ↗ / ↙ ↘`) paired with side-by-side X and Y pixel offsets.
+      - Font family dropdown paired with a size slider and live numeric readout.
+      - Line spacing and outline width sliders side by side.
+      - Horizontal effects checkboxes (`Bold`, `Drop shadow`, `Backing box`) with contextual opacity slider.
+    - **Adaptive UI Locking**: Resolution presets, zoom controls, fit/fill buttons, and export buttons remain cleanly disabled until a background screenshot is loaded.
+    - **Unified Windows Save Dialog**: Replaced separate PNG and JPEG buttons with a single "Save Image" button opening a standard Windows save dialog defaulting to PNG with JPEG selectable in the file type dropdown.
+    - **1-Click Clipboard Export**: `Ctrl+Shift+C` and "Copy image" button for instant sharing to Discord, forums, or image hosts.
+
+### Fixed
+- **Theme Selector Unlocked Regardless Of Settings (`ProgramSettingsWindow.xaml`, `ProgramSettingsWindow.xaml.cs`)**:
+  - The theme dropdown's only lock condition was `Use system accent color`. While on the GTA World default theme the list now stays disabled, and a `Use a custom accent color` checkbox enables customization without stranding unreachable accents.
+  - Fixed blank theme dropdown caused by mismatched string identifier when unticking system accent.
+- **GTA World Chat Color Accuracy (`ChatLineClassifier.cs`, `RoleplayChatColorizer.cs`)**:
+  - `/do` shares `/me` purple (`#C2A2DA`) in game; fixed `/do` rendering green or teal.
+  - Fixed `[Radio]` and `[Dispatch]` misdetected as advertisements due to un-bounded "Ad" regex.
+  - Corrected success green to `#32CD32` based on live in-game DOM inspection.
+  - Added classification for raw typed `/me` and `/do` commands, private messages (`(( PM from ... ))`), and bracket-tagged server messages.
+  - Preserved `/low` speech dimming in Live Tail (`#DCDCDC`).
+  - Audited against 59 lines captured from a live GTA World English session with regression tests.
+- **Eliminated Empty Space Lines in Saved .txt Chatlog Backups (`BackupController.cs`, `MainWindow.xaml.cs`, `ChatLogFilterWindow.xaml.cs`, `Main.cs`, `FiveMChatCaptureService.cs`, `ChatLogParser.cs`)**:
+  - Replaced flawed `.Replace("\n", Environment.NewLine)` calls with centralized `ChatLogParser.NormalizeLineEndings` across all log exporters and clipboard operations.
+  - Collapses degenerate `\r\r\n` sequences into standard single `\r\n` line endings on Windows, eliminating unintended blank lines between chat lines across automated backups, manual saves, and clipboard copies.
+
 ## [6.4.0] - 2026-08-24
 
 ### Added
