@@ -145,5 +145,75 @@ namespace GTAWParser.Shared.Tests
                 Assert.Contains("Concurrent message", result);
             }
         }
+
+        [Fact]
+        public void NormalizeLineEndings_EliminatesDegenerateDoubleCrLf()
+        {
+            // \r\r\n is the regression that caused blank lines in txt backups
+            string corrupted = "Line 1\r\r\nLine 2\r\r\nLine 3";
+            string result = ChatLogParser.NormalizeLineEndings(corrupted);
+
+            Assert.Equal($"Line 1{Environment.NewLine}Line 2{Environment.NewLine}Line 3", result);
+        }
+
+        [Fact]
+        public void NormalizeLineEndings_LeavesStandardCrLfClean()
+        {
+            string standard = $"Line 1{Environment.NewLine}Line 2{Environment.NewLine}Line 3";
+            string result = ChatLogParser.NormalizeLineEndings(standard);
+
+            Assert.Equal(standard, result);
+        }
+
+        [Fact]
+        public void NormalizeLineEndings_ConvertsUnixLfToWindowsCrLf()
+        {
+            string unix = "Line 1\nLine 2\nLine 3";
+            string result = ChatLogParser.NormalizeLineEndings(unix);
+
+            Assert.Equal($"Line 1{Environment.NewLine}Line 2{Environment.NewLine}Line 3", result);
+        }
+
+        [Fact]
+        public void NormalizeLineEndings_ConvertsLoneCrToCrLf()
+        {
+            string mac = "Line 1\rLine 2\rLine 3";
+            string result = ChatLogParser.NormalizeLineEndings(mac);
+
+            Assert.Equal($"Line 1{Environment.NewLine}Line 2{Environment.NewLine}Line 3", result);
+        }
+
+        [Fact]
+        public void NormalizeLineEndings_PreservesIntentionalEmptyLines()
+        {
+            string withBlankLine = "Line 1\r\n\r\nLine 2";
+            string result = ChatLogParser.NormalizeLineEndings(withBlankLine);
+
+            Assert.Equal($"Line 1{Environment.NewLine}{Environment.NewLine}Line 2", result);
+        }
+
+        [Fact]
+        public void NormalizeLineEndings_HandlesNullAndEmpty()
+        {
+            Assert.Equal(string.Empty, ChatLogParser.NormalizeLineEndings(null));
+            Assert.Equal(string.Empty, ChatLogParser.NormalizeLineEndings(string.Empty));
+        }
+
+        [Fact]
+        public void NormalizeLineEndings_PreventsRegressionOfOldReplaceHack()
+        {
+            // The old flawed code did: parsed.Replace("\n", Environment.NewLine)
+            // On Windows this turned \r\n into \r\r\n, doubling line spacing.
+            string logFromSession = "[12:00:00] Line 1\r\n[12:00:01] Line 2\r\n[12:00:02] Line 3\r\n";
+            string normalized = ChatLogParser.NormalizeLineEndings(logFromSession);
+
+            Assert.DoesNotContain("\r\r\n", normalized);
+            var split = normalized.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            Assert.Equal(4, split.Length);
+            Assert.Equal("[12:00:00] Line 1", split[0]);
+            Assert.Equal("[12:00:01] Line 2", split[1]);
+            Assert.Equal("[12:00:02] Line 3", split[2]);
+            Assert.Equal(string.Empty, split[3]);
+        }
     }
 }

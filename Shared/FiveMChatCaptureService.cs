@@ -140,7 +140,7 @@ namespace GTAWParser.Shared
                     chat = TimestampRegex.Replace(chat, string.Empty);
                 }
 
-                return chat;
+                return ChatLogParser.NormalizeLineEndings(chat);
             }
             catch (Exception ex)
             {
@@ -316,7 +316,8 @@ namespace GTAWParser.Shared
 
                 foreach (CapturedChatLine line in newLines)
                 {
-                    string formatted = AddTimestamp(line.Text, capturedAt);
+                    string cleanText = line.Text.TrimEnd('\r', '\n');
+                    string formatted = AddTimestamp(cleanText, capturedAt);
                     line.Text = formatted;
                     _sessionRichLines.Add(line);
                     writer.WriteLine(formatted);
@@ -345,7 +346,9 @@ namespace GTAWParser.Shared
 
                 foreach (string line in lines)
                 {
-                    string formatted = AddTimestamp(line, capturedAt);
+                    string cleanText = line.TrimEnd('\r', '\n');
+                    if (string.IsNullOrWhiteSpace(cleanText)) continue;
+                    string formatted = AddTimestamp(cleanText, capturedAt);
                     writer.WriteLine(formatted);
                     LineReceived?.Invoke(formatted);
                     CapturedLineReceived?.Invoke(new CapturedChatLine(formatted));

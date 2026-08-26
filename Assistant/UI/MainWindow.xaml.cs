@@ -294,7 +294,7 @@ namespace Assistant.UI
                 {
                     using (StreamWriter sw = new StreamWriter(dialog.OpenFile()))
                     {
-                        sw.Write(Parsed.Text.Replace("\n", Environment.NewLine));
+                        sw.Write(ChatLogParser.NormalizeLineEndings(Parsed.Text));
                     }
                 }
             }
@@ -315,7 +315,7 @@ namespace Assistant.UI
             if (string.IsNullOrWhiteSpace(Parsed.Text) && !Properties.Settings.Default.DisableErrorPopups)
                 MessageBox.Show(Strings.NothingParsed, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             else
-                Clipboard.SetText(Parsed.Text.Replace("\n", Environment.NewLine));
+                Clipboard.SetText(ChatLogParser.NormalizeLineEndings(Parsed.Text));
         }
 
         /// <summary>

@@ -186,7 +186,7 @@ namespace Assistant.Controllers
                     string txtPath = Path.Combine(directory, $"{baseFileName}.txt");
                     string txtTemp = Path.Combine(directory, $".temp_{baseFileName}.txt");
 
-                    WriteBackupFileWithDeduplication(txtPath, txtTemp, parsed.Replace("\n", Environment.NewLine));
+                    WriteBackupFileWithDeduplication(txtPath, txtTemp, ChatLogParser.NormalizeLineEndings(parsed));
                     primarySavedPath = txtPath;
                 }
 

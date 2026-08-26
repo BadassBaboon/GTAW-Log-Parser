@@ -10,6 +10,7 @@ using Assistant.Localization;
 using System.Windows.Threading;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using GTAWParser.Shared;
 
 namespace Assistant.UI
 {
@@ -434,7 +435,7 @@ namespace Assistant.UI
                 if (dialog.ShowDialog() != true) return;
                 using (StreamWriter sw = new StreamWriter(dialog.OpenFile()))
                 {
-                    sw.Write(Filtered.Text.Replace("\n", Environment.NewLine));
+                    sw.Write(ChatLogParser.NormalizeLineEndings(Filtered.Text));
                 }
             }
             catch
@@ -454,7 +455,7 @@ namespace Assistant.UI
             if (string.IsNullOrWhiteSpace(Filtered.Text) && !Properties.Settings.Default.DisableErrorPopups)
                 MessageBox.Show(Strings.NothingFiltered, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             else
-                Clipboard.SetText(Filtered.Text.Replace("\n", Environment.NewLine));
+                Clipboard.SetText(ChatLogParser.NormalizeLineEndings(Filtered.Text));
         }
 
         /// <summary>

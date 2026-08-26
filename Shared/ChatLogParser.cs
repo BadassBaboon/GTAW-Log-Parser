@@ -71,5 +71,18 @@ namespace GTAWParser.Shared
         /// </summary>
         public static string StripTimestamps(string log) =>
             string.IsNullOrEmpty(log) ? log : TimestampRegex.Replace(log, string.Empty);
+
+        private static readonly Regex MultipleCrBeforeLfRegex = new Regex(@"\r+\n", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Normalizes any mix of CRLF (\r\n), degenerate double-CRLF (\r\r\n), LF (\n), or lone CR (\r)
+        /// into standard Environment.NewLine (\r\n on Windows), completely eliminating empty blank lines
+        /// caused by degenerate \r\r\n sequences while preserving intentional empty lines.
+        /// </summary>
+        public static string NormalizeLineEndings(string? text)
+        {
+            if (string.IsNullOrEmpty(text)) return string.Empty;
+            return MultipleCrBeforeLfRegex.Replace(text, "\n").Replace('\r', '\n').Replace("\n", Environment.NewLine);
+        }
     }
 }

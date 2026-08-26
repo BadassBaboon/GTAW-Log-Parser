@@ -153,7 +153,7 @@ namespace Parser.UI
                 if (SaveFileDialog.ShowDialog() != DialogResult.OK) return;
                 using (StreamWriter sw = new StreamWriter(SaveFileDialog.OpenFile()))
                 {
-                    sw.Write(Parsed.Text.Replace("\n", Environment.NewLine));
+                    sw.Write(ChatLogParser.NormalizeLineEndings(Parsed.Text));
                 }
             }
             catch
@@ -169,7 +169,7 @@ namespace Parser.UI
         private void CopyParsedToClipboard_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrWhiteSpace(Parsed.Text))
-                Clipboard.SetText(Parsed.Text.Replace("\n", Environment.NewLine));
+                Clipboard.SetText(ChatLogParser.NormalizeLineEndings(Parsed.Text));
         }
 
         /// <summary>
