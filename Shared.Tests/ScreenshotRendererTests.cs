@@ -273,28 +273,60 @@ namespace GTAWParser.Shared.Tests
             var swatches = RoleplayChatColorizer.EditorSwatches;
             Assert.NotEmpty(swatches);
 
-            Assert.Contains(swatches, s => s.Label == "/me" && s.Hex.Equals("#C2A3DA", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "/do" && s.Hex.Equals("#C2A3DA", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "Your Speech" && s.Hex.Equals("#F1F1F1", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "/me & /do" && s.Hex.Equals("#C2A3DA", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Your Speech" && s.Hex.Equals("#FFFFFF", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(swatches, s => s.Label == "Other Speech" && s.Hex.Equals("#C8C8C8", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(swatches, s => s.Label == "Whisper" && s.Hex.Equals("#EDA841", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "Phone Call" && s.Hex.Equals("#FBF724", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Phone / SMS / PM" && s.Hex.Equals("#FFFF00", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(swatches, s => s.Label == "Radio" && s.Hex.Equals("#1E90FF", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "Item Given" && s.Hex.Equals("#56D64B", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "Money Paid" && s.Hex.Equals("#56D64B", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "CK Blue" && s.Hex.Equals("#3896F3", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "CK Red / Admin" && s.Hex.Equals("#F00000", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "Inventory" && s.Hex.Equals("#FFFF00", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(swatches, s => s.Label == "OOC" && s.Hex.Equals("#A6ACAF", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "Item / Money / Success" && s.Hex.Equals("#32CD32", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "CK Red / Admin / Error" && s.Hex.Equals("#FF0000", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "CK Blue / System" && s.Hex.Equals("#3896F3", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(swatches, s => s.Label == "OOC (( ))" && s.Hex.Equals("#A6ACAF", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(swatches, s => s.Label == "Advertisement" && s.Hex.Equals("#2ECC71", StringComparison.OrdinalIgnoreCase));
 
+            // Verify no duplicate labels or hex combinations
+            var labels = new HashSet<string>();
             foreach (var s in swatches)
             {
                 Assert.False(string.IsNullOrWhiteSpace(s.Label));
                 Assert.False(string.IsNullOrWhiteSpace(s.Tooltip));
                 Assert.StartsWith("#", s.Hex);
                 Assert.Equal(7, s.Hex.Length);
+                Assert.True(labels.Add(s.Label), $"Duplicate swatch label found: {s.Label}");
             }
+        }
+
+        [Fact]
+        public void ColorizeLine_MultiSegment_PreservesSpansAndColors()
+        {
+            // Store prompt line: Blue prefix, Yellow action prompt
+            string storeLine = "Route 68 24/7: Press Y to open store.";
+            var segs = RoleplayChatColorizer.ColorizeLine(storeLine);
+            Assert.NotEmpty(segs);
+
+            // Store prefix in blue
+            Assert.Contains(segs, s => s.ColorHex.Equals("#1E90FF", StringComparison.OrdinalIgnoreCase) && s.Text.Contains("Route 68"));
+
+            // Prompt in yellow
+            Assert.Contains(segs, s => s.ColorHex.Equals("#FFFF00", StringComparison.OrdinalIgnoreCase) && s.Text.Contains("Press Y"));
+        }
+
+        [Fact]
+        public void Recolor_PreservesRunsAndChangesColor()
+        {
+            var orig = new List<ChatStyledSegment>
+            {
+                new ChatStyledSegment("Part 1 ", "#1E90FF"),
+                new ChatStyledSegment("Part 2", "#FFFFFF")
+            };
+
+            var recolored = RoleplayChatColorizer.Recolor(orig, "#C2A3DA");
+            Assert.Equal(2, recolored.Count);
+            Assert.Equal("Part 1 ", recolored[0].Text);
+            Assert.Equal("#C2A3DA", recolored[0].ColorHex);
+            Assert.Equal("Part 2", recolored[1].Text);
+            Assert.Equal("#C2A3DA", recolored[1].ColorHex);
         }
     }
 }

@@ -7,6 +7,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Text;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Threading;
@@ -82,6 +84,8 @@ namespace Assistant.UI
         public string CleanedText { get; set; } = string.Empty;
         public string DisplayText => CleanedText;
 
+        public List<ChatStyledSegment> Segments { get; set; } = new List<ChatStyledSegment>();
+
         /// <summary>
         /// Explains where this line's colour came from. For an imported log with no captured
         /// colours this is the only signal the user has that the colour was inferred.
@@ -114,8 +118,19 @@ namespace Assistant.UI
     {
         private string _rawText = string.Empty;
         private string? _colorOverride;
+        private List<ChatStyledSegment> _segments = new List<ChatStyledSegment>();
 
         public List<CapturedChatSpan>? NuiSpans { get; set; }
+
+        public List<ChatStyledSegment> Segments
+        {
+            get => _segments;
+            set
+            {
+                _segments = value;
+                Raise(nameof(Segments));
+            }
+        }
 
         public string RawText
         {
@@ -123,12 +138,6 @@ namespace Assistant.UI
             set
             {
                 if (_rawText == value) return;
-
-                // Once the text is edited the captured spans no longer describe it, so they are
-                // dropped and the line falls back to classification.
-                if (NuiSpans != null && !string.Equals(_rawText, value, StringComparison.Ordinal))
-                    NuiSpans = null;
-
                 _rawText = value;
                 Reclassify();
                 Raise(nameof(RawText));
@@ -152,12 +161,12 @@ namespace Assistant.UI
         public string SourceTooltip =>
             _colorOverride != null ? $"Custom colour {_colorOverride} (Click square to change)"
             : NuiSpans != null ? "Colour captured live from the game (Click square to change)"
-            : $"Detected as {ChatLineClassifier.DescribeCategory(Category)} — {ColorHex} (Click square to change)";
+            : $"Detected as {ChatLineClassifier.DescribeCategory(Category)} ({ColorHex}) (Click square to change)";
 
         public void Reclassify()
         {
             Category = RoleplayChatColorizer.Classify(_rawText);
-            ColorHex = _colorOverride ?? DominantOf(NuiSpans) ?? ChatLineClassifier.GetHexColor(Category);
+            ColorHex = _colorOverride ?? DominantOf(NuiSpans) ?? DominantOf(_segments) ?? ChatLineClassifier.GetHexColor(Category);
         }
 
         private static string? DominantOf(List<CapturedChatSpan>? spans)
@@ -174,19 +183,180 @@ namespace Assistant.UI
             return null;
         }
 
+        private static string? DominantOf(List<ChatStyledSegment>? segments)
+        {
+            if (segments == null) return null;
+            foreach (var s in segments)
+            {
+                if (!string.IsNullOrWhiteSpace(s.ColorHex) &&
+                    !string.Equals(s.ColorHex, "#FFFFFF", StringComparison.OrdinalIgnoreCase))
+                {
+                    return s.ColorHex;
+                }
+            }
+            return null;
+        }
+
         /// <summary>Builds the styled segments this line contributes to the render.</summary>
         public List<ChatStyledSegment> ToSegments()
         {
+            if (_colorOverride != null)
+            {
+                var baseSegs = _segments != null && _segments.Count > 0
+                    ? _segments
+                    : RoleplayChatColorizer.ColorizeLine(_rawText);
+                return RoleplayChatColorizer.Recolor(baseSegs, _colorOverride);
+            }
+
+            if (_segments != null && _segments.Count > 0)
+            {
+                return _segments;
+            }
+
             List<ChatStyledSegment> segments =
                 NuiSpans != null && NuiSpans.Count > 0
                     ? RoleplayChatColorizer.FromSpans(NuiSpans)
                     : RoleplayChatColorizer.ColorizeLine(_rawText);
 
-            if (segments.Count == 0) return segments;
+            if (segments.Count == 0 && !string.IsNullOrWhiteSpace(_rawText))
+            {
+                segments.Add(new ChatStyledSegment(_rawText, ColorHex));
+            }
 
-            return _colorOverride != null
-                ? RoleplayChatColorizer.Recolor(segments, _colorOverride)
-                : segments;
+            return segments;
+        }
+    }
+
+    public static class ChatInlinesHelper
+    {
+        public static readonly DependencyProperty SegmentsProperty =
+            DependencyProperty.RegisterAttached(
+                "Segments",
+                typeof(IEnumerable<ChatStyledSegment>),
+                typeof(ChatInlinesHelper),
+                new PropertyMetadata(null, OnSegmentsChanged));
+
+        public static IEnumerable<ChatStyledSegment>? GetSegments(DependencyObject obj) =>
+            (IEnumerable<ChatStyledSegment>?)obj.GetValue(SegmentsProperty);
+
+        public static void SetSegments(DependencyObject obj, IEnumerable<ChatStyledSegment>? value) =>
+            obj.SetValue(SegmentsProperty, value);
+
+        private static void OnSegmentsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not TextBlock tb) return;
+            tb.Inlines.Clear();
+
+            if (e.NewValue is IEnumerable<ChatStyledSegment> segments)
+            {
+                foreach (var seg in segments)
+                {
+                    if (string.IsNullOrEmpty(seg.Text)) continue;
+                    tb.Inlines.Add(new Run(seg.Text)
+                    {
+                        Foreground = ScreenshotEditorWindow.FreezeBrush(seg.ColorHex),
+                        FontWeight = seg.IsBold ? FontWeights.Bold : FontWeights.Normal,
+                        FontStyle = seg.IsItalic ? FontStyles.Italic : FontStyles.Normal
+                    });
+                }
+            }
+        }
+    }
+
+    public static class RichChatLineHelper
+    {
+        public static readonly DependencyProperty PlacedLineProperty =
+            DependencyProperty.RegisterAttached(
+                "PlacedLine",
+                typeof(PlacedChatLine),
+                typeof(RichChatLineHelper),
+                new PropertyMetadata(null, OnPlacedLineChanged));
+
+        public static PlacedChatLine? GetPlacedLine(DependencyObject obj) =>
+            (PlacedChatLine?)obj.GetValue(PlacedLineProperty);
+
+        public static void SetPlacedLine(DependencyObject obj, PlacedChatLine? value) =>
+            obj.SetValue(PlacedLineProperty, value);
+
+        private static void OnPlacedLineChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not RichTextBox rtb) return;
+
+            DataObject.RemovePastingHandler(rtb, OnPasting);
+            DataObject.AddPastingHandler(rtb, OnPasting);
+
+            if (rtb.IsLoaded)
+            {
+                PopulateDocument(rtb, e.NewValue as PlacedChatLine);
+            }
+            else
+            {
+                RoutedEventHandler? onLoaded = null;
+                onLoaded = (s, args) =>
+                {
+                    rtb.Loaded -= onLoaded;
+                    PopulateDocument(rtb, GetPlacedLine(rtb));
+                };
+                rtb.Loaded += onLoaded;
+            }
+        }
+
+        private static void OnPasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (e.DataObject.GetDataPresent(DataFormats.UnicodeText))
+            {
+                string text = (string)e.DataObject.GetData(DataFormats.UnicodeText);
+                if (sender is RichTextBox rtb)
+                {
+                    rtb.Selection.Text = text.Replace("\r\n", " ").Replace("\n", " ");
+                    e.CancelCommand();
+                    e.Handled = true;
+                }
+            }
+        }
+
+        public static void PopulateDocument(RichTextBox rtb, PlacedChatLine? line)
+        {
+            if (line == null)
+            {
+                rtb.Document = new FlowDocument();
+                return;
+            }
+
+            var doc = new FlowDocument
+            {
+                PagePadding = new Thickness(0),
+                LineHeight = 1
+            };
+            var para = new Paragraph { Margin = new Thickness(0), Padding = new Thickness(0) };
+
+            var segments = line.ToSegments();
+            if (segments.Count == 0 && !string.IsNullOrEmpty(line.RawText))
+            {
+                segments = new List<ChatStyledSegment> { new ChatStyledSegment(line.RawText, line.ColorHex) };
+            }
+
+            foreach (var seg in segments)
+            {
+                if (string.IsNullOrEmpty(seg.Text)) continue;
+                para.Inlines.Add(new Run(seg.Text)
+                {
+                    Foreground = ScreenshotEditorWindow.FreezeBrush(seg.ColorHex),
+                    FontWeight = seg.IsBold ? FontWeights.Bold : FontWeights.Normal,
+                    FontStyle = seg.IsItalic ? FontStyles.Italic : FontStyles.Normal
+                });
+            }
+
+            if (para.Inlines.Count == 0)
+            {
+                para.Inlines.Add(new Run("") { Foreground = ScreenshotEditorWindow.FreezeBrush(line.ColorHex) });
+            }
+
+            doc.Blocks.Add(para);
+
+            rtb.Tag = "populating";
+            rtb.Document = doc;
+            rtb.Tag = null;
         }
     }
 
@@ -206,8 +376,10 @@ namespace Assistant.UI
         private Point _dragStartChatPos;
         private Point _dragStartImageOffset;
 
-        private readonly ObservableCollection<ChatSelectableItem> _sourceLines = new ObservableCollection<ChatSelectableItem>();
-        private readonly ObservableCollection<ChatSelectableItem> _filteredSourceLines = new ObservableCollection<ChatSelectableItem>();
+        private Point _dragStartListPos;
+        private PlacedChatLine? _draggedListLine;
+        private bool _isDraggingListLine;
+
         private readonly ObservableCollection<PlacedChatLine> _placedLines = new ObservableCollection<PlacedChatLine>();
 
         /// <summary>Where the chat block sits on the canvas, from the last render.</summary>
@@ -220,7 +392,6 @@ namespace Assistant.UI
         {
             InitializeComponent();
 
-            ChatLinesListBox.ItemsSource = _filteredSourceLines;
             PlacedLinesListBox.ItemsSource = _placedLines;
             _placedLines.CollectionChanged += (_, __) => UpdatePlacedCount();
 
@@ -234,11 +405,9 @@ namespace Assistant.UI
             ApplyThemeStyling();
 
             if (FontFamilyCombo.SelectedIndex < 0) FontFamilyCombo.SelectedIndex = 0;
-            if (ChatSourceCombo.SelectedIndex < 0) ChatSourceCombo.SelectedIndex = 0;
 
             PopulateResolutionPresets();
             LoadSavedSettings();
-            LoadLiveSessionChat();
             UpdateCanvas();
         }
 
@@ -345,7 +514,7 @@ namespace Assistant.UI
             }
         }
 
-        private static SolidColorBrush FreezeBrush(string hex)
+        public static SolidColorBrush FreezeBrush(string hex)
         {
             var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
             brush.Freeze();
@@ -431,180 +600,7 @@ namespace Assistant.UI
             _isUpdatingUi = wasUpdating;
         }
 
-        // ==========================================
-        // SOURCE LOADING
-        // ==========================================
 
-        private static ChatSelectableItem BuildSourceItem(string rawLine, List<CapturedChatSpan>? spans = null)
-        {
-            string cleaned = RoleplayChatColorizer.StripTimestamp(rawLine);
-            var category = RoleplayChatColorizer.Classify(cleaned);
-
-            string colorHex = ChatLineClassifier.GetHexColor(category);
-            if (spans != null)
-            {
-                foreach (var s in spans)
-                {
-                    if (!string.IsNullOrWhiteSpace(s.Color) &&
-                        !string.Equals(s.Color, "#FFFFFF", StringComparison.OrdinalIgnoreCase))
-                    {
-                        colorHex = s.Color;
-                        break;
-                    }
-                }
-            }
-
-            var item = new ChatSelectableItem
-            {
-                RawText = rawLine,
-                CleanedText = cleaned,
-                Category = category,
-                NuiSpans = spans,
-                IsSelected = false
-            };
-            item.ColorHex = colorHex;
-            return item;
-        }
-
-        /// <summary>
-        /// Prefers the rich lines captured from the FiveM NUI — those carry the exact colours the
-        /// game painted. Only falls back to re-reading flat text when no live session is available.
-        /// </summary>
-        private void LoadLiveSessionChat()
-        {
-            _sourceLines.Clear();
-            int nuiCount = 0;
-
-            try
-            {
-                IReadOnlyList<CapturedChatLine> rich = FiveMChatCaptureService.SessionRichLines;
-                if (rich != null && rich.Count > 0)
-                {
-                    foreach (var line in rich)
-                    {
-                        if (string.IsNullOrWhiteSpace(line.Text)) continue;
-
-                        bool hasColor = line.Spans != null && line.Spans.Count > 0;
-                        if (hasColor) nuiCount++;
-
-                        _sourceLines.Add(BuildSourceItem(line.Text, hasColor ? line.Spans : null));
-                    }
-                }
-                else
-                {
-                    string raw = AppController.ParseChatLog(false);
-                    if (!string.IsNullOrWhiteSpace(raw))
-                    {
-                        foreach (var line in raw.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries))
-                        {
-                            if (string.IsNullOrWhiteSpace(RoleplayChatColorizer.StripTimestamp(line))) continue;
-                            _sourceLines.Add(BuildSourceItem(line));
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to load live chat session into the Screenshot Editor.");
-            }
-
-            SetStatus($"Loaded {_sourceLines.Count} lines.");
-            ShowColorSource(nuiCount, _sourceLines.Count);
-            ApplyChatFilter();
-        }
-
-        private void LoadChatFromFile(string filePath)
-        {
-            _sourceLines.Clear();
-            try
-            {
-                foreach (var line in File.ReadAllLines(filePath))
-                {
-                    if (string.IsNullOrWhiteSpace(RoleplayChatColorizer.StripTimestamp(line))) continue;
-                    _sourceLines.Add(BuildSourceItem(line));
-                }
-                SetStatus($"Loaded {_sourceLines.Count} lines from {Path.GetFileName(filePath)}.");
-                ShowColorSource(0, _sourceLines.Count);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to load chat log file {Path}", filePath);
-                MessageBox.Show(this, $"Failed to load chat file:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-
-            ApplyChatFilter();
-        }
-
-        /// <summary>
-        /// States plainly where the colours came from. An imported log carries no colour of its
-        /// own, so the user needs to know the badges are this app's reading of the text and not
-        /// something the game recorded — otherwise a wrong colour looks like corrupt data.
-        /// </summary>
-        private void ShowColorSource(int capturedCount, int totalCount)
-        {
-            if (totalCount == 0)
-            {
-                ColorSourceBanner.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            if (capturedCount > 0)
-            {
-                ColorSourceIcon.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.CheckCircleOutline;
-                ColorSourceIcon.Foreground = new SolidColorBrush(Color.FromRgb(0x5F, 0xC3, 0x7A));
-                ColorSourceText.Text = capturedCount == totalCount
-                    ? "Exact colours captured live from the game."
-                    : $"{capturedCount} of {totalCount} lines have exact colours captured from the game. The rest were detected from their text.";
-            }
-            else
-            {
-                ColorSourceIcon.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.InformationOutline;
-                ColorSourceIcon.Foreground = new SolidColorBrush(Color.FromRgb(0x5F, 0xA8, 0xD3));
-                ColorSourceText.Text = "This chat carries no colour, so colours were detected from each line's text. Hover a badge to see what it was read as, or pick a line and click a swatch to set it yourself.";
-            }
-
-            ColorSourceBanner.Visibility = Visibility.Visible;
-        }
-
-        private void ApplyChatFilter()
-        {
-            if (!_isLoaded) return;
-
-            _filteredSourceLines.Clear();
-            string filterText = ChatSearchTextBox.Text?.Trim() ?? string.Empty;
-
-            bool meDo = FilterMeDoRadio.IsChecked == true;
-            bool dialogue = FilterDialogueRadio.IsChecked == true;
-            bool radio = FilterRadioRadio.IsChecked == true;
-
-            foreach (var item in _sourceLines)
-            {
-                if (!string.IsNullOrEmpty(filterText) &&
-                    item.CleanedText.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                // Filtering is by roleplay category, not by colour — /me and /do share a colour, so
-                // a colour comparison could not tell the two filters apart.
-                if (meDo && item.Category != ChatLineCategory.Emote && item.Category != ChatLineCategory.Action)
-                    continue;
-
-                if (dialogue && item.Category != ChatLineCategory.ICSpeech &&
-                    item.Category != ChatLineCategory.ICWhisper && item.Category != ChatLineCategory.ICShout)
-                    continue;
-
-                if (radio && item.Category != ChatLineCategory.Radio &&
-                    item.Category != ChatLineCategory.Phone && item.Category != ChatLineCategory.PM)
-                    continue;
-
-                _filteredSourceLines.Add(item);
-            }
-
-            SourceCountText.Text = _filteredSourceLines.Count == _sourceLines.Count
-                ? $"{_sourceLines.Count} lines"
-                : $"{_filteredSourceLines.Count} of {_sourceLines.Count}";
-        }
 
         // ==========================================
         // RENDERING
@@ -670,12 +666,69 @@ namespace Assistant.UI
 
             SyncZoomSlider();
             UpdateChatOutline();
+            UpdateImageDependentControls();
+        }
+
+        private void UpdateImageDependentControls()
+        {
+            bool hasImage = _backgroundImage != null;
+
+            if (ResolutionPresetCombo != null)
+            {
+                ResolutionPresetCombo.IsEnabled = hasImage;
+                ResolutionPresetCombo.ToolTip = hasImage ? "Choose a standard canvas resolution preset" : "Open or paste an image first";
+            }
+            if (CanvasWidthTextBox != null)
+            {
+                CanvasWidthTextBox.IsEnabled = hasImage;
+                CanvasWidthTextBox.ToolTip = hasImage ? "Canvas width in pixels" : "Open or paste an image first";
+            }
+            if (CanvasHeightTextBox != null)
+            {
+                CanvasHeightTextBox.IsEnabled = hasImage;
+                CanvasHeightTextBox.ToolTip = hasImage ? "Canvas height in pixels" : "Open or paste an image first";
+            }
+
+            if (AspectFitBtn != null)
+            {
+                AspectFitBtn.IsEnabled = hasImage;
+                AspectFitBtn.ToolTip = hasImage ? "Scale the image to fit inside the canvas" : "Open or paste an image first";
+            }
+            if (AspectFillBtn != null)
+            {
+                AspectFillBtn.IsEnabled = hasImage;
+                AspectFillBtn.ToolTip = hasImage ? "Scale the image to cover the canvas" : "Open or paste an image first";
+            }
+            if (ResetViewBtn != null)
+            {
+                ResetViewBtn.IsEnabled = hasImage;
+                ResetViewBtn.ToolTip = hasImage ? "Reset pan and zoom to 100%" : "Open or paste an image first";
+            }
+            if (ZoomSlider != null)
+            {
+                ZoomSlider.IsEnabled = hasImage;
+                ZoomSlider.ToolTip = hasImage ? "Zoom image manually (10% to 400%)" : "Open or paste an image first";
+            }
+            if (SaveImageBtn != null)
+            {
+                SaveImageBtn.IsEnabled = hasImage;
+                SaveImageBtn.ToolTip = hasImage ? "Save rendered image to disk (PNG or JPEG)" : "Open or paste an image first";
+            }
+            if (CopyToClipboardBtn != null)
+            {
+                CopyToClipboardBtn.IsEnabled = hasImage;
+                CopyToClipboardBtn.ToolTip = hasImage ? "Copy the rendered image to the clipboard (Ctrl+Shift+C)" : "Open or paste an image first";
+            }
         }
 
         private void UpdatePlacedCount()
         {
             if (!_isLoaded) return;
-            PlacedCountText.Text = _placedLines.Count == 0 ? "" : $"{_placedLines.Count} lines";
+            PlacedCountText.Text = _placedLines.Count == 0 ? "" : $"{_placedLines.Count} line{(_placedLines.Count == 1 ? "" : "s")}";
+            if (PlacedEmptyHint != null)
+            {
+                PlacedEmptyHint.Visibility = _placedLines.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
 
         /// <summary>Canvas pixels per displayed DIP.</summary>
@@ -942,7 +995,7 @@ namespace Assistant.UI
             double mouseCanvasX = mousePos.X * ratio;
             double mouseCanvasY = mousePos.Y * ratio;
 
-            _imageOffsetX = mouseCanvasX - (mouseCanvasX - _imageOffsetX) * (newScale / oldScale);
+                    _imageOffsetX = mouseCanvasX - (mouseCanvasX - _imageOffsetX) * (newScale / oldScale);
             _imageOffsetY = mouseCanvasY - (mouseCanvasY - _imageOffsetY) * (newScale / oldScale);
             _imageScale = newScale;
 
@@ -950,113 +1003,273 @@ namespace Assistant.UI
         }
 
         // ==========================================
-        // SOURCE LIST ACTIONS
+        // CHAT LINES ACTIONS
         // ==========================================
 
-        private void ChatSourceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ImportChatlogBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isLoaded) return;
-
-            bool isPaste = ChatSourceCombo.SelectedIndex == 2;
-            SearchFilterGrid.Visibility = isPaste ? Visibility.Collapsed : Visibility.Visible;
-            ChatLinesListBox.Visibility = isPaste ? Visibility.Collapsed : Visibility.Visible;
-            CustomChatTextBox.Visibility = isPaste ? Visibility.Visible : Visibility.Collapsed;
-            ReloadSourceBtn.IsEnabled = !isPaste;
-
-            if (ChatSourceCombo.SelectedIndex == 0)
+            string initialDir;
+            string userBackupPath = Properties.Settings.Default.BackupPath;
+            if (!string.IsNullOrWhiteSpace(userBackupPath) && Directory.Exists(userBackupPath))
             {
-                LoadLiveSessionChat();
-            }
-            else if (ChatSourceCombo.SelectedIndex == 1)
-            {
-                var dialog = new OpenFileDialog
-                {
-                    InitialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GTAW-Log-Parser", "logs"),
-                    Filter = "Text & Log Files (*.txt;*.log;*.html)|*.txt;*.log;*.html|All Files (*.*)|*.*",
-                    Title = "Open GTA World Chat Log Backup"
-                };
-
-                if (dialog.ShowDialog() == true) LoadChatFromFile(dialog.FileName);
+                initialDir = userBackupPath;
             }
             else
             {
-                SetStatus("Paste chat lines, then press Add to canvas.");
-                ShowColorSource(0, 1);
+                string defaultLogDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GTAW-Log-Parser", "logs");
+                initialDir = Directory.Exists(defaultLogDir)
+                    ? defaultLogDir
+                    : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
+
+            var dialog = new OpenFileDialog
+            {
+                InitialDirectory = initialDir,
+                Filter = "Text & Log Files (*.txt;*.log;*.html)|*.txt;*.log;*.html|All Files (*.*)|*.*",
+                Title = "Import GTA World Chat Log"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    string content = File.ReadAllText(dialog.FileName);
+                    InsertChatLines(content);
+                    SetStatus($"Imported chat log from {Path.GetFileName(dialog.FileName)}.");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to import chat log file {Path}", dialog.FileName);
+                    MessageBox.Show(this, $"Failed to read chat log file:\n{ex.Message}", "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
-        private void ReloadSourceBtn_Click(object sender, RoutedEventArgs e)
+        private void PasteChatBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (ChatSourceCombo.SelectedIndex == 0) LoadLiveSessionChat();
-            else ChatSourceCombo_SelectionChanged(sender, null!);
+            PasteChatFromClipboard();
         }
 
-        private void ChatSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void PasteChatFromClipboard()
         {
-            if (!_isLoaded) return;
-            ApplyChatFilter();
-        }
-
-        private void FilterRadio_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            if (!_isLoaded) return;
-            ApplyChatFilter();
-        }
-
-        private void SelectAllLinesBtn_Click(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in _filteredSourceLines) item.IsSelected = true;
-        }
-
-        private void DeselectAllLinesBtn_Click(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in _filteredSourceLines) item.IsSelected = false;
-        }
-
-        private void AddSelectedLinesBtn_Click(object sender, RoutedEventArgs e)
-        {
-            int added = 0;
-
-            if (ChatSourceCombo.SelectedIndex == 2)
+            // Check HTML clipboard first (e.g. copied from browser or forum)
+            if (Clipboard.ContainsText(TextDataFormat.Html))
             {
-                string text = CustomChatTextBox.Text ?? string.Empty;
-                foreach (var l in text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+                string html = Clipboard.GetText(TextDataFormat.Html);
+                if (ChatLogHtmlParser.IsHtml(html))
+                {
+                    InsertChatLines(html);
+                    return;
+                }
+            }
+
+            if (Clipboard.ContainsText())
+            {
+                string text = Clipboard.GetText();
+                InsertChatLines(text);
+                return;
+            }
+
+            SetStatus("Clipboard does not contain text.");
+        }
+
+        private void InsertChatLines(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            bool autoColor = AutoColorCheckBox?.IsChecked ?? true;
+            int insertIndex = PlacedLinesListBox.SelectedIndex >= 0
+                ? PlacedLinesListBox.SelectedIndex + 1
+                : _placedLines.Count;
+
+            var linesToAdd = new List<PlacedChatLine>();
+
+            if (ChatLogHtmlParser.IsHtml(text))
+            {
+                var parsedHtmlLines = ChatLogHtmlParser.Parse(text);
+                foreach (var htmlLine in parsedHtmlLines)
+                {
+                    if (string.IsNullOrWhiteSpace(htmlLine.RawText)) continue;
+
+                    bool useHtmlColors = htmlLine.HasExplicitColors || htmlLine.IsFromStructuredChatLine;
+                    PlacedChatLine placed;
+                    if (useHtmlColors && htmlLine.Segments.Count > 0)
+                    {
+                        // Prioritize rich HTML colors (exact in-game CEF DOM capture from Live Tail or forum styles)
+                        placed = new PlacedChatLine
+                        {
+                            RawText = htmlLine.RawText,
+                            Segments = autoColor
+                                ? htmlLine.Segments
+                                : RoleplayChatColorizer.Recolor(htmlLine.Segments, "#FFFFFF")
+                        };
+                    }
+                    else if (autoColor)
+                    {
+                        // Fallback to pattern guessing only for untagged, styleless HTML snippets
+                        placed = new PlacedChatLine
+                        {
+                            RawText = htmlLine.RawText,
+                            Segments = RoleplayChatColorizer.ColorizeLine(htmlLine.RawText)
+                        };
+                    }
+                    else
+                    {
+                        placed = new PlacedChatLine
+                        {
+                            RawText = htmlLine.RawText,
+                            ColorOverride = "#FFFFFF",
+                            Segments = new List<ChatStyledSegment> { new ChatStyledSegment(htmlLine.RawText, "#FFFFFF") }
+                        };
+                    }
+
+                    linesToAdd.Add(placed);
+                }
+            }
+            else
+            {
+                var rawLines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var l in rawLines)
                 {
                     string cleaned = RoleplayChatColorizer.StripTimestamp(l);
                     if (string.IsNullOrWhiteSpace(cleaned)) continue;
 
-                    var placed = new PlacedChatLine();
-                    placed.RawText = cleaned;
-                    _placedLines.Add(placed);
-                    added++;
+                    PlacedChatLine placed;
+                    if (autoColor)
+                    {
+                        placed = new PlacedChatLine
+                        {
+                            RawText = cleaned,
+                            Segments = RoleplayChatColorizer.ColorizeLine(cleaned)
+                        };
+                    }
+                    else
+                    {
+                        placed = new PlacedChatLine
+                        {
+                            RawText = cleaned,
+                            ColorOverride = "#FFFFFF",
+                            Segments = new List<ChatStyledSegment> { new ChatStyledSegment(cleaned, "#FFFFFF") }
+                        };
+                    }
+
+                    linesToAdd.Add(placed);
                 }
             }
-            else
+
+            if (linesToAdd.Count == 0)
             {
-                foreach (var item in _filteredSourceLines.Where(l => l.IsSelected).ToList())
+                SetStatus("No valid chat lines found.");
+                return;
+            }
+
+            foreach (var placed in linesToAdd)
+            {
+                if (insertIndex <= _placedLines.Count)
                 {
-                    var placed = new PlacedChatLine { NuiSpans = item.NuiSpans };
-                    placed.RawText = item.CleanedText;
+                    _placedLines.Insert(insertIndex, placed);
+                    insertIndex++;
+                }
+                else
+                {
                     _placedLines.Add(placed);
-                    item.IsSelected = false;
-                    added++;
                 }
             }
 
             UpdateCanvas();
-            SetStatus(added == 0 ? "Nothing selected to add." : $"Added {added} line{(added == 1 ? "" : "s")} to the canvas.");
+            SetStatus($"Added {linesToAdd.Count} line{(linesToAdd.Count == 1 ? "" : "s")} to the canvas.");
         }
-
-        // ==========================================
-        // PLACED LINE ACTIONS
-        // ==========================================
 
         private void PlacedLinesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
 
-        private void PlacedLineText_Changed(object sender, TextChangedEventArgs e)
+        private void PlacedLinesListBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                PasteChatFromClipboard();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Delete && PlacedLinesListBox.SelectedItem is PlacedChatLine line)
+            {
+                _placedLines.Remove(line);
+                UpdateCanvas();
+                e.Handled = true;
+            }
+        }
+
+        private void PlacedLineRichText_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true; // Prevent multiline inside a single chat line
+                if (sender is RichTextBox rtb && rtb.DataContext is PlacedChatLine currentLine)
+                {
+                    int index = _placedLines.IndexOf(currentLine);
+                    var newLine = new PlacedChatLine
+                    {
+                        RawText = "",
+                        ColorOverride = "#FFFFFF",
+                        Segments = new List<ChatStyledSegment>()
+                    };
+                    int insertIndex = index >= 0 ? index + 1 : _placedLines.Count;
+                    _placedLines.Insert(insertIndex, newLine);
+                    PlacedLinesListBox.SelectedIndex = insertIndex;
+                    UpdateCanvas();
+
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        var container = PlacedLinesListBox.ItemContainerGenerator.ContainerFromIndex(insertIndex);
+                        if (container != null)
+                        {
+                            var newRtb = FindVisualChild<RichTextBox>(container);
+                            newRtb?.Focus();
+                        }
+                    }), System.Windows.Threading.DispatcherPriority.Input);
+                }
+            }
+        }
+
+        private void PlacedLineRichText_Changed(object sender, TextChangedEventArgs e)
         {
             if (!_isLoaded) return;
+            if (sender is not RichTextBox rtb) return;
+            if (rtb.Tag is string s && s == "populating") return;
+            if (rtb.DataContext is not PlacedChatLine line) return;
+
+            SyncRichTextBoxToLine(rtb, line);
             UpdateCanvas();
+        }
+
+        private static void SyncRichTextBoxToLine(RichTextBox rtb, PlacedChatLine line)
+        {
+            var segments = new List<ChatStyledSegment>();
+            var sb = new StringBuilder();
+
+            foreach (var block in rtb.Document.Blocks)
+            {
+                if (block is Paragraph p)
+                {
+                    foreach (var inline in p.Inlines)
+                    {
+                        if (inline is Run run && !string.IsNullOrEmpty(run.Text))
+                        {
+                            string hex = "#FFFFFF";
+                            if (run.Foreground is SolidColorBrush scb)
+                            {
+                                hex = $"#{scb.Color.R:X2}{scb.Color.G:X2}{scb.Color.B:X2}";
+                            }
+                            segments.Add(new ChatStyledSegment(run.Text, hex,
+                                run.FontWeight == FontWeights.Bold,
+                                run.FontStyle == FontStyles.Italic));
+                            sb.Append(run.Text);
+                        }
+                    }
+                }
+            }
+
+            line.Segments = segments;
+            line.RawText = sb.ToString();
+            line.Reclassify();
         }
 
         private void DeletePlacedLine_Click(object sender, RoutedEventArgs e)
@@ -1068,28 +1281,213 @@ namespace Assistant.UI
             }
         }
 
-        private void MoveLineUpBtn_Click(object sender, RoutedEventArgs e) => MovePlacedLine(-1);
-
-        private void MoveLineDownBtn_Click(object sender, RoutedEventArgs e) => MovePlacedLine(+1);
-
-        private void MovePlacedLine(int delta)
+        private void DragHandle_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            int idx = PlacedLinesListBox.SelectedIndex;
-            int target = idx + delta;
-            if (idx < 0 || target < 0 || target >= _placedLines.Count) return;
+            if (sender is FrameworkElement elem && elem.DataContext is PlacedChatLine line)
+            {
+                _isDraggingListLine = true;
+                _draggedListLine = line;
+                _dragStartListPos = e.GetPosition(PlacedLinesListBox);
+            }
+        }
 
-            _placedLines.Move(idx, target);
-            PlacedLinesListBox.SelectedIndex = target;
-            UpdateCanvas();
+        private void PlacedLinesListBox_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isDraggingListLine || _draggedListLine == null || e.LeftButton != MouseButtonState.Pressed)
+            {
+                _isDraggingListLine = false;
+                _draggedListLine = null;
+                return;
+            }
+
+            Point currentPoint = e.GetPosition(PlacedLinesListBox);
+            Vector diff = _dragStartListPos - currentPoint;
+
+            if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+            {
+                try
+                {
+                    var data = new DataObject("PlacedChatLine", _draggedListLine);
+                    DragDrop.DoDragDrop(PlacedLinesListBox, data, DragDropEffects.Move);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "DragDrop reorder exception");
+                }
+                finally
+                {
+                    _isDraggingListLine = false;
+                    _draggedListLine = null;
+                }
+            }
+        }
+
+        private void PlacedLinesListBox_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent("PlacedChatLine"))
+            {
+                e.Effects = DragDropEffects.Move;
+
+                Point pos = e.GetPosition(PlacedLinesListBox);
+                var scrollViewer = GetScrollViewer(PlacedLinesListBox);
+                if (scrollViewer != null)
+                {
+                    const double edge = 22.0;
+                    if (pos.Y < edge)
+                    {
+                        scrollViewer.ScrollToVerticalOffset(Math.Max(0, scrollViewer.VerticalOffset - 4));
+                    }
+                    else if (pos.Y > PlacedLinesListBox.ActualHeight - edge)
+                    {
+                        scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + 4);
+                    }
+                }
+
+                e.Handled = true;
+            }
+            else if (e.Data.GetDataPresent(DataFormats.FileDrop) || e.Data.GetDataPresent(DataFormats.UnicodeText))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+        }
+
+        private void PlacedLinesListBox_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent("PlacedChatLine"))
+            {
+                if (e.Data.GetData("PlacedChatLine") is not PlacedChatLine sourceLine) return;
+
+                Point dropPos = e.GetPosition(PlacedLinesListBox);
+                var hit = PlacedLinesListBox.InputHitTest(dropPos) as DependencyObject;
+                var targetContainer = FindVisualParent<ListBoxItem>(hit);
+
+                int targetIndex = _placedLines.Count - 1;
+                if (targetContainer != null)
+                {
+                    targetIndex = PlacedLinesListBox.ItemContainerGenerator.IndexFromContainer(targetContainer);
+                    if (targetIndex < 0) targetIndex = _placedLines.Count - 1;
+                }
+
+                int sourceIndex = _placedLines.IndexOf(sourceLine);
+                if (sourceIndex >= 0 && targetIndex >= 0 && sourceIndex != targetIndex)
+                {
+                    _placedLines.Move(sourceIndex, targetIndex);
+                    PlacedLinesListBox.SelectedItem = sourceLine;
+                    UpdateCanvas();
+                }
+
+                _isDraggingListLine = false;
+                _draggedListLine = null;
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files != null && files.Length > 0 && File.Exists(files[0]))
+                {
+                    try
+                    {
+                        string content = File.ReadAllText(files[0]);
+                        InsertChatLines(content);
+                        SetStatus($"Imported chat from {Path.GetFileName(files[0])}.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Failed to load dropped chat log file.");
+                    }
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            if (e.Data.GetDataPresent(DataFormats.UnicodeText))
+            {
+                string text = (string)e.Data.GetData(DataFormats.UnicodeText);
+                InsertChatLines(text);
+                e.Handled = true;
+            }
+        }
+
+        private static ScrollViewer? GetScrollViewer(DependencyObject dep)
+        {
+            if (dep is ScrollViewer sv) return sv;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
+            {
+                var child = VisualTreeHelper.GetChild(dep, i);
+                var res = GetScrollViewer(child);
+                if (res != null) return res;
+            }
+            return null;
+        }
+
+        private static T? FindVisualParent<T>(DependencyObject? child) where T : DependencyObject
+        {
+            while (child != null)
+            {
+                if (child is T parent) return parent;
+                child = VisualTreeHelper.GetParent(child);
+            }
+            return null;
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject? parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typedChild) return typedChild;
+                var result = FindVisualChild<T>(child);
+                if (result != null) return result;
+            }
+            return null;
         }
 
         private void AddCustomLineBtn_Click(object sender, RoutedEventArgs e)
         {
-            var placed = new PlacedChatLine();
-            placed.RawText = "* Character Name performs an action.";
-            _placedLines.Add(placed);
-            PlacedLinesListBox.SelectedItem = placed;
+            string defaultText = "* Character Name performs an action.";
+            var placed = new PlacedChatLine
+            {
+                RawText = defaultText,
+                Segments = RoleplayChatColorizer.ColorizeLine(defaultText)
+            };
+
+            int selectedIndex = PlacedLinesListBox.SelectedIndex;
+            int insertIndex;
+            if (selectedIndex >= 0 && selectedIndex < _placedLines.Count)
+            {
+                insertIndex = selectedIndex + 1;
+                _placedLines.Insert(insertIndex, placed);
+            }
+            else
+            {
+                insertIndex = _placedLines.Count;
+                _placedLines.Add(placed);
+            }
+
+            PlacedLinesListBox.SelectedIndex = insertIndex;
+            PlacedLinesListBox.ScrollIntoView(placed);
             UpdateCanvas();
+            SetStatus("Added line to canvas.");
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var container = PlacedLinesListBox.ItemContainerGenerator.ContainerFromIndex(insertIndex);
+                if (container != null)
+                {
+                    var rtb = FindVisualChild<RichTextBox>(container);
+                    rtb?.Focus();
+                }
+            }), System.Windows.Threading.DispatcherPriority.Input);
         }
 
         private void ClearAllPlacedLinesBtn_Click(object sender, RoutedEventArgs e)
@@ -1105,11 +1503,30 @@ namespace Assistant.UI
         {
             if (sender is not FrameworkElement elem || elem.DataContext is not PlacedChatLine line) return;
 
+            var grid = FindVisualParent<Grid>(elem);
+            var rtb = grid?.Children.OfType<RichTextBox>().FirstOrDefault();
+
+            bool hasSelection = rtb != null && !rtb.Selection.IsEmpty && !string.IsNullOrWhiteSpace(rtb.Selection.Text);
+            TextRange? activeSelection = hasSelection ? new TextRange(rtb!.Selection.Start, rtb.Selection.End) : null;
+            string? selectedSample = hasSelection ? (activeSelection!.Text.Trim().Length > 25 ? activeSelection.Text.Trim().Substring(0, 22) + "..." : activeSelection.Text.Trim()) : null;
+
             var menu = new ContextMenu
             {
                 PlacementTarget = elem,
                 Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom
             };
+
+            if (hasSelection)
+            {
+                var selHeader = new MenuItem
+                {
+                    Header = $"Recolor \"{selectedSample}\":",
+                    IsEnabled = false,
+                    FontWeight = FontWeights.SemiBold
+                };
+                menu.Items.Add(selHeader);
+                menu.Items.Add(new Separator());
+            }
 
             foreach (var swatch in RoleplayChatColorizer.EditorSwatches)
             {
@@ -1134,9 +1551,29 @@ namespace Assistant.UI
                 string label = swatch.Label;
                 item.Click += (_, __) =>
                 {
-                    line.ColorOverride = hex;
-                    UpdateCanvas();
-                    SetStatus($"Line colour set to {label} ({hex}).");
+                    if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
+                    {
+                        activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(hex));
+                        line.ColorOverride = null;
+                        SyncRichTextBoxToLine(rtb, line);
+                        UpdateCanvas();
+                        SetStatus($"Selection recoloured to {label} ({hex}).");
+                    }
+                    else if (rtb != null)
+                    {
+                        var wholeDoc = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+                        wholeDoc.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(hex));
+                        line.ColorOverride = hex;
+                        SyncRichTextBoxToLine(rtb, line);
+                        UpdateCanvas();
+                        SetStatus($"Line colour set to {label} ({hex}).");
+                    }
+                    else
+                    {
+                        line.ColorOverride = hex;
+                        UpdateCanvas();
+                        SetStatus($"Line colour set to {label} ({hex}).");
+                    }
                 };
 
                 menu.Items.Add(item);
@@ -1146,7 +1583,7 @@ namespace Assistant.UI
 
             var autoItem = new MenuItem
             {
-                Header = "Auto (Detected Colour)",
+                Header = hasSelection ? "Reset Selection to Detected Colour" : "Auto (Detected Colour)",
                 ToolTip = "Reset to default detected roleplay colour",
                 Icon = new PackIconMaterial
                 {
@@ -1158,15 +1595,29 @@ namespace Assistant.UI
             };
             autoItem.Click += (_, __) =>
             {
-                line.ColorOverride = null;
-                UpdateCanvas();
-                SetStatus("Line colour reset to detected colour.");
+                if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
+                {
+                    string defaultColor = ChatLineClassifier.GetHexColor(line.Category);
+                    activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(defaultColor));
+                    line.ColorOverride = null;
+                    SyncRichTextBoxToLine(rtb, line);
+                    UpdateCanvas();
+                    SetStatus($"Selection colour reset to default ({defaultColor}).");
+                }
+                else
+                {
+                    line.ColorOverride = null;
+                    line.Segments = RoleplayChatColorizer.ColorizeLine(line.RawText);
+                    if (rtb != null) RichChatLineHelper.PopulateDocument(rtb, line);
+                    UpdateCanvas();
+                    SetStatus("Line colour reset to detected colour.");
+                }
             };
             menu.Items.Add(autoItem);
 
             var customItem = new MenuItem
             {
-                Header = "Custom Colour...",
+                Header = hasSelection ? "Custom Colour for Selection..." : "Custom Colour...",
                 ToolTip = "Choose any custom colour from palette",
                 Icon = new PackIconMaterial
                 {
@@ -1200,9 +1651,29 @@ namespace Assistant.UI
                     if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         string customHex = $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
-                        line.ColorOverride = customHex;
-                        UpdateCanvas();
-                        SetStatus($"Line colour set to custom ({customHex}).");
+                        if (rtb != null && activeSelection != null && !activeSelection.IsEmpty)
+                        {
+                            activeSelection.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(customHex));
+                            line.ColorOverride = null;
+                            SyncRichTextBoxToLine(rtb, line);
+                            UpdateCanvas();
+                            SetStatus($"Selection recoloured to custom ({customHex}).");
+                        }
+                        else if (rtb != null)
+                        {
+                            var wholeDoc = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+                            wholeDoc.ApplyPropertyValue(TextElement.ForegroundProperty, FreezeBrush(customHex));
+                            line.ColorOverride = customHex;
+                            SyncRichTextBoxToLine(rtb, line);
+                            UpdateCanvas();
+                            SetStatus($"Line colour set to custom ({customHex}).");
+                        }
+                        else
+                        {
+                            line.ColorOverride = customHex;
+                            UpdateCanvas();
+                            SetStatus($"Line colour set to custom ({customHex}).");
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1315,30 +1786,36 @@ namespace Assistant.UI
             MessageBox.Show(this, "The clipboard is in use by another program.", "Clipboard Error", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
-        private void SavePngBtn_Click(object sender, RoutedEventArgs e) => SaveImage(false);
-
-        private void SaveJpegBtn_Click(object sender, RoutedEventArgs e) => SaveImage(true);
-
-        private void SaveImage(bool jpeg)
+        private void SaveImageBtn_Click(object sender, RoutedEventArgs e)
         {
             if (CanvasPreviewImage.Source is not BitmapSource bmp) return;
 
             var dialog = new SaveFileDialog
             {
-                Filter = jpeg ? "JPEG Image (*.jpg;*.jpeg)|*.jpg;*.jpeg" : "PNG Image (*.png)|*.png",
-                FileName = $"GTAW_Screenshot_{DateTime.Now:yyyyMMdd_HHmmss}{(jpeg ? ".jpg" : ".png")}"
+                Title = "Save Screenshot",
+                Filter = "PNG Image (*.png)|*.png|JPEG Image (*.jpg;*.jpeg)|*.jpg;*.jpeg|All Files (*.*)|*.*",
+                FilterIndex = 1,
+                DefaultExt = ".png",
+                FileName = $"GTAW_Screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png"
             };
 
             if (dialog.ShowDialog() != true) return;
 
             try
             {
-                if (jpeg) ScreenshotRenderer.SaveToJpeg(bmp, dialog.FileName, 95);
-                else ScreenshotRenderer.SaveToPng(bmp, dialog.FileName);
+                string ext = Path.GetExtension(dialog.FileName).ToLowerInvariant();
+                bool isJpeg = ext is ".jpg" or ".jpeg" || (dialog.FilterIndex == 2 && ext != ".png");
 
-                SetStatus(jpeg
-                    ? $"Saved {Path.GetFileName(dialog.FileName)} — JPEG has no transparency, so any uncovered canvas was filled black."
-                    : $"Saved {Path.GetFileName(dialog.FileName)} — uncovered canvas was kept transparent.");
+                if (isJpeg)
+                {
+                    ScreenshotRenderer.SaveToJpeg(bmp, dialog.FileName, 95);
+                    SetStatus($"Saved {Path.GetFileName(dialog.FileName)} (JPEG).");
+                }
+                else
+                {
+                    ScreenshotRenderer.SaveToPng(bmp, dialog.FileName);
+                    SetStatus($"Saved {Path.GetFileName(dialog.FileName)} (PNG).");
+                }
             }
             catch (Exception ex)
             {
@@ -1359,15 +1836,34 @@ namespace Assistant.UI
             }
             else if (ctrl && !shift && e.Key == Key.V)
             {
-                if (FocusManager.GetFocusedElement(this) is not TextBox)
+                var focused = FocusManager.GetFocusedElement(this);
+                if (focused is not TextBox && focused is not RichTextBox)
                 {
-                    PasteImageFromClipboard();
+                    if (Clipboard.ContainsImage())
+                    {
+                        PasteImageFromClipboard();
+                    }
+                    else if (Clipboard.ContainsText())
+                    {
+                        PasteChatFromClipboard();
+                    }
                     e.Handled = true;
                 }
             }
+            else if (ctrl && !shift && e.Key == Key.S)
+            {
+                if (_backgroundImage != null)
+                {
+                    SaveImageBtn_Click(sender, e);
+                }
+                e.Handled = true;
+            }
             else if (ctrl && shift && e.Key == Key.C)
             {
-                CopyToClipboardBtn_Click(sender, e);
+                if (_backgroundImage != null)
+                {
+                    CopyToClipboardBtn_Click(sender, e);
+                }
                 e.Handled = true;
             }
         }

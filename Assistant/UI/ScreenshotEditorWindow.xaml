@@ -5,6 +5,7 @@
                       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                       xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                       xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                      xmlns:local="clr-namespace:Assistant.UI"
                       mc:Ignorable="d"
                       Title="Screenshot Editor"
                       TitleCharacterCasing="Normal"
@@ -133,23 +134,21 @@
                     </Border>
 
                     <Border Style="{StaticResource ToolbarSegment}">
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <Button x:Name="AspectFitBtn" Click="AspectFitBtn_Click" Content="Fit" Height="25" Padding="9,0" Margin="0,0,2,0" FontSize="11.5" ToolTip="Scale the image to fit inside the canvas"/>
                             <Button x:Name="AspectFillBtn" Click="AspectFillBtn_Click" Content="Fill" Height="25" Padding="9,0" Margin="0,0,2,0" FontSize="11.5" ToolTip="Scale the image to cover the canvas"/>
-                            <Button x:Name="ResetViewBtn" Click="ResetViewBtn_Click" Content="Reset" Height="25" Padding="9,0" FontSize="11.5" ToolTip="Reset pan and zoom to 100%"/>
-                        </StackPanel>
-                    </Border>
+                            <Button x:Name="ResetViewBtn" Click="ResetViewBtn_Click" Content="Reset" Height="25" Padding="9,0" Margin="0,0,6,0" FontSize="11.5" ToolTip="Reset pan and zoom to 100%"/>
 
-                    <Border Style="{StaticResource ToolbarSegment}" Padding="7,3">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <iconPacks:PackIconMaterial Kind="Magnify" Width="13" Height="13" Margin="0,0,6,0"
+                            <Rectangle Width="1" Height="16" Fill="{DynamicResource MahApps.Brushes.Separator}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+
+                            <iconPacks:PackIconMaterial Kind="Magnify" Width="13" Height="13" Margin="0,0,5,0"
                                                         Foreground="{DynamicResource MahApps.Brushes.Gray3}" VerticalAlignment="Center"/>
                             <Slider x:Name="ZoomSlider" Minimum="10" Maximum="400" Value="100" Width="85" Height="20"
-                                    VerticalAlignment="Center" Margin="0,0,6,0"
+                                    VerticalAlignment="Center" Margin="0,0,5,0"
                                     ValueChanged="ZoomSlider_ValueChanged"
                                     ToolTip="Zoom image manually (10% to 400%)"/>
                             <TextBlock x:Name="ZoomValText" Text="100%" Width="36" FontSize="11" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource MahApps.Brushes.Gray3}" TextAlignment="Right"/>
+                                       Foreground="{DynamicResource MahApps.Brushes.Gray3}" TextAlignment="Right" Margin="0,0,3,0"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -164,17 +163,10 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="SavePngBtn" Click="SavePngBtn_Click" Height="31" Padding="10,0" Margin="0,0,4,0" ToolTip="Save as PNG">
+                    <Button x:Name="SaveImageBtn" Click="SaveImageBtn_Click" Height="31" Padding="12,0" ToolTip="Save rendered image to disk (PNG or JPEG)">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconMaterial Kind="Download" Width="13" Height="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="PNG" FontSize="12" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="SaveJpegBtn" Click="SaveJpegBtn_Click" Height="31" Padding="10,0" ToolTip="Save as JPEG">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Kind="FileImageOutline" Width="13" Height="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="JPEG" FontSize="12" VerticalAlignment="Center"/>
+                            <TextBlock Text="Save Image" FontSize="12" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -254,183 +246,66 @@
             <!-- INSPECTOR -->
             <Grid Grid.Column="2" Margin="8,8,8,8">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*" MinHeight="200"/>
-                    <RowDefinition Height="6"/>
-                    <RowDefinition Height="*" MinHeight="170"/>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- STEP 1 : PICK LINES -->
+                <!-- CHAT LINES (Unified single section) -->
                 <Grid Grid.Row="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,7">
-                        <Border Style="{StaticResource StepNumber}">
-                            <TextBlock Text="1" Foreground="White" FontSize="10.5" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="Pick lines" Style="{StaticResource StepHeader}"/>
-                        <TextBlock x:Name="SourceCountText" Text="" Style="{StaticResource SecondaryLabel}" Margin="8,0,0,0"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="1" Margin="0,0,0,7">
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <ComboBox x:Name="ChatSourceCombo" Grid.Column="0" SelectionChanged="ChatSourceCombo_SelectionChanged"
-                                      Height="28" FontSize="12">
-                                <ComboBoxItem Content="Live FiveM session"/>
-                                <ComboBoxItem Content="Chat log backup file..."/>
-                                <ComboBoxItem Content="Pasted text"/>
-                            </ComboBox>
-                            <Button x:Name="ReloadSourceBtn" Grid.Column="1" Click="ReloadSourceBtn_Click"
-                                    Height="28" Width="30" Margin="4,0,0,0" ToolTip="Reload from the current source">
-                                <iconPacks:PackIconMaterial Kind="Refresh" Width="13" Height="13"/>
-                            </Button>
-                        </Grid>
-
-                        <Grid x:Name="SearchFilterGrid">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <TextBox x:Name="ChatSearchTextBox" Grid.Row="0" Height="27" VerticalContentAlignment="Center" FontSize="12"
-                                     Controls:TextBoxHelper.Watermark="Filter lines..."
-                                     Controls:TextBoxHelper.ClearTextButton="True"
-                                     TextChanged="ChatSearchTextBox_TextChanged" Margin="0,0,0,6"/>
-                            <UniformGrid Grid.Row="1" Columns="4">
-                                <RadioButton x:Name="FilterAllRadio" Content="All" IsChecked="True" Checked="FilterRadio_CheckedChanged" FontSize="11.5"/>
-                                <RadioButton x:Name="FilterMeDoRadio" Content="/me &amp; /do" Checked="FilterRadio_CheckedChanged" FontSize="11.5"/>
-                                <RadioButton x:Name="FilterDialogueRadio" Content="Speech" Checked="FilterRadio_CheckedChanged" FontSize="11.5"/>
-                                <RadioButton x:Name="FilterRadioRadio" Content="Radio" Checked="FilterRadio_CheckedChanged" FontSize="11.5"/>
-                            </UniformGrid>
-                        </Grid>
-                        <Border x:Name="ColorSourceBanner" Margin="0,7,0,0"
-                                Background="{DynamicResource ScreenshotBannerFill}" BorderBrush="{DynamicResource ScreenshotBannerBorder}" BorderThickness="1" CornerRadius="4"
-                                Padding="7,4" Visibility="Collapsed">
-                            <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial x:Name="ColorSourceIcon" Kind="InformationOutline" Width="12" Height="12"
-                                                            VerticalAlignment="Top" Margin="0,2,7,0"/>
-                                <TextBlock x:Name="ColorSourceText" FontSize="11" Foreground="{DynamicResource MahApps.Brushes.Text}"
-                                           TextWrapping="Wrap" MaxWidth="330"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <Border Grid.Row="2" Style="{StaticResource PaneBody}" Margin="0,0,0,7">
-                        <Grid>
-                            <!-- Lines are previewed on a dark ground at their true chat colour, so the
-                                 list reads like the game rather than like a spreadsheet. -->
-                            <ListBox x:Name="ChatLinesListBox" SelectionMode="Extended"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     VirtualizingPanel.IsVirtualizing="True" ScrollViewer.CanContentScroll="True"
-                                     Background="{DynamicResource ScreenshotChatSurface}" BorderThickness="0" Padding="2">
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                        <Setter Property="Padding" Value="2"/>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,1">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="2,0,7,0"/>
-
-                                            <!-- Color indicator square -->
-                                            <Border Grid.Column="1" Width="13" Height="13" CornerRadius="3"
-                                                    Background="{Binding ColorBrush}" BorderBrush="#55FFFFFF" BorderThickness="1"
-                                                    Margin="0,0,7,0" VerticalAlignment="Center"
-                                                    ToolTip="{Binding SourceTooltip}"/>
-
-                                            <TextBlock Grid.Column="2" TextWrapping="Wrap" FontSize="11.5"
-                                                       VerticalAlignment="Center" Margin="0,1"
-                                                       Controls:TextBoxHelper.AutoWatermark="False"
-                                                       Text="{Binding DisplayText}" Foreground="{Binding ColorBrush}"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-
-                            <TextBox x:Name="CustomChatTextBox" AcceptsReturn="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Visibility="Collapsed" Padding="7"
-                                     BorderThickness="0" FontSize="12" Background="{DynamicResource ScreenshotChatSurface}"
-                                     Controls:TextBoxHelper.Watermark="Paste chat lines here — timestamps are stripped automatically."/>
-                        </Grid>
-                    </Border>
-
-                    <Grid Grid.Row="3">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <Button x:Name="SelectAllLinesBtn" Click="SelectAllLinesBtn_Click" Content="All" Height="28" Padding="11,0" Margin="0,0,4,0" FontSize="11.5" ToolTip="Tick every visible line"/>
-                            <Button x:Name="DeselectAllLinesBtn" Click="DeselectAllLinesBtn_Click" Content="None" Height="28" Padding="11,0" FontSize="11.5" ToolTip="Untick every visible line"/>
-                        </StackPanel>
-                        <Button x:Name="AddSelectedLinesBtn" Grid.Column="2" Click="AddSelectedLinesBtn_Click"
-                                Style="{DynamicResource MahApps.Styles.Button.Square.Accent}" Height="28" Padding="13,0" FontSize="12">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Add to canvas" Margin="0,0,6,0" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                <iconPacks:PackIconMaterial Kind="ArrowDownBold" Width="12" Height="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-                </Grid>
-
-                <GridSplitter Grid.Row="1" Height="6" HorizontalAlignment="Stretch"
-                              Background="Transparent" Cursor="SizeNS"/>
-
-                <!-- STEP 2 : ARRANGE -->
-                <Grid Grid.Row="2">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,7">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                            <Border Style="{StaticResource StepNumber}">
-                                <TextBlock Text="2" Foreground="White" FontSize="10.5" FontWeight="Bold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock Text="On the canvas" Style="{StaticResource StepHeader}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <iconPacks:PackIconMaterial Kind="ChatOutline" Width="14" Height="14" Margin="0,0,7,0"
+                                                        Foreground="{DynamicResource MahApps.Brushes.Accent}" VerticalAlignment="Center"/>
+                            <TextBlock Text="Chat lines" Style="{StaticResource StepHeader}"/>
                             <TextBlock x:Name="PlacedCountText" Text="" Style="{StaticResource SecondaryLabel}" Margin="8,0,0,0"/>
                         </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button x:Name="MoveLineUpBtn" Click="MoveLineUpBtn_Click" Width="26" Height="26" Padding="0" Margin="0,0,3,0" ToolTip="Move the selected line up">
-                                <iconPacks:PackIconMaterial Kind="ArrowUp" Width="11" Height="11"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button x:Name="ImportChatlogBtn" Click="ImportChatlogBtn_Click" Height="26" Padding="8,0" Margin="0,0,4,0"
+                                    FontSize="11.5" ToolTip="Import lines from a chatlog file">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="FolderOpenOutline" Width="12" Height="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Import chatlog" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
-                            <Button x:Name="MoveLineDownBtn" Click="MoveLineDownBtn_Click" Width="26" Height="26" Padding="0" Margin="0,0,3,0" ToolTip="Move the selected line down">
-                                <iconPacks:PackIconMaterial Kind="ArrowDown" Width="11" Height="11"/>
+                            <Button x:Name="PasteChatBtn" Click="PasteChatBtn_Click" Height="26" Padding="8,0" Margin="0,0,4,0"
+                                    FontSize="11.5" ToolTip="Paste chat lines from clipboard (Ctrl+V)">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="ContentPaste" Width="12" Height="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Paste" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
-                            <Button x:Name="AddCustomLineBtn" Click="AddCustomLineBtn_Click" Width="26" Height="26" Padding="0" Margin="0,0,3,0" ToolTip="Add a blank line">
+                            <Button x:Name="AddCustomLineBtn" Click="AddCustomLineBtn_Click" Width="26" Height="26" Padding="0" Margin="0,0,4,0"
+                                    ToolTip="Add a blank line below selected or at the end">
                                 <iconPacks:PackIconMaterial Kind="Plus" Width="11" Height="11"/>
                             </Button>
                             <Button x:Name="ClearAllPlacedLinesBtn" Click="ClearAllPlacedLinesBtn_Click" Width="26" Height="26" Padding="0"
-                                    Foreground="{DynamicResource ScreenshotDanger}" ToolTip="Remove every line from the canvas">
+                                    Foreground="{DynamicResource ScreenshotDanger}" ToolTip="Clear all chat lines">
                                 <iconPacks:PackIconMaterial Kind="TrashCanOutline" Width="12" Height="12"/>
                             </Button>
                         </StackPanel>
                     </Grid>
 
-                    <Border Grid.Row="1" Style="{StaticResource PaneBody}">
+                    <Grid Grid.Row="1" Margin="0,0,0,6">
+                        <CheckBox x:Name="AutoColorCheckBox" Content="Auto colour"
+                                  IsChecked="True" VerticalAlignment="Center" FontSize="11.5"
+                                  ToolTip="Automatically detect and colour roleplay lines on import or paste. When unchecked, lines are plain white."/>
+                    </Grid>
+
+                    <Border Grid.Row="2" Style="{StaticResource PaneBody}">
                         <Grid>
                             <ListBox x:Name="PlacedLinesListBox" SelectionChanged="PlacedLinesListBox_SelectionChanged"
+                                     AllowDrop="True"
+                                     KeyDown="PlacedLinesListBox_KeyDown"
+                                     PreviewMouseMove="PlacedLinesListBox_PreviewMouseMove"
+                                     DragOver="PlacedLinesListBox_DragOver"
+                                     Drop="PlacedLinesListBox_Drop"
                                      Background="{DynamicResource ScreenshotChatSurface}" BorderThickness="0" Padding="2"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <ListBox.ItemContainerStyle>
@@ -444,29 +319,82 @@
                                         <Grid Margin="0,1">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
+                                            <!-- Drag Grip Handle -->
+                                            <Border Grid.Column="0" Cursor="SizeAll" Background="Transparent"
+                                                    Width="14" Height="18" Margin="0,0,3,0"
+                                                    PreviewMouseLeftButtonDown="DragHandle_PreviewMouseLeftButtonDown"
+                                                    ToolTip="Drag to reorder">
+                                                <iconPacks:PackIconMaterial Kind="DragVertical" Width="11" Height="11"
+                                                                            Foreground="{DynamicResource MahApps.Brushes.Gray3}"
+                                                                            VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+
                                             <!-- Clickable Color Square with Dropdown -->
-                                            <Button Grid.Column="0" Click="LineColorSquare_Click"
-                                                    Width="20" Height="20" Margin="1,0,6,0" Padding="0"
-                                                    ToolTip="{Binding SourceTooltip}"
-                                                    Cursor="Hand" Style="{DynamicResource MahApps.Styles.Button.Flat}">
-                                                <Border Width="15" Height="15" CornerRadius="3" Background="{Binding ColorBrush}"
-                                                        BorderBrush="#66FFFFFF" BorderThickness="1"/>
+                                            <Button Grid.Column="1" Click="LineColorSquare_Click" Focusable="False"
+                                                    Width="13" Height="13" Margin="2,0,7,0" Padding="0"
+                                                    Background="Transparent" BorderThickness="0"
+                                                    Cursor="Hand" ToolTip="{Binding SourceTooltip}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Width="13" Height="13" CornerRadius="3"
+                                                                Background="{Binding ColorBrush}"
+                                                                BorderBrush="#55FFFFFF" BorderThickness="1"/>
+                                                    </ControlTemplate>
+                                                </Button.Template>
                                             </Button>
 
-                                            <TextBox Grid.Column="1" Text="{Binding RawText, UpdateSourceTrigger=PropertyChanged}"
-                                                     TextChanged="PlacedLineText_Changed"
-                                                     Background="Transparent" BorderThickness="0"
-                                                     Foreground="{Binding ColorBrush}"
-                                                     FontSize="11.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                            <!-- Multi-color editable line with text selection recolor support -->
+                                            <RichTextBox Grid.Column="2"
+                                                         Background="Transparent"
+                                                         BorderThickness="0"
+                                                         Padding="0"
+                                                         Margin="0,0,4,0"
+                                                         VerticalAlignment="Center"
+                                                         FontSize="11.5"
+                                                         CaretBrush="{DynamicResource MahApps.Brushes.ThemeForeground}"
+                                                         IsInactiveSelectionHighlightEnabled="True"
+                                                         AcceptsReturn="False"
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                         local:RichChatLineHelper.PlacedLine="{Binding}"
+                                                         PreviewKeyDown="PlacedLineRichText_PreviewKeyDown"
+                                                         TextChanged="PlacedLineRichText_Changed">
+                                                <RichTextBox.Resources>
+                                                    <Style TargetType="{x:Type FlowDocument}">
+                                                        <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                                        <Setter Property="PagePadding" Value="0"/>
+                                                    </Style>
+                                                    <Style TargetType="{x:Type Paragraph}">
+                                                        <Setter Property="Margin" Value="0"/>
+                                                        <Setter Property="Padding" Value="0"/>
+                                                        <Setter Property="LineHeight" Value="1"/>
+                                                    </Style>
+                                                </RichTextBox.Resources>
+                                            </RichTextBox>
 
-                                            <Button Grid.Column="2" Click="DeletePlacedLine_Click" Width="20" Height="20" Padding="0"
+                                            <Button Grid.Column="3" Click="DeletePlacedLine_Click" Focusable="False" Width="18" Height="18" Padding="0"
+                                                    Background="Transparent" BorderThickness="0"
                                                     Foreground="{DynamicResource MahApps.Brushes.Gray3}" ToolTip="Delete this line"
-                                                    Style="{DynamicResource MahApps.Styles.Button.Flat}">
-                                                <iconPacks:PackIconMaterial Kind="Close" Width="10" Height="10"/>
+                                                    Cursor="Hand">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="Transparent" CornerRadius="3">
+                                                            <iconPacks:PackIconMaterial Kind="Close" Width="10" Height="10"
+                                                                                        Foreground="{TemplateBinding Foreground}"
+                                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource ScreenshotDanger}"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
                                             </Button>
                                         </Grid>
                                     </DataTemplate>
@@ -476,92 +404,158 @@
                             <TextBlock x:Name="PlacedEmptyHint" IsHitTestVisible="False"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Foreground="{DynamicResource MahApps.Brushes.Gray3}" FontSize="11.5" TextAlignment="Center"
-                                       Text="Nothing placed yet.&#x0a;Tick lines above and press Add to canvas."/>
+                                       Text="No chat lines yet.&#x0a;Click Paste, Import chatlog, or + to add a line."/>
                         </Grid>
                     </Border>
                 </Grid>
 
-                <!-- STEP 3 : STYLE — collapsed by default; it is tuned once, not per line. -->
-                <Expander Grid.Row="3" x:Name="StyleExpander" IsExpanded="False" Margin="0,6,0,0">
+                <!-- STYLE AND POSITION -->
+                <Expander Grid.Row="1" x:Name="StyleExpander" IsExpanded="False" Margin="0,6,0,0">
                     <Expander.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <Border Style="{StaticResource StepNumber}">
-                                <TextBlock Text="3" Foreground="White" FontSize="10.5" FontWeight="Bold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <iconPacks:PackIconMaterial Kind="TuneVertical" Width="14" Height="14" Margin="0,0,7,0"
+                                                        Foreground="{DynamicResource MahApps.Brushes.Accent}" VerticalAlignment="Center"/>
                             <TextBlock Text="Style &amp; position" Style="{StaticResource StepHeader}"/>
                         </StackPanel>
                     </Expander.Header>
 
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="290" Margin="0,8,0,0">
-                        <StackPanel Margin="2,0,6,2">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="320" Margin="0,6,0,0">
+                        <StackPanel Margin="2,2,6,4">
 
-                            <TextBlock Text="Anchor the chat block" Style="{StaticResource SecondaryLabel}" Margin="0,0,0,4"/>
-                            <UniformGrid Columns="4" Margin="0,0,0,8">
-                                <Button Content="↖" Click="AnchorTopLeft_Click" Height="26" Margin="0,0,2,0" FontSize="13" ToolTip="Top left"/>
-                                <Button Content="↗" Click="AnchorTopRight_Click" Height="26" Margin="2,0,2,0" FontSize="13" ToolTip="Top right"/>
-                                <Button Content="↙" Click="AnchorBottomLeft_Click" Height="26" Margin="2,0,2,0" FontSize="13" ToolTip="Bottom left"/>
-                                <Button Content="↘" Click="AnchorBottomRight_Click" Height="26" Margin="2,0,0,0" FontSize="13" ToolTip="Bottom right"/>
-                            </UniformGrid>
+                            <!-- SECTION: POSITION & ANCHORS -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                            <Grid Margin="0,0,0,10">
+                                <!-- 2x2 Corner Snap Buttons -->
+                                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                    <TextBlock Text="Corner snap" Style="{StaticResource SecondaryLabel}" Margin="0,0,0,3"/>
+                                    <Grid Width="58" Height="52">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Row="0" Grid.Column="0" Content="↖" Click="AnchorTopLeft_Click" Margin="0,0,1,1" FontSize="11.5" ToolTip="Snap top-left"/>
+                                        <Button Grid.Row="0" Grid.Column="1" Content="↗" Click="AnchorTopRight_Click" Margin="1,0,0,1" FontSize="11.5" ToolTip="Snap top-right"/>
+                                        <Button Grid.Row="1" Grid.Column="0" Content="↙" Click="AnchorBottomLeft_Click" Margin="0,1,1,0" FontSize="11.5" ToolTip="Snap bottom-left"/>
+                                        <Button Grid.Row="1" Grid.Column="1" Content="↘" Click="AnchorBottomRight_Click" Margin="1,1,0,0" FontSize="11.5" ToolTip="Snap bottom-right"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Position X & Y Inputs -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                                    <TextBlock Text="Position offset (px)" Style="{StaticResource SecondaryLabel}" Margin="0,0,0,3"/>
+                                    <Grid Margin="0,1,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="X" FontSize="10" Foreground="{DynamicResource MahApps.Brushes.Gray2}" Margin="1,0,0,1"/>
+                                            <TextBox x:Name="ChatXTextBox" Text="30" TextChanged="ChatPosition_TextChanged" Height="25" VerticalContentAlignment="Center" FontSize="11.5"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Y" FontSize="10" Foreground="{DynamicResource MahApps.Brushes.Gray2}" Margin="1,0,0,1"/>
+                                            <TextBox x:Name="ChatYTextBox" Text="30" TextChanged="ChatPosition_TextChanged" Height="25" VerticalContentAlignment="Center" FontSize="11.5"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+
+                            <Separator Background="{DynamicResource MahApps.Brushes.Separator}" Margin="0,0,0,8"/>
+
+                            <!-- SECTION: FONT & SIZE -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="110"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Font family" Style="{StaticResource SecondaryLabel}" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="FontFamilyCombo" SelectionChanged="Styling_Changed" Height="26" FontSize="11.5">
+                                        <ComboBoxItem Content="Arial"/>
+                                        <ComboBoxItem Content="Segoe UI"/>
+                                        <ComboBoxItem Content="Tahoma"/>
+                                        <ComboBoxItem Content="Trebuchet MS"/>
+                                        <ComboBoxItem Content="Verdana"/>
+                                        <ComboBoxItem Content="Georgia"/>
+                                        <ComboBoxItem Content="Impact"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <Grid Margin="0,0,0,2">
+                                        <TextBlock Text="Size" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
+                                        <TextBlock x:Name="FontSizeValText" Text="14" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"
+                                                   Foreground="{DynamicResource MahApps.Brushes.Text}"/>
+                                    </Grid>
+                                    <Slider x:Name="FontSizeSlider" Minimum="8" Maximum="34" Value="14" ValueChanged="StylingSlider_ValueChanged" Height="26"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- SECTION: LINE SPACING & OUTLINE -->
+                            <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="10"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
+
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="X" Style="{StaticResource SecondaryLabel}" Margin="0,0,0,2"/>
-                                    <TextBox x:Name="ChatXTextBox" Text="30" TextChanged="ChatPosition_TextChanged" Height="26" VerticalContentAlignment="Center"/>
+                                    <Grid Margin="0,0,0,2">
+                                        <TextBlock Text="Line spacing" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
+                                        <TextBlock x:Name="LineSpacingValText" Text="4" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"
+                                                   Foreground="{DynamicResource MahApps.Brushes.Text}"/>
+                                    </Grid>
+                                    <Slider x:Name="LineSpacingSlider" Minimum="0" Maximum="16" Value="4" ValueChanged="StylingSlider_ValueChanged"/>
                                 </StackPanel>
+
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Y" Style="{StaticResource SecondaryLabel}" Margin="0,0,0,2"/>
-                                    <TextBox x:Name="ChatYTextBox" Text="30" TextChanged="ChatPosition_TextChanged" Height="26" VerticalContentAlignment="Center"/>
+                                    <Grid Margin="0,0,0,2">
+                                        <TextBlock Text="Outline" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
+                                        <TextBlock x:Name="OutlineWidthValText" Text="1.2" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"
+                                                   Foreground="{DynamicResource MahApps.Brushes.Text}"/>
+                                    </Grid>
+                                    <Slider x:Name="OutlineWidthSlider" Minimum="0" Maximum="3.0" Value="1.2" SmallChange="0.1" ValueChanged="StylingSlider_ValueChanged"/>
                                 </StackPanel>
                             </Grid>
 
-                            <TextBlock Text="Font" Style="{StaticResource SecondaryLabel}" Margin="0,0,0,3"/>
-                            <ComboBox x:Name="FontFamilyCombo" SelectionChanged="Styling_Changed" Height="27" Margin="0,0,0,9" FontSize="12">
-                                <ComboBoxItem Content="Arial"/>
-                                <ComboBoxItem Content="Segoe UI"/>
-                                <ComboBoxItem Content="Tahoma"/>
-                                <ComboBoxItem Content="Trebuchet MS"/>
-                                <ComboBoxItem Content="Verdana"/>
-                                <ComboBoxItem Content="Georgia"/>
-                                <ComboBoxItem Content="Impact"/>
-                            </ComboBox>
+                            <Separator Background="{DynamicResource MahApps.Brushes.Separator}" Margin="0,0,0,8"/>
 
-                            <Grid Margin="0,0,0,1">
-                                <TextBlock Text="Size" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
-                                <TextBlock x:Name="FontSizeValText" Text="14" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"
+                            <!-- SECTION: EFFECTS & BOX -->
+                            <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <CheckBox x:Name="FontBoldCheck" Content="Bold" IsChecked="True" Checked="Styling_Changed" Unchecked="Styling_Changed"
+                                          FontSize="11.5" Margin="0,0,16,4"/>
+                                <CheckBox x:Name="DropShadowCheck" Content="Drop shadow" IsChecked="True" Checked="Styling_Changed" Unchecked="Styling_Changed"
+                                          FontSize="11.5" Margin="0,0,16,4"/>
+                                <CheckBox x:Name="EnableBgBoxCheck" Content="Backing box" IsChecked="False" Checked="Styling_Changed" Unchecked="Styling_Changed"
+                                          FontSize="11.5" Margin="0,0,0,4"/>
+                            </WrapPanel>
+
+                            <Grid Margin="0,0,0,2" IsEnabled="{Binding IsChecked, ElementName=EnableBgBoxCheck}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Box opacity" Style="{StaticResource SecondaryLabel}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="BgBoxOpacityValText" Text="0.45" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource MahApps.Brushes.Text}"/>
+                                <Slider Grid.Row="1" Grid.ColumnSpan="2" x:Name="BgBoxOpacitySlider" Minimum="0.1" Maximum="0.9" Value="0.45" SmallChange="0.05"
+                                        ValueChanged="StylingSlider_ValueChanged" Margin="0,2,0,0"/>
                             </Grid>
-                            <Slider x:Name="FontSizeSlider" Minimum="8" Maximum="34" Value="14" ValueChanged="StylingSlider_ValueChanged" Margin="0,0,0,8"/>
-
-                            <Grid Margin="0,0,0,1">
-                                <TextBlock Text="Line spacing" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
-                                <TextBlock x:Name="LineSpacingValText" Text="4" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource MahApps.Brushes.Text}"/>
-                            </Grid>
-                            <Slider x:Name="LineSpacingSlider" Minimum="0" Maximum="16" Value="4" ValueChanged="StylingSlider_ValueChanged" Margin="0,0,0,8"/>
-
-                            <Grid Margin="0,0,0,1">
-                                <TextBlock Text="Outline" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
-                                <TextBlock x:Name="OutlineWidthValText" Text="1.2" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource MahApps.Brushes.Text}"/>
-                            </Grid>
-                            <Slider x:Name="OutlineWidthSlider" Minimum="0" Maximum="3.0" Value="1.2" SmallChange="0.1" ValueChanged="StylingSlider_ValueChanged" Margin="0,0,0,8"/>
-
-                            <CheckBox x:Name="FontBoldCheck" Content="Bold" IsChecked="True" Checked="Styling_Changed" Unchecked="Styling_Changed" FontSize="12" Margin="0,0,0,5"/>
-                            <CheckBox x:Name="DropShadowCheck" Content="Drop shadow" IsChecked="True" Checked="Styling_Changed" Unchecked="Styling_Changed" FontSize="12" Margin="0,0,0,5"/>
-                            <CheckBox x:Name="EnableBgBoxCheck" Content="Dark backing box" IsChecked="False" Checked="Styling_Changed" Unchecked="Styling_Changed" FontSize="12" Margin="0,0,0,5"/>
-
-                            <Grid Margin="0,0,0,1">
-                                <TextBlock Text="Box opacity" Style="{StaticResource SecondaryLabel}" HorizontalAlignment="Left"/>
-                                <TextBlock x:Name="BgBoxOpacityValText" Text="0.45" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource MahApps.Brushes.Text}"/>
-                            </Grid>
-                            <Slider x:Name="BgBoxOpacitySlider" Minimum="0.1" Maximum="0.9" Value="0.45" SmallChange="0.05" ValueChanged="StylingSlider_ValueChanged"/>
 
                         </StackPanel>
                     </ScrollViewer>

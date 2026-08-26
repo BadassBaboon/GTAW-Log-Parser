@@ -131,23 +131,20 @@ namespace GTAWParser.Shared.Screenshot
         }
 
         /// <summary>
-        /// Comprehensive list of GTA World roleplay colors for the Screenshot Editor palette picker.
+        /// Unified list of verified GTA World roleplay colors for the Screenshot Editor color picker.
         /// </summary>
         public static readonly IReadOnlyList<RoleplayPaletteSwatch> EditorSwatches = new List<RoleplayPaletteSwatch>
         {
-            new RoleplayPaletteSwatch("/me", "#C2A3DA", "/me emote (#C2A3DA)"),
-            new RoleplayPaletteSwatch("/do", "#C2A3DA", "/do action (#C2A3DA)"),
-            new RoleplayPaletteSwatch("Your Speech", "#F1F1F1", "Your character talking (#F1F1F1)"),
+            new RoleplayPaletteSwatch("/me & /do", "#C2A3DA", "/me emote and /do action (#C2A3DA)"),
+            new RoleplayPaletteSwatch("Your Speech", "#FFFFFF", "Your character talking (#FFFFFF)"),
             new RoleplayPaletteSwatch("Other Speech", "#C8C8C8", "Other characters talking (#C8C8C8)"),
-            new RoleplayPaletteSwatch("Whisper", "#EDA841", "Whisper / low speech (#EDA841)"),
-            new RoleplayPaletteSwatch("Phone Call", "#FBF724", "Phone call / SMS (#FBF724)"),
-            new RoleplayPaletteSwatch("Radio", "#1E90FF", "Radio communication (#1E90FF)"),
-            new RoleplayPaletteSwatch("Item Given", "#56D64B", "Item given / transferred (#56D64B)"),
-            new RoleplayPaletteSwatch("Money Paid", "#56D64B", "Money paid / transaction (#56D64B)"),
-            new RoleplayPaletteSwatch("CK Blue", "#3896F3", "CK blue / system info (#3896F3)"),
-            new RoleplayPaletteSwatch("CK Red / Admin", "#F00000", "CK red / admin error (#F00000)"),
-            new RoleplayPaletteSwatch("Inventory", "#FFFF00", "Item in inventory / warning (#FFFF00)"),
-            new RoleplayPaletteSwatch("OOC", "#A6ACAF", "Out of character (( )) (#A6ACAF)"),
+            new RoleplayPaletteSwatch("Whisper", "#EDA841", "Whisper / [low] speech (#EDA841)"),
+            new RoleplayPaletteSwatch("Phone / SMS / PM", "#FFFF00", "Phone calls, SMS, PMs, inventory (#FFFF00)"),
+            new RoleplayPaletteSwatch("Radio", "#1E90FF", "Radio channels (#1E90FF)"),
+            new RoleplayPaletteSwatch("Item / Money / Success", "#32CD32", "Item given, payment, success (#32CD32)"),
+            new RoleplayPaletteSwatch("CK Red / Admin / Error", "#FF0000", "CK red, admin actions, errors (#FF0000)"),
+            new RoleplayPaletteSwatch("CK Blue / System", "#3896F3", "CK blue, system notices (#3896F3)"),
+            new RoleplayPaletteSwatch("OOC (( ))", "#A6ACAF", "Out of character (( )) (#A6ACAF)"),
             new RoleplayPaletteSwatch("Advertisement", "#2ECC71", "Advertisement / news (#2ECC71)"),
         };
     }
