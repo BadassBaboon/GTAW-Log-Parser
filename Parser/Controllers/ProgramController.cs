@@ -9,7 +9,7 @@ namespace Parser.Controllers
 {
     public static class ProgramController
     {
-        public const string AssemblyVersion = "6.4.0";
+        public const string AssemblyVersion = "6.5.0";
         public static readonly string Version = $"v{AssemblyVersion}";
         public static bool IsBetaVersion => false;
         public const string ParameterPrefix = "--";
