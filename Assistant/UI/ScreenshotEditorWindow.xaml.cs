@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Threading;
 using Assistant.Controllers;
+using ControlzEx.Theming;
 using GTAWParser.Shared;
 using GTAWParser.Shared.Screenshot;
 using MahApps.Metro.Controls;
@@ -314,7 +315,21 @@ namespace Assistant.UI
             _placedLines.CollectionChanged += (_, __) => UpdatePlacedCount();
 
             Loaded += ScreenshotEditorWindow_Loaded;
-            Closing += (_, __) => SaveSettings();
+            Closing += (_, __) =>
+            {
+                ThemeManager.Current.ThemeChanged -= OnThemeChanged;
+                SaveSettings();
+            };
+            ThemeManager.Current.ThemeChanged += OnThemeChanged;
+        }
+
+        private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                ApplyThemeStyling();
+                UpdateCanvas();
+            });
         }
 
         private void ScreenshotEditorWindow_Loaded(object sender, RoutedEventArgs e)
@@ -452,26 +467,52 @@ namespace Assistant.UI
         {
             bool dark = StyleController.DarkMode;
 
+            var lightChecker = FreezeBrush(dark ? "#3A3A3A" : "#4A505C");
+            var darkChecker = FreezeBrush(dark ? "#2B2B2B" : "#3A404A");
+
             Resources["ScreenshotChatSurface"] = FreezeBrush(dark ? "#16171A" : "#2B303A");
+            Resources["ScreenshotChatMuted"] = FreezeBrush(dark ? "#8E9297" : "#A5ACB8");
             Resources["ScreenshotViewportGround"] = FreezeBrush(dark ? "#121212" : "#20242C");
             Resources["ScreenshotCanvasFrame"] = FreezeBrush(dark ? "#0A0A0A" : "#171A20");
 
-            // The checkerboard has to read as "nothing here" against whichever ground is behind it.
-            Resources["ScreenshotCheckerLight"] = FreezeBrush(dark ? "#3A3A3A" : "#4A505C");
-            Resources["ScreenshotCheckerDark"] = FreezeBrush(dark ? "#2B2B2B" : "#3A404A");
+            Resources["ScreenshotCheckerLight"] = lightChecker;
+            Resources["ScreenshotCheckerDark"] = darkChecker;
 
             Resources["ScreenshotOverlayFill"] = FreezeBrush(dark ? "#CC1E1E1E" : "#CC232830");
-            Resources["ScreenshotOverlayBorder"] = FreezeBrush("#2EFFFFFF");
-            Resources["ScreenshotOverlayText"] = FreezeBrush("#C8C8C8");
-            Resources["ScreenshotOverlayMuted"] = FreezeBrush("#8A8A8A");
+            Resources["ScreenshotOverlayBorder"] = FreezeBrush(dark ? "#2EFFFFFF" : "#3B4252");
+            Resources["ScreenshotOverlayText"] = FreezeBrush(dark ? "#C8C8C8" : "#E2E8F0");
+            Resources["ScreenshotOverlayMuted"] = FreezeBrush(dark ? "#8A8A8A" : "#94A3B8");
             Resources["ScreenshotSelectionFill"] = FreezeBrush("#14FFFFFF");
 
             Resources["ScreenshotBannerFill"] = FreezeBrush(dark ? "#1E2A33" : "#26333D");
             Resources["ScreenshotBannerBorder"] = FreezeBrush(dark ? "#2F4A5A" : "#3B5666");
             Resources["ScreenshotDanger"] = FreezeBrush(dark ? "#E05555" : "#F07070");
 
-            ViewportSurface.Background = (Brush)Resources["ScreenshotViewportGround"];
-            CanvasFrame.Background = (Brush)Resources["ScreenshotCanvasFrame"];
+            // Rebuild the checkerboard DrawingBrush dynamically so it re-renders immediately on theme changes
+            var group = new DrawingGroup();
+            group.Children.Add(new GeometryDrawing(lightChecker, null, new RectangleGeometry(new Rect(0, 0, 16, 16))));
+            var darkGeom = new GeometryGroup();
+            darkGeom.Children.Add(new RectangleGeometry(new Rect(0, 0, 8, 8)));
+            darkGeom.Children.Add(new RectangleGeometry(new Rect(8, 8, 8, 8)));
+            group.Children.Add(new GeometryDrawing(darkChecker, null, darkGeom));
+            var checker = new DrawingBrush(group)
+            {
+                TileMode = TileMode.Tile,
+                Viewport = new Rect(0, 0, 16, 16),
+                ViewportUnits = BrushMappingMode.Absolute,
+                Stretch = Stretch.None
+            };
+            checker.Freeze();
+            Resources["CheckerboardBrush"] = checker;
+            if (CheckerboardLayer != null)
+            {
+                CheckerboardLayer.Fill = checker;
+            }
+
+            if (ViewportSurface != null)
+                ViewportSurface.Background = (Brush)Resources["ScreenshotViewportGround"];
+            if (CanvasFrame != null)
+                CanvasFrame.Background = (Brush)Resources["ScreenshotCanvasFrame"];
         }
 
         private void PopulateResolutionPresets()
@@ -1473,7 +1514,7 @@ namespace Assistant.UI
                         line.ColorOverride = null;
                         SyncRichTextBoxToLine(rtb, line);
                         UpdateCanvas();
-                        SetStatus($"Selection recoloured to {label} ({hex}).");
+                        SetStatus($"Selection recolored to {label} ({hex}).");
                     }
                     else if (rtb != null)
                     {
@@ -1482,13 +1523,13 @@ namespace Assistant.UI
                         line.ColorOverride = hex;
                         SyncRichTextBoxToLine(rtb, line);
                         UpdateCanvas();
-                        SetStatus($"Line colour set to {label} ({hex}).");
+                        SetStatus($"Line color set to {label} ({hex}).");
                     }
                     else
                     {
                         line.ColorOverride = hex;
                         UpdateCanvas();
-                        SetStatus($"Line colour set to {label} ({hex}).");
+                        SetStatus($"Line color set to {label} ({hex}).");
                     }
                 };
 
@@ -1499,14 +1540,15 @@ namespace Assistant.UI
 
             var autoItem = new MenuItem
             {
-                Header = hasSelection ? "Reset Selection to Detected Colour" : "Auto (Detected Colour)",
-                ToolTip = "Reset to default detected roleplay colour",
+                Header = hasSelection ? "Reset Selection to Detected Color" : "Auto (Detected Color)",
+                ToolTip = "Reset to default detected roleplay color",
                 Icon = new PackIconMaterial
                 {
                     Kind = PackIconMaterialKind.AutoFix,
                     Width = 13,
                     Height = 13,
-                    VerticalAlignment = VerticalAlignment.Center
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Foreground = (Brush)FindResource("MahApps.Brushes.ThemeForeground")
                 }
             };
             autoItem.Click += (_, __) =>
@@ -1518,7 +1560,7 @@ namespace Assistant.UI
                     line.ColorOverride = null;
                     SyncRichTextBoxToLine(rtb, line);
                     UpdateCanvas();
-                    SetStatus($"Selection colour reset to default ({defaultColor}).");
+                    SetStatus($"Selection color reset to default ({defaultColor}).");
                 }
                 else
                 {
@@ -1526,21 +1568,22 @@ namespace Assistant.UI
                     line.Segments = RoleplayChatColorizer.ColorizeLine(line.RawText);
                     if (rtb != null) RichChatLineHelper.PopulateDocument(rtb, line);
                     UpdateCanvas();
-                    SetStatus("Line colour reset to detected colour.");
+                    SetStatus("Line color reset to detected color.");
                 }
             };
             menu.Items.Add(autoItem);
 
             var customItem = new MenuItem
             {
-                Header = hasSelection ? "Custom Colour for Selection..." : "Custom Colour...",
-                ToolTip = "Choose any custom colour from palette",
+                Header = hasSelection ? "Custom Color for Selection..." : "Custom Color...",
+                ToolTip = "Choose any custom color from palette",
                 Icon = new PackIconMaterial
                 {
                     Kind = PackIconMaterialKind.Palette,
                     Width = 13,
                     Height = 13,
-                    VerticalAlignment = VerticalAlignment.Center
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Foreground = (Brush)FindResource("MahApps.Brushes.ThemeForeground")
                 }
             };
             customItem.Click += (_, __) =>
@@ -1573,7 +1616,7 @@ namespace Assistant.UI
                             line.ColorOverride = null;
                             SyncRichTextBoxToLine(rtb, line);
                             UpdateCanvas();
-                            SetStatus($"Selection recoloured to custom ({customHex}).");
+                            SetStatus($"Selection recolored to custom ({customHex}).");
                         }
                         else if (rtb != null)
                         {
@@ -1582,19 +1625,19 @@ namespace Assistant.UI
                             line.ColorOverride = customHex;
                             SyncRichTextBoxToLine(rtb, line);
                             UpdateCanvas();
-                            SetStatus($"Line colour set to custom ({customHex}).");
+                            SetStatus($"Line color set to custom ({customHex}).");
                         }
                         else
                         {
                             line.ColorOverride = customHex;
                             UpdateCanvas();
-                            SetStatus($"Line colour set to custom ({customHex}).");
+                            SetStatus($"Line color set to custom ({customHex}).");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Failed to open custom colour dialog.");
+                    Log.Error(ex, "Failed to open custom color dialog.");
                 }
             };
             menu.Items.Add(customItem);

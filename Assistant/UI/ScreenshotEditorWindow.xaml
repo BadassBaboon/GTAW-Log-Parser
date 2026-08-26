@@ -82,6 +82,59 @@
             <Setter Property="CornerRadius" Value="5"/>
         </Style>
 
+        <!-- Compact section expander that places the drop-down chevron directly next to the header text without huge gaps -->
+        <Style x:Key="CompactSectionExpander" TargetType="Expander">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.Text}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                            <DockPanel>
+                                <ToggleButton x:Name="HeaderButton" DockPanel.Dock="Top"
+                                              IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Cursor="Hand" Background="Transparent" BorderThickness="0" Padding="0"
+                                              HorizontalAlignment="Left">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border Background="Transparent" Padding="0,3">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <ContentPresenter ContentSource="Content" Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
+                                                    <iconPacks:PackIconMaterial x:Name="ExpandArrow" Kind="ChevronDown" Width="13" Height="13"
+                                                                                Margin="6,1,0,0" VerticalAlignment="Center"
+                                                                                Foreground="{DynamicResource MahApps.Brushes.Gray3}"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ExpandArrow" Property="Foreground" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter TargetName="ExpandArrow" Property="Kind" Value="ChevronUp"/>
+                                                    <Setter TargetName="ExpandArrow" Property="Foreground" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                    <ContentPresenter ContentSource="Header"/>
+                                </ToggleButton>
+
+                                <ContentPresenter x:Name="ExpandSite" DockPanel.Dock="Bottom"
+                                                  ContentSource="Content"
+                                                  Visibility="Collapsed"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Window.Resources>
 
     <Grid Background="{DynamicResource MahApps.Brushes.ThemeBackground}">
@@ -254,15 +307,14 @@
                 <Grid Grid.Row="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,7">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                            <iconPacks:PackIconMaterial Kind="ChatOutline" Width="14" Height="14" Margin="0,0,7,0"
-                                                        Foreground="{DynamicResource MahApps.Brushes.Accent}" VerticalAlignment="Center"/>
-                            <TextBlock Text="Chat lines" Style="{StaticResource StepHeader}"/>
+                            <CheckBox x:Name="AutoColorCheckBox" Content="Auto color"
+                                      IsChecked="True" VerticalAlignment="Center" FontSize="11.5"
+                                      ToolTip="Automatically detect and color roleplay lines on import or paste. When unchecked, lines are plain white."/>
                             <TextBlock x:Name="PlacedCountText" Text="" Style="{StaticResource SecondaryLabel}" Margin="8,0,0,0"/>
                         </StackPanel>
 
@@ -292,13 +344,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid Grid.Row="1" Margin="0,0,0,6">
-                        <CheckBox x:Name="AutoColorCheckBox" Content="Auto colour"
-                                  IsChecked="True" VerticalAlignment="Center" FontSize="11.5"
-                                  ToolTip="Automatically detect and colour roleplay lines on import or paste. When unchecked, lines are plain white."/>
-                    </Grid>
-
-                    <Border Grid.Row="2" Style="{StaticResource PaneBody}">
+                    <Border Grid.Row="1" Style="{StaticResource PaneBody}">
                         <Grid>
                             <ListBox x:Name="PlacedLinesListBox"
                                      AllowDrop="True"
@@ -330,7 +376,7 @@
                                                     PreviewMouseLeftButtonDown="DragHandle_PreviewMouseLeftButtonDown"
                                                     ToolTip="Drag to reorder">
                                                 <iconPacks:PackIconMaterial Kind="DragVertical" Width="11" Height="11"
-                                                                            Foreground="{DynamicResource MahApps.Brushes.Gray3}"
+                                                                            Foreground="{DynamicResource ScreenshotChatMuted}"
                                                                             VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                             </Border>
 
@@ -356,7 +402,8 @@
                                                          Margin="0,0,4,0"
                                                          VerticalAlignment="Center"
                                                          FontSize="11.5"
-                                                         CaretBrush="{DynamicResource MahApps.Brushes.ThemeForeground}"
+                                                         Foreground="#FFFFFF"
+                                                         CaretBrush="#FFFFFF"
                                                          IsInactiveSelectionHighlightEnabled="True"
                                                          AcceptsReturn="False"
                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -379,7 +426,7 @@
 
                                             <Button Grid.Column="3" Click="DeletePlacedLine_Click" Focusable="False" Width="18" Height="18" Padding="0"
                                                     Background="Transparent" BorderThickness="0"
-                                                    Foreground="{DynamicResource MahApps.Brushes.Gray3}" ToolTip="Delete this line"
+                                                    Foreground="{DynamicResource ScreenshotChatMuted}" ToolTip="Delete this line"
                                                     Cursor="Hand">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
@@ -403,14 +450,14 @@
 
                             <TextBlock x:Name="PlacedEmptyHint" IsHitTestVisible="False"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource MahApps.Brushes.Gray3}" FontSize="11.5" TextAlignment="Center"
+                                       Foreground="{DynamicResource ScreenshotChatMuted}" FontSize="11.5" TextAlignment="Center"
                                        Text="No chat lines yet.&#x0a;Click Paste, Import chatlog, or + to add a line."/>
                         </Grid>
                     </Border>
                 </Grid>
 
                 <!-- STYLE AND POSITION -->
-                <Expander Grid.Row="1" x:Name="StyleExpander" IsExpanded="False" Margin="0,6,0,0">
+                <Expander Grid.Row="1" x:Name="StyleExpander" Style="{StaticResource CompactSectionExpander}" IsExpanded="False" Margin="0,6,0,0">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="TuneVertical" Width="14" Height="14" Margin="0,0,7,0"
