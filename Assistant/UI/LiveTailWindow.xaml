@@ -71,6 +71,11 @@
                               Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged"
                               ToolTip="Hide leading timestamps from log display"/>
 
+                    <CheckBox x:Name="WordWrapCheck" Content="Word wrap" IsChecked="True"
+                              VerticalAlignment="Center" Margin="0,0,14,0"
+                              Checked="WordWrap_CheckedChanged" Unchecked="WordWrap_CheckedChanged"
+                              ToolTip="Wrap long chat lines to window width (uncheck for single-line horizontal scrolling)"/>
+
                     <CheckBox x:Name="AutoScroll" Content="Auto-scroll" IsChecked="True"
                               VerticalAlignment="Center" Margin="0,0,14,0"
                               ToolTip="Automatically scroll down when new chat messages arrive"/>

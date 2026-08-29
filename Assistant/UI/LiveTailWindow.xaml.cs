@@ -92,6 +92,8 @@ namespace Assistant.UI
             InitializeComponent();
             _document.PagePadding = new Thickness(0);
             TailRich.Document = _document;
+            WordWrapCheck.IsChecked = Properties.Settings.Default.LiveTailWordWrap;
+            ApplyWordWrap(WordWrapCheck.IsChecked == true);
             _isInitialized = true;
             ApplyThemeStyling();
         }
@@ -124,6 +126,7 @@ namespace Assistant.UI
         private void LiveTail_Loaded(object sender, RoutedEventArgs e)
         {
             ApplyThemeStyling();
+            ApplyWordWrap(WordWrapCheck?.IsChecked == true);
             if (!_isWatching)
             {
                 StartWatching();
@@ -278,7 +281,7 @@ namespace Assistant.UI
         {
             Paragraph p = new Paragraph
             {
-                Margin = new Thickness(0, 1, 0, 1),
+                Margin = new Thickness(0, 1, 0, 3),
                 LineHeight = 16
             };
 
@@ -570,6 +573,30 @@ namespace Assistant.UI
         {
             if (!_isInitialized) return;
             RebuildDocument();
+        }
+
+        private void WordWrap_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized) return;
+            bool isWrapped = WordWrapCheck?.IsChecked == true;
+            Properties.Settings.Default.LiveTailWordWrap = isWrapped;
+            Properties.Settings.Default.Save();
+            ApplyWordWrap(isWrapped);
+        }
+
+        private void ApplyWordWrap(bool isWrapped)
+        {
+            if (TailRich == null || _document == null) return;
+            if (isWrapped)
+            {
+                TailRich.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                _document.PageWidth = double.NaN;
+            }
+            else
+            {
+                TailRich.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+                _document.PageWidth = 5000;
+            }
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)

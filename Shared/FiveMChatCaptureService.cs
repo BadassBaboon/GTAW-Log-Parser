@@ -53,7 +53,37 @@ namespace GTAWParser.Shared
         public static event Action<string>? LineReceived;
         public static event Action<CapturedChatLine>? CapturedLineReceived;
 
-        public static DateTime SessionStartedAt => _sessionStartedAt == DateTime.MinValue ? DateTime.Now : _sessionStartedAt;
+        public static DateTime SessionStartedAt
+        {
+            get
+            {
+                if (_sessionStartedAt != DateTime.MinValue)
+                    return _sessionStartedAt;
+
+                if (File.Exists(SessionFilePath) && new FileInfo(SessionFilePath).Length > 0)
+                {
+                    DateTime? fromHeader = TryReadSessionHeaderTimestamp(SessionFilePath);
+                    if (fromHeader.HasValue)
+                    {
+                        _sessionStartedAt = fromHeader.Value;
+                        return fromHeader.Value;
+                    }
+
+                    try
+                    {
+                        DateTime created = File.GetCreationTime(SessionFilePath);
+                        if (created > DateTime.MinValue && created.Year >= 2020)
+                        {
+                            _sessionStartedAt = created;
+                            return created;
+                        }
+                    }
+                    catch { }
+                }
+
+                return DateTime.Now;
+            }
+        }
 
         public static IReadOnlyList<CapturedChatLine> SessionRichLines
         {

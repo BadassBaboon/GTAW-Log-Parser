@@ -23,6 +23,8 @@ namespace Assistant.Controllers
 
         private static string backupPath = string.Empty;
         private static bool isGameRunning;
+        private static bool _hasUnsavedChanges;
+        private static string _lastSavedNormalizedContent = string.Empty;
 
         private static bool _quitting;
         public static bool Quitting
@@ -36,6 +38,7 @@ namespace Assistant.Controllers
                     try
                     {
                         if ((Properties.Settings.Default.BackupChatLogAutomatically || Properties.Settings.Default.EnableIntervalBackup) && 
+                            (isGameRunning || _hasUnsavedChanges) &&
                             File.Exists(FiveMChatCaptureService.SessionFilePath) && 
                             new FileInfo(FiveMChatCaptureService.SessionFilePath).Length > 0)
                         {
@@ -76,6 +79,9 @@ namespace Assistant.Controllers
             if (Quitting)
                 return;
 
+            FiveMChatCaptureService.LineReceived -= OnLineReceived;
+            FiveMChatCaptureService.LineReceived += OnLineReceived;
+
             // Cancel any previous run; old workers see the cancellation at their next await.
             _cts?.Cancel();
             _cts?.Dispose();
@@ -89,12 +95,21 @@ namespace Assistant.Controllers
                 _intervalTask = Task.Run(() => IntervalWorkerAsync(ct), ct);
         }
 
+        private static void OnLineReceived(string line)
+        {
+            _hasUnsavedChanges = true;
+        }
+
         /// <summary>
         /// Signals both workers to stop at their next await point.
         /// </summary>
         public static void AbortAll()
         {
-            try { _cts?.Cancel(); }
+            try 
+            { 
+                FiveMChatCaptureService.LineReceived -= OnLineReceived;
+                _cts?.Cancel(); 
+            }
             catch (Exception ex) { Log.Error(ex, "AbortAll failed"); }
         }
 
@@ -107,7 +122,10 @@ namespace Assistant.Controllers
                     bool running = AppController.IsFiveMRunning();
 
                     if (!isGameRunning && running)
+                    {
                         isGameRunning = true;
+                        _hasUnsavedChanges = true;
+                    }
                     else if (isGameRunning && !running)
                     {
                         isGameRunning = false;
@@ -166,6 +184,13 @@ namespace Assistant.Controllers
                 if (string.IsNullOrWhiteSpace(parsed))
                     return;
 
+                string normalized = ChatLogParser.NormalizeLineEndings(parsed);
+                if (!gameClosed && !_hasUnsavedChanges && !string.IsNullOrEmpty(_lastSavedNormalizedContent) && string.Equals(_lastSavedNormalizedContent, normalized, StringComparison.Ordinal))
+                {
+                    // Content is already saved and unchanged
+                    return;
+                }
+
                 DateTime sessionTime = FiveMChatCaptureService.SessionStartedAt;
                 string datePart = sessionTime.ToString("dd.MMM.yyyy", CultureInfo.InvariantCulture).ToUpperInvariant();
                 string timePart = sessionTime.ToString("HH.mm.ss", CultureInfo.InvariantCulture);
@@ -186,7 +211,7 @@ namespace Assistant.Controllers
                     string txtPath = Path.Combine(directory, $"{baseFileName}.txt");
                     string txtTemp = Path.Combine(directory, $".temp_{baseFileName}.txt");
 
-                    WriteBackupFileWithDeduplication(txtPath, txtTemp, ChatLogParser.NormalizeLineEndings(parsed));
+                    WriteBackupFileWithDeduplication(txtPath, txtTemp, normalized);
                     primarySavedPath = txtPath;
                 }
 
@@ -211,6 +236,9 @@ namespace Assistant.Controllers
                     if (string.IsNullOrEmpty(primarySavedPath))
                         primarySavedPath = htmlPath;
                 }
+
+                _lastSavedNormalizedContent = normalized;
+                _hasUnsavedChanges = false;
 
                 if (!gameClosed) return;
                 if (!Properties.Settings.Default.SuppressNotifications)

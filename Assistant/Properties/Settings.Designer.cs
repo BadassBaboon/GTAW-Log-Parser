@@ -751,5 +751,17 @@ namespace Assistant.Properties {
                 this["ScreenshotResolutionPreset"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool LiveTailWordWrap {
+            get {
+                return ((bool)(this["LiveTailWordWrap"]));
+            }
+            set {
+                this["LiveTailWordWrap"] = value;
+            }
+        }
     }
 }

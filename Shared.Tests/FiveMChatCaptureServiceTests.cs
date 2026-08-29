@@ -322,5 +322,31 @@ namespace Shared.Tests
 
             Assert.Equal("[18:05:23] John Doe says: Hello", formatted);
         }
+
+        [Fact]
+        public void SessionStartedAt_ExtractsTimestampFromHeaderFile()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "GTAW_Test_Session_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            string tempFile = Path.Combine(tempDir, "test-session.txt");
+
+            try
+            {
+                DateTime expectedTime = new DateTime(2026, 8, 29, 14, 15, 30);
+                string header = FiveMChatCaptureService.CreateSessionHeader(expectedTime);
+                File.WriteAllText(tempFile, header + "\n[14:15:30] Player says: test\n");
+
+                // Verify CreateSessionHeader match
+                var match = ChatLineClassifier.DateHeaderRegex.Match(header);
+                Assert.True(match.Success);
+                Assert.Equal("29/AUG/2026", match.Groups[1].Value);
+                Assert.Equal("14:15:30", match.Groups[2].Value);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
     }
 }

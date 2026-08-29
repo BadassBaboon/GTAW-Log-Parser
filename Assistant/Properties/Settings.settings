@@ -185,5 +185,8 @@
     <Setting Name="ScreenshotResolutionPreset" Type="System.String" Scope="User">
       <Value Profile="(Default)">Standard RP Thread</Value>
     </Setting>
+    <Setting Name="LiveTailWordWrap" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
