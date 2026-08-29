@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.5.1] - 2026-08-29
+
+### Added
+- **Live Tail Word Wrap Option & Clean Spacing (`LiveTailWindow.xaml`, `LiveTailWindow.xaml.cs`)**:
+  - Added a **"Word wrap"** toolbar checkbox (enabled by default and saved in user preferences) allowing users to switch between soft-wrapped multi-line text and single-line view with horizontal scrolling.
+  - Refined paragraph margins to 3px bottom separation, ensuring wrapped lines within a long message stay compact while distinct chat messages are immediately visually clear.
+
+### Fixed
+- **Duplicate Backup Creation on PC Shutdown & Program Startup (`BackupController.cs`, `FiveMChatCaptureService.cs`)**:
+  - Fixed an issue where `FiveMChatCaptureService.SessionStartedAt` defaulted to `DateTime.Now` when uninitialized on app start/exit, generating a brand new timestamp filename for the previous game session upon PC shutdown or app closing.
+  - `SessionStartedAt` now extracts the true session timestamp directly from the `current-session.txt` header across application restarts.
+  - Added dirty state tracking and content deduplication in `BackupController`: the app only flushes a backup on exit if FiveM was actively running or new chat lines were received in that session, preventing duplicate backups when closing, reopening, or rebooting without playing.
+
 ## [6.5.0] - 2026-08-26
 
 ### Added
