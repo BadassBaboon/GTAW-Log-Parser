@@ -4,7 +4,7 @@
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         Title="FiveM Tools &amp; Utilities"
         TitleCharacterCasing="Normal"
-        Height="550" Width="660"
+        Height="580" Width="680"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         BorderThickness="0"
@@ -98,6 +98,32 @@
                             <ComboBoxItem Content="Beta"/>
                             <ComboBoxItem Content="Latest (Unstable)"/>
                         </ComboBox>
+                    </StackPanel>
+
+                    <!-- Row 3: Extended Texture Budget (Bypass) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Extended Texture Budget:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                        <ComboBox x:Name="TextureBudgetComboBox" Height="26" Width="170" Margin="0,0,8,0"
+                                  SelectionChanged="TextureBudgetComboBox_SelectionChanged">
+                            <ComboBoxItem Content="0 (Default / Off)" Tag="0"/>
+                            <ComboBoxItem Content="20 (In-Game Max)" Tag="20"/>
+                            <ComboBoxItem Content="30 (+1.5x Boost)" Tag="30"/>
+                            <ComboBoxItem Content="40 (+2.0x Heavy Mods)" Tag="40"/>
+                            <ComboBoxItem Content="50 (+2.5x Ultra Mods)" Tag="50"/>
+                            <ComboBoxItem Content="60 (+3.0x Maximum)" Tag="60"/>
+                            <ComboBoxItem Content="Custom..." Tag="custom"/>
+                        </ComboBox>
+
+                        <Controls:NumericUpDown x:Name="CustomTextureBudgetNumericUpDown"
+                                                Minimum="0" Maximum="100" Value="20" Interval="5"
+                                                Height="26" Width="75"
+                                                TextAlignment="Center"
+                                                Visibility="Collapsed"
+                                                ValueChanged="CustomTextureBudgetNumericUpDown_ValueChanged"/>
+
+                        <TextBlock Text="⚡ Bypasses FiveM's 20 cap to fix disappearing textures from heavy mods."
+                                   FontSize="10.5" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0"/>
                     </StackPanel>
 
                     <!-- Hint -->

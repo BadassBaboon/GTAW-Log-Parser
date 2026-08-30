@@ -92,11 +92,56 @@ namespace Assistant.UI
                         CustomFovNumericUpDown.Visibility = Visibility.Visible;
                     }
                 }
+
+                // 4. Load Extended Texture Budget (Bypass)
+                int currentBudget = FiveMConfigManager.GetExtendedTextureBudget();
+                if (currentBudget == 0)
+                {
+                    TextureBudgetComboBox.SelectedIndex = 0; // 0 (Default / Off)
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
+                    CustomTextureBudgetNumericUpDown.Value = 0;
+                }
+                else if (currentBudget == 20)
+                {
+                    TextureBudgetComboBox.SelectedIndex = 1; // 20 (In-Game Max)
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
+                    CustomTextureBudgetNumericUpDown.Value = 20;
+                }
+                else if (currentBudget == 30)
+                {
+                    TextureBudgetComboBox.SelectedIndex = 2; // 30 (+1.5x Boost)
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
+                    CustomTextureBudgetNumericUpDown.Value = 30;
+                }
+                else if (currentBudget == 40)
+                {
+                    TextureBudgetComboBox.SelectedIndex = 3; // 40 (+2.0x Heavy Mods)
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
+                    CustomTextureBudgetNumericUpDown.Value = 40;
+                }
+                else if (currentBudget == 50)
+                {
+                    TextureBudgetComboBox.SelectedIndex = 4; // 50 (+2.5x Ultra Mods)
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
+                    CustomTextureBudgetNumericUpDown.Value = 50;
+                }
+                else if (currentBudget == 60)
+                {
+                    TextureBudgetComboBox.SelectedIndex = 5; // 60 (+3.0x Maximum)
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
+                    CustomTextureBudgetNumericUpDown.Value = 60;
+                }
+                else
+                {
+                    TextureBudgetComboBox.SelectedIndex = 6; // Custom...
+                    CustomTextureBudgetNumericUpDown.Value = Math.Clamp(currentBudget, 0, 100);
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Visible;
+                }
             }
 
             _isInitializing = false;
 
-            // 4. Check ReShade Status
+            // 5. Check ReShade Status
             CheckReShadeStatus();
         }
 
@@ -314,6 +359,47 @@ namespace Assistant.UI
                 {
                     float customVal = (float)Math.Clamp(CustomFovNumericUpDown.Value.Value, 0.0, 130.0);
                     FiveMConfigManager.SetVehicleFirstPersonFov(customVal, out _);
+                }
+            }
+        }
+
+        private void TextureBudgetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (TextureBudgetComboBox.SelectedItem is ComboBoxItem item && item.Tag is string tagStr)
+            {
+                if (tagStr == "custom")
+                {
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Visible;
+                    if (CustomTextureBudgetNumericUpDown.Value == null || CustomTextureBudgetNumericUpDown.Value < 0)
+                        CustomTextureBudgetNumericUpDown.Value = 20;
+
+                    int customVal = (int)Math.Clamp(CustomTextureBudgetNumericUpDown.Value ?? 20, 0, 100);
+                    FiveMConfigManager.SetExtendedTextureBudget(customVal, out _);
+                }
+                else
+                {
+                    CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
+                    if (int.TryParse(tagStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int presetBudget))
+                    {
+                        CustomTextureBudgetNumericUpDown.Value = presetBudget;
+                        FiveMConfigManager.SetExtendedTextureBudget(presetBudget, out _);
+                    }
+                }
+            }
+        }
+
+        private void CustomTextureBudgetNumericUpDown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
+        {
+            if (_isInitializing) return;
+
+            if (TextureBudgetComboBox.SelectedItem is ComboBoxItem item && item.Tag is string tagStr && tagStr == "custom")
+            {
+                if (CustomTextureBudgetNumericUpDown.Value.HasValue)
+                {
+                    int customVal = (int)Math.Clamp(CustomTextureBudgetNumericUpDown.Value.Value, 0, 100);
+                    FiveMConfigManager.SetExtendedTextureBudget(customVal, out _);
                 }
             }
         }
