@@ -68,6 +68,7 @@ namespace Assistant.UI
                 if (currentFov < 0)
                 {
                     FovPresetComboBox.SelectedIndex = 2; // -1 (Game Default)
+                    FovPresetComboBox.Width = 180;
                     CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
                 }
                 else
@@ -76,18 +77,21 @@ namespace Assistant.UI
                     if (fovInt == 60)
                     {
                         FovPresetComboBox.SelectedIndex = 0; // 60° (Recommended)
+                        FovPresetComboBox.Width = 180;
                         CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
                         CustomFovNumericUpDown.Value = 60;
                     }
                     else if (fovInt == 0)
                     {
                         FovPresetComboBox.SelectedIndex = 1; // 0° (FiveM Default)
+                        FovPresetComboBox.Width = 180;
                         CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
                         CustomFovNumericUpDown.Value = 0;
                     }
                     else
                     {
                         FovPresetComboBox.SelectedIndex = 3; // Custom...
+                        FovPresetComboBox.Width = 104;
                         CustomFovNumericUpDown.Value = Math.Clamp(fovInt, 0, 130);
                         CustomFovNumericUpDown.Visibility = Visibility.Visible;
                     }
@@ -98,42 +102,49 @@ namespace Assistant.UI
                 if (currentBudget == 0)
                 {
                     TextureBudgetComboBox.SelectedIndex = 0; // 0 (Default / Off)
+                    TextureBudgetComboBox.Width = 180;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
                     CustomTextureBudgetNumericUpDown.Value = 0;
                 }
                 else if (currentBudget == 20)
                 {
                     TextureBudgetComboBox.SelectedIndex = 1; // 20 (In-Game Max)
+                    TextureBudgetComboBox.Width = 180;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
                     CustomTextureBudgetNumericUpDown.Value = 20;
                 }
                 else if (currentBudget == 30)
                 {
                     TextureBudgetComboBox.SelectedIndex = 2; // 30 (+1.5x Boost)
+                    TextureBudgetComboBox.Width = 180;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
                     CustomTextureBudgetNumericUpDown.Value = 30;
                 }
                 else if (currentBudget == 40)
                 {
                     TextureBudgetComboBox.SelectedIndex = 3; // 40 (+2.0x Heavy Mods)
+                    TextureBudgetComboBox.Width = 180;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
                     CustomTextureBudgetNumericUpDown.Value = 40;
                 }
                 else if (currentBudget == 50)
                 {
                     TextureBudgetComboBox.SelectedIndex = 4; // 50 (+2.5x Ultra Mods)
+                    TextureBudgetComboBox.Width = 180;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
                     CustomTextureBudgetNumericUpDown.Value = 50;
                 }
                 else if (currentBudget == 60)
                 {
                     TextureBudgetComboBox.SelectedIndex = 5; // 60 (+3.0x Maximum)
+                    TextureBudgetComboBox.Width = 180;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
                     CustomTextureBudgetNumericUpDown.Value = 60;
                 }
                 else
                 {
                     TextureBudgetComboBox.SelectedIndex = 6; // Custom...
+                    TextureBudgetComboBox.Width = 104;
                     CustomTextureBudgetNumericUpDown.Value = Math.Clamp(currentBudget, 0, 100);
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Visible;
                 }
@@ -325,6 +336,7 @@ namespace Assistant.UI
             {
                 if (tagStr == "custom")
                 {
+                    FovPresetComboBox.Width = 104;
                     CustomFovNumericUpDown.Visibility = Visibility.Visible;
                     if (CustomFovNumericUpDown.Value == null || CustomFovNumericUpDown.Value < 0)
                         CustomFovNumericUpDown.Value = 60;
@@ -335,6 +347,7 @@ namespace Assistant.UI
                 }
                 else
                 {
+                    FovPresetComboBox.Width = 180;
                     CustomFovNumericUpDown.Visibility = Visibility.Collapsed;
                     if (tagStr == "-1")
                     {
@@ -371,6 +384,7 @@ namespace Assistant.UI
             {
                 if (tagStr == "custom")
                 {
+                    TextureBudgetComboBox.Width = 104;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Visible;
                     if (CustomTextureBudgetNumericUpDown.Value == null || CustomTextureBudgetNumericUpDown.Value < 0)
                         CustomTextureBudgetNumericUpDown.Value = 20;
@@ -380,6 +394,7 @@ namespace Assistant.UI
                 }
                 else
                 {
+                    TextureBudgetComboBox.Width = 180;
                     CustomTextureBudgetNumericUpDown.Visibility = Visibility.Collapsed;
                     if (int.TryParse(tagStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int presetBudget))
                     {

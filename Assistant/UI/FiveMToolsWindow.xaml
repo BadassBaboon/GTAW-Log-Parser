@@ -4,7 +4,7 @@
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         Title="FiveM Tools &amp; Utilities"
         TitleCharacterCasing="Normal"
-        Height="580" Width="680"
+        Height="620" Width="680"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         BorderThickness="0"
@@ -70,64 +70,82 @@
                     </Grid>
 
                     <!-- Separator -->
-                    <Border BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="0,1,0,0" Margin="0,0,0,10"/>
+                    <Border BorderBrush="{DynamicResource MahApps.Brushes.Gray8}" BorderThickness="0,1,0,0" Margin="0,2,0,10"/>
 
-                    <!-- Row 2: First-Person Driving FOV (left) & Update Channel (right) -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="First-Person Driving FOV:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <!-- Settings Grid: 3 Clean Vertical Rows with Aligned Labels, Controls & Explanations -->
+                    <Grid Margin="0,0,0,4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="170"/>
+                            <ColumnDefinition Width="185"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <ComboBox x:Name="FovPresetComboBox" Height="26" Width="150" Margin="0,0,8,0"
-                                  SelectionChanged="FovPresetComboBox_SelectionChanged">
-                            <ComboBoxItem Content="60° (Recommended)" Tag="60"/>
-                            <ComboBoxItem Content="0° (FiveM Default)" Tag="0"/>
-                            <ComboBoxItem Content="-1 (Game Default)" Tag="-1"/>
-                            <ComboBoxItem Content="Custom..." Tag="custom"/>
-                        </ComboBox>
-
-                        <Controls:NumericUpDown x:Name="CustomFovNumericUpDown"
-                                                Minimum="0" Maximum="130" Value="60" Interval="1"
-                                                Height="26" Width="75"
-                                                TextAlignment="Center" StringFormat="{}{0}°"
-                                                Visibility="Collapsed"
-                                                ValueChanged="CustomFovNumericUpDown_ValueChanged"/>
-
-                        <TextBlock Text="Update Channel:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="20,0,10,0"/>
-                        <ComboBox x:Name="UpdateChannelComboBox" Height="26" Width="140"
-                                  SelectionChanged="UpdateChannelComboBox_SelectionChanged">
-                            <ComboBoxItem Content="Release"/>
-                            <ComboBoxItem Content="Beta"/>
-                            <ComboBoxItem Content="Latest (Unstable)"/>
-                        </ComboBox>
-                    </StackPanel>
-
-                    <!-- Row 3: Extended Texture Budget (Bypass) -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="Extended Texture Budget:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-
-                        <ComboBox x:Name="TextureBudgetComboBox" Height="26" Width="170" Margin="0,0,8,0"
-                                  SelectionChanged="TextureBudgetComboBox_SelectionChanged">
-                            <ComboBoxItem Content="0 (Default / Off)" Tag="0"/>
-                            <ComboBoxItem Content="20 (In-Game Max)" Tag="20"/>
-                            <ComboBoxItem Content="30 (+1.5x Boost)" Tag="30"/>
-                            <ComboBoxItem Content="40 (+2.0x Heavy Mods)" Tag="40"/>
-                            <ComboBoxItem Content="50 (+2.5x Ultra Mods)" Tag="50"/>
-                            <ComboBoxItem Content="60 (+3.0x Maximum)" Tag="60"/>
-                            <ComboBoxItem Content="Custom..." Tag="custom"/>
-                        </ComboBox>
-
-                        <Controls:NumericUpDown x:Name="CustomTextureBudgetNumericUpDown"
-                                                Minimum="0" Maximum="100" Value="20" Interval="5"
-                                                Height="26" Width="75"
-                                                TextAlignment="Center"
-                                                Visibility="Collapsed"
-                                                ValueChanged="CustomTextureBudgetNumericUpDown_ValueChanged"/>
-
-                        <TextBlock Text="⚡ Bypasses FiveM's 20 cap to fix disappearing textures from heavy mods."
+                        <!-- Row 0: First-Person Driving FOV -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="First-Person Driving FOV:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ComboBox x:Name="FovPresetComboBox" Height="26" Width="180" Margin="0,0,4,0"
+                                      SelectionChanged="FovPresetComboBox_SelectionChanged">
+                                <ComboBoxItem Content="60° (Recommended)" Tag="60"/>
+                                <ComboBoxItem Content="0° (FiveM Default)" Tag="0"/>
+                                <ComboBoxItem Content="-1 (Game Default)" Tag="-1"/>
+                                <ComboBoxItem Content="Custom..." Tag="custom"/>
+                            </ComboBox>
+                            <Controls:NumericUpDown x:Name="CustomFovNumericUpDown"
+                                                    Minimum="0" Maximum="130" Value="60" Interval="1"
+                                                    Height="26" Width="72"
+                                                    TextAlignment="Center" StringFormat="{}{0}°"
+                                                    Visibility="Collapsed"
+                                                    ValueChanged="CustomFovNumericUpDown_ValueChanged"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Adjusts cockpit camera field of view while driving."
                                    FontSize="10.5" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                    </StackPanel>
+
+                        <!-- Row 2: Extended Texture Budget -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Extended Texture Budget:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ComboBox x:Name="TextureBudgetComboBox" Height="26" Width="180" Margin="0,0,4,0"
+                                      SelectionChanged="TextureBudgetComboBox_SelectionChanged">
+                                <ComboBoxItem Content="0 (Default / Off)" Tag="0"/>
+                                <ComboBoxItem Content="20 (In-Game Max)" Tag="20"/>
+                                <ComboBoxItem Content="30 (+1.5x Boost)" Tag="30"/>
+                                <ComboBoxItem Content="40 (+2.0x Heavy Mods)" Tag="40"/>
+                                <ComboBoxItem Content="50 (+2.5x Ultra Mods)" Tag="50"/>
+                                <ComboBoxItem Content="60 (+3.0x Maximum)" Tag="60"/>
+                                <ComboBoxItem Content="Custom..." Tag="custom"/>
+                            </ComboBox>
+                            <Controls:NumericUpDown x:Name="CustomTextureBudgetNumericUpDown"
+                                                    Minimum="0" Maximum="100" Value="20" Interval="5"
+                                                    Height="26" Width="72"
+                                                    TextAlignment="Center"
+                                                    Visibility="Collapsed"
+                                                    ValueChanged="CustomTextureBudgetNumericUpDown_ValueChanged"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="Fixes missing map and textures with heavy mods."
+                                   FontSize="10.5" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0"/>
+
+                        <!-- Row 4: Update Channel -->
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Update Channel:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ComboBox x:Name="UpdateChannelComboBox" Height="26" Width="180"
+                                      SelectionChanged="UpdateChannelComboBox_SelectionChanged">
+                                <ComboBoxItem Content="Release"/>
+                                <ComboBoxItem Content="Beta"/>
+                                <ComboBoxItem Content="Latest (Unstable)"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <TextBlock Grid.Row="4" Grid.Column="2" Text="Switches FiveM between Release, Beta, and Canary."
+                                   FontSize="10.5" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    </Grid>
 
                     <!-- Hint -->
-                    <TextBlock Text="💡 Note: Changes to FiveM settings require restarting FiveM to take effect." FontSize="10.5" Foreground="Gray" Margin="0,2,0,0"/>
+                    <TextBlock Text="💡 Note: Changes to FiveM settings require restarting FiveM to take effect." FontSize="10.5" Foreground="Gray" Margin="0,4,0,0"/>
                 </StackPanel>
             </GroupBox>
 

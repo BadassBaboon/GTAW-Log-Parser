@@ -37,7 +37,7 @@ namespace Parser
                 // Initialize the controllers and
                 // display the main user form
                 Logging.Initialize("Parser");
-                AppSettingsManager.Initialize(Properties.Settings.Default, "parser_settings.json", "Parser*", "GTAWParserMini*");
+                AppSettingsManager.Initialize(Properties.Settings.Default, "parser_settings.json", "Parser*", "GTAWParserMini*", "GTAW-Log-Parser*", "ParserMini*");
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);

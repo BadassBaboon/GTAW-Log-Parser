@@ -49,7 +49,7 @@ namespace Assistant
 
             Logging.Initialize("Assistant");
             AppController.MigrateLegacyAppDataDirectories();
-            AppSettingsManager.Initialize(Settings.Default, "assistant_settings.json", "GTAWAssistant*", "GTAW-Log-Parser*");
+            AppSettingsManager.Initialize(Settings.Default, "assistant_settings.json", "GTAWAssistant*", "GTAW-Log-Parser*", "Assistant*", "GTAWChatLogAssistant*");
 
             // Initialize the eligibility
             StyleController.InitializeFollowEligibility();

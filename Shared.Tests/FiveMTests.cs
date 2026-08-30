@@ -662,5 +662,97 @@ namespace Shared.Tests
                     Directory.Delete(tempDir, true);
             }
         }
+
+        [Fact]
+        public void AppSettingsManager_LegacyConfig_FullSimulationTest()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "GTAW_Legacy_Sim_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string legacyVerDir = Path.Combine(tempDir, "GTAWAssistant.exe_Url_abc123", "6.4.0.0");
+                Directory.CreateDirectory(legacyVerDir);
+                string userConfigFile = Path.Combine(legacyVerDir, "user.config");
+
+                string fullLegacyXml = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<configuration>
+    <userSettings>
+        <Assistant.Properties.Settings>
+            <setting name=""BackupPath"" serializeAs=""String"">
+                <value>E:\CustomGTAWLogs\</value>
+            </setting>
+            <setting name=""SelectedTheme"" serializeAs=""String"">
+                <value>Dark</value>
+            </setting>
+            <setting name=""AccentColor"" serializeAs=""String"">
+                <value>Crimson</value>
+            </setting>
+            <setting name=""ScreenshotFontSize"" serializeAs=""String"">
+                <value>19.5</value>
+            </setting>
+            <setting name=""ScreenshotStrokeSize"" serializeAs=""String"">
+                <value>3.0</value>
+            </setting>
+            <setting name=""ScreenshotResolutionPreset"" serializeAs=""String"">
+                <value>1300x730</value>
+            </setting>
+            <setting name=""LanguageCode"" serializeAs=""String"">
+                <value>en-US</value>
+            </setting>
+            <setting name=""HasPickedLanguage"" serializeAs=""String"">
+                <value>True</value>
+            </setting>
+            <setting name=""EnableIntervalBackup"" serializeAs=""String"">
+                <value>True</value>
+            </setting>
+            <setting name=""IntervalTime"" serializeAs=""String"">
+                <value>30</value>
+            </setting>
+        </Assistant.Properties.Settings>
+    </userSettings>
+</configuration>";
+                File.WriteAllText(userConfigFile, fullLegacyXml);
+
+                // 1. Verify XML parsing accurately extracts all settings
+                var parsed = AppSettingsManager.ParseLegacyUserConfigXml(File.ReadAllText(userConfigFile));
+                Assert.Equal(10, parsed.Count);
+                Assert.Equal(@"E:\CustomGTAWLogs\", parsed["BackupPath"]);
+                Assert.Equal("Dark", parsed["SelectedTheme"]);
+                Assert.Equal("Crimson", parsed["AccentColor"]);
+                Assert.Equal("19.5", parsed["ScreenshotFontSize"]);
+                Assert.Equal("3.0", parsed["ScreenshotStrokeSize"]);
+                Assert.Equal("1300x730", parsed["ScreenshotResolutionPreset"]);
+                Assert.Equal("en-US", parsed["LanguageCode"]);
+                Assert.Equal("True", parsed["HasPickedLanguage"]);
+                Assert.Equal("True", parsed["EnableIntervalBackup"]);
+                Assert.Equal("30", parsed["IntervalTime"]);
+
+                // 2. Verify type conversion matches target types
+                Assert.Equal(@"E:\CustomGTAWLogs\", AppSettingsManager.ConvertStringToType(parsed["BackupPath"], typeof(string)));
+                Assert.Equal(19.5, (double)AppSettingsManager.ConvertStringToType(parsed["ScreenshotFontSize"], typeof(double))!, 3);
+                Assert.Equal(3.0, (double)AppSettingsManager.ConvertStringToType(parsed["ScreenshotStrokeSize"], typeof(double))!, 3);
+                Assert.True((bool)AppSettingsManager.ConvertStringToType(parsed["EnableIntervalBackup"], typeof(bool))!);
+                Assert.Equal(30, (int)AppSettingsManager.ConvertStringToType(parsed["IntervalTime"], typeof(int))!);
+
+                // 3. Verify JSON serialization round-trip
+                string targetJsonPath = Path.Combine(tempDir, "assistant_settings.json");
+                var jsonDict = new Dictionary<string, object?>();
+                foreach (var kvp in parsed)
+                {
+                    jsonDict[kvp.Key] = kvp.Value;
+                }
+                string json = JsonSerializer.Serialize(jsonDict, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(targetJsonPath, json);
+
+                Assert.True(File.Exists(targetJsonPath));
+                using var jsonDoc = JsonDocument.Parse(File.ReadAllText(targetJsonPath));
+                Assert.Equal(@"E:\CustomGTAWLogs\", jsonDoc.RootElement.GetProperty("BackupPath").GetString());
+                Assert.Equal("30", jsonDoc.RootElement.GetProperty("IntervalTime").GetString());
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
     }
 }
