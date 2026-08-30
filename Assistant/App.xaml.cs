@@ -49,6 +49,7 @@ namespace Assistant
 
             Logging.Initialize("Assistant");
             AppController.MigrateLegacyAppDataDirectories();
+            AppSettingsManager.Initialize(Settings.Default, "assistant_settings.json", "GTAWAssistant*", "GTAW-Log-Parser*");
 
             // Initialize the eligibility
             StyleController.InitializeFollowEligibility();
@@ -126,15 +127,6 @@ namespace Assistant
                 catch (Exception ex)
                 {
                     Serilog.Log.Warning(ex, "Could not acquire single-instance mutex. Continuing startup.");
-                }
-
-                // Check if settings already exist
-                // for a previous assembly version
-                if (!Settings.Default.HasPickedLanguage)
-                {
-                    Settings.Default.Upgrade();
-                    Settings.Default.FollowSystemColor = false;
-                    Settings.Default.Save();
                 }
 
                 // Initialize the controllers and
