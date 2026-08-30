@@ -5,14 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.5.1] - 2026-08-29
+## [6.6.0] - 2026-08-31
 
 ### Added
-- **Live Tail Word Wrap Option & Clean Spacing (`LiveTailWindow.xaml`, `LiveTailWindow.xaml.cs`)**:
-  - Added a **"Word wrap"** toolbar checkbox (enabled by default and saved in user preferences) allowing users to switch between soft-wrapped multi-line text and single-line view with horizontal scrolling.
-  - Refined paragraph margins to 3px bottom separation, ensuring wrapped lines within a long message stay compact while distinct chat messages are immediately visually clear.
+- **Extended Texture Budget Bypass (`FiveMToolsWindow.xaml`, `FiveMToolsWindow.xaml.cs`, `FiveMConfigManager.cs`)**:
+  - Added an Extended Texture Budget option in FiveM Tools under FiveM Settings that manages `vid_budgetScale` in `%APPDATA%\CitizenFX\fivem.cfg`.
+  - Allows players running heavy vehicle, clothing, and graphics mod packs to bypass FiveM's in-game UI cap of 20 with presets (`0 (Default / Off)`, `20 (In-Game Max)`, `30 (+1.5x Boost)`, `40 (+2.0x Heavy Mods)`, `50 (+2.5x Ultra Mods)`, `60 (+3.0x Maximum)`) or custom scale values (up to 100), permanently fixing disappearing roads, buildings, and flickering textures caused by streaming pool exhaustion.
+- **Live Tail Multi-Category Filtering & Search Isolation (`LiveTailWindow.xaml`, `LiveTailWindow.xaml.cs`)**:
+  - Added an integrated **Filter Dropdown** sitting above the Start/Stop controls with multi-category filtering: `All Lines`, `Filter by Search Term`, `All RP / IC (Dialogue & Emotes)`, `IC Dialogue (/say, /w, /s)`, `Emotes & Actions (/me, /do)`, `Radio & Faction (/r, /f, /dep)`, `Private Messages (/pm)`, `OOC Chat (( ))`, `Phone & SMS (/ph)`, `Advertisements & News (/ad)`, and `Server & System Messages`.
+  - Added **Search-Term Line Isolation**: Selecting "Filter by Search Term" isolates and renders only chat lines that contain the search query instead of having to hunt through the entire log.
+  - Added **Automatic Word Wrap**: Removed the manual word wrap checkbox in favor of seamless responsive wrapping: words wrap automatically in compact/normal window views, while maximizing the window allows single-line horizontal scrolling.
+- **Live Tail Search Performance Optimization & Input Debounce (`LiveTailWindow.xaml.cs`, `CapturedChatLine.cs`)**:
+  - Eliminated UI thread stutter and input freezing when searching through large log buffers (5,000+ lines):
+    - Added a 160ms `DispatcherTimer` debounce to `SearchBox` keystrokes so rapid typing doesn't trigger redundant document rebuilds on every letter.
+    - Cached `ChatLineClassifier` category resolution lazily on `CapturedChatLine`, preventing tens of thousands of redundant regex classifications per keystroke.
+    - Batched WPF `FlowDocument` block creation via `AddRange` on in-memory documents, speeding up document re-rendering from ~1,500ms down to ~25ms (over 60x faster).
 
 ### Fixed
+- **Settings Lost Upon Updating to Newer Versions (`AppSettingsManager.cs`, `App.xaml.cs`, `Program.cs`)**:
+  - Replaced fragile .NET evidence/version-hashed `user.config` storage with centralized, human-readable JSON settings stored in `%LOCALAPPDATA%\GTAW-Log-Parser\config\assistant_settings.json` and `parser_settings.json`.
+  - Added automatic legacy migration on first launch: scans `%LOCALAPPDATA%` for any previous `user.config` files from older versions, imports all saved preferences (backup paths, themes, filters, screenshot settings), and preserves them across all future updates, versions, and single-file executable renames.
 - **Duplicate Backup Creation on PC Shutdown & Program Startup (`BackupController.cs`, `FiveMChatCaptureService.cs`)**:
   - Fixed an issue where `FiveMChatCaptureService.SessionStartedAt` defaulted to `DateTime.Now` when uninitialized on app start/exit, generating a brand new timestamp filename for the previous game session upon PC shutdown or app closing.
   - `SessionStartedAt` now extracts the true session timestamp directly from the `current-session.txt` header across application restarts.
