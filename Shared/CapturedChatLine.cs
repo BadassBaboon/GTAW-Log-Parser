@@ -46,5 +46,21 @@ namespace GTAWParser.Shared
             DominantColor = dominantColor;
             Spans = spans ?? new List<CapturedChatSpan>();
         }
+
+        private ChatLineCategory? _cachedCategory;
+
+        [JsonIgnore]
+        public ChatLineCategory Category
+        {
+            get
+            {
+                if (!_cachedCategory.HasValue)
+                {
+                    _cachedCategory = ChatLineClassifier.Classify(Text);
+                }
+                return _cachedCategory.Value;
+            }
+            set => _cachedCategory = value;
+        }
     }
 }

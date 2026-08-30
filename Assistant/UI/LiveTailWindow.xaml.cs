@@ -23,8 +23,9 @@ namespace Assistant.UI
     {
         private const int MaxLineBuffer = 5000;
         private readonly List<CapturedChatLine> _capturedLines = new List<CapturedChatLine>();
-        private readonly FlowDocument _document = new FlowDocument();
+        private FlowDocument _document = new FlowDocument();
         private readonly List<Run> _searchMatchRuns = new List<Run>();
+        private readonly System.Windows.Threading.DispatcherTimer _searchDebounceTimer;
         private int _currentMatchIndex = -1;
         private bool _isWatching;
         private bool _isInitialized;
@@ -93,6 +94,17 @@ namespace Assistant.UI
             _document.PagePadding = new Thickness(0);
             TailRich.Document = _document;
             ApplyAutomaticWordWrap();
+
+            _searchDebounceTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(160)
+            };
+            _searchDebounceTimer.Tick += (s, e) =>
+            {
+                _searchDebounceTimer.Stop();
+                RebuildDocument();
+            };
+
             _isInitialized = true;
             ApplyThemeStyling();
         }
@@ -297,7 +309,7 @@ namespace Assistant.UI
                 return line.Text.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) >= 0;
             }
 
-            ChatLineCategory category = ChatLineClassifier.Classify(line.Text);
+            ChatLineCategory category = line.Category;
 
             bool categoryMatch;
             switch (filterTag)
@@ -605,10 +617,9 @@ namespace Assistant.UI
 
         private void RebuildDocument()
         {
-            if (!_isInitialized || _document == null)
+            if (!_isInitialized)
                 return;
 
-            _document.Blocks.Clear();
             _searchMatchRuns.Clear();
             _currentMatchIndex = -1;
 
@@ -617,14 +628,28 @@ namespace Assistant.UI
             string query = SearchBox?.Text ?? string.Empty;
             string filterTag = (FilterComboBox?.SelectedItem as ComboBoxItem)?.Tag as string ?? "all";
 
+            FlowDocument newDoc = new FlowDocument
+            {
+                PagePadding = new Thickness(0)
+            };
+            if (WindowState == WindowState.Maximized)
+            {
+                newDoc.PageWidth = 5000;
+            }
+
+            List<Block> blocks = new List<Block>(_capturedLines.Count);
             foreach (CapturedChatLine line in _capturedLines)
             {
                 if (!MatchesFilter(line, filterTag, query))
                     continue;
 
                 Paragraph p = CreateLineParagraph(line, hideTimestamps, useColors, query, _searchMatchRuns);
-                _document.Blocks.Add(p);
+                blocks.Add(p);
             }
+
+            newDoc.Blocks.AddRange(blocks);
+            _document = newDoc;
+            TailRich.Document = newDoc;
 
             UpdateCounter();
 
@@ -691,6 +716,7 @@ namespace Assistant.UI
         private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!_isInitialized) return;
+            _searchDebounceTimer.Stop();
             RebuildDocument();
         }
 
@@ -708,6 +734,7 @@ namespace Assistant.UI
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
+            _searchDebounceTimer.Stop();
             _capturedLines.Clear();
             _document.Blocks.Clear();
             _searchMatchRuns.Clear();
@@ -747,7 +774,16 @@ namespace Assistant.UI
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!_isInitialized) return;
-            RebuildDocument();
+
+            _searchDebounceTimer.Stop();
+            if (string.IsNullOrEmpty(SearchBox.Text))
+            {
+                RebuildDocument();
+            }
+            else
+            {
+                _searchDebounceTimer.Start();
+            }
         }
 
         private void SearchBox_KeyDown(object sender, KeyEventArgs e)
@@ -755,6 +791,12 @@ namespace Assistant.UI
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;
+                _searchDebounceTimer.Stop();
+                if (_searchMatchRuns.Count == 0 && !string.IsNullOrEmpty(SearchBox.Text))
+                {
+                    RebuildDocument();
+                }
+
                 if ((Keyboard.Modifiers & ModifierKeys.Shift) != 0)
                 {
                     NavigateSearch(-1);
@@ -767,6 +809,7 @@ namespace Assistant.UI
             else if (e.Key == Key.Escape)
             {
                 e.Handled = true;
+                _searchDebounceTimer.Stop();
                 SearchBox.Text = string.Empty;
                 TailRich.Focus();
             }
@@ -783,6 +826,12 @@ namespace Assistant.UI
             else if (e.Key == Key.F3)
             {
                 e.Handled = true;
+                _searchDebounceTimer.Stop();
+                if (_searchMatchRuns.Count == 0 && !string.IsNullOrEmpty(SearchBox.Text))
+                {
+                    RebuildDocument();
+                }
+
                 if ((Keyboard.Modifiers & ModifierKeys.Shift) != 0)
                 {
                     NavigateSearch(-1);
@@ -797,6 +846,7 @@ namespace Assistant.UI
                 if (SearchBox.IsFocused || !string.IsNullOrEmpty(SearchBox.Text))
                 {
                     e.Handled = true;
+                    _searchDebounceTimer.Stop();
                     SearchBox.Text = string.Empty;
                     TailRich.Focus();
                 }
@@ -815,6 +865,7 @@ namespace Assistant.UI
 
         private void SearchClearBtn_Click(object sender, RoutedEventArgs e)
         {
+            _searchDebounceTimer.Stop();
             if (SearchBox != null) SearchBox.Text = string.Empty;
             _searchMatchRuns.Clear();
             _currentMatchIndex = -1;
