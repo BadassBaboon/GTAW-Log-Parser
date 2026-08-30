@@ -682,7 +682,8 @@ namespace Assistant.UI
 
             if (AutoScroll?.IsChecked == true && string.IsNullOrEmpty(query))
             {
-                TailRich?.ScrollToEnd();
+                Dispatcher.BeginInvoke(new Action(() => TailRich?.ScrollToEnd()),
+                    System.Windows.Threading.DispatcherPriority.Loaded);
             }
         }
 
@@ -723,12 +724,14 @@ namespace Assistant.UI
         private void ColoredText_CheckedChanged(object sender, RoutedEventArgs e)
         {
             if (!_isInitialized) return;
+            _searchDebounceTimer.Stop();
             RebuildDocument();
         }
 
         private void RemoveTimestamps_CheckedChanged(object sender, RoutedEventArgs e)
         {
             if (!_isInitialized) return;
+            _searchDebounceTimer.Stop();
             RebuildDocument();
         }
 

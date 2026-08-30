@@ -596,6 +596,8 @@ namespace GTAWParser.Shared
     public static class AppSettingsManager
     {
         private static readonly object SyncRoot = new object();
+        private static readonly Dictionary<ApplicationSettingsBase, System.Configuration.SettingsSavingEventHandler> _settingsSavingHandlers
+            = new Dictionary<ApplicationSettingsBase, System.Configuration.SettingsSavingEventHandler>();
 
         public static readonly string ConfigDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -623,8 +625,15 @@ namespace GTAWParser.Shared
             Load(settings, configFilePath, legacySearchPatterns);
 
             // 2. Wire automatic JSON persistence whenever settings.Save() is invoked
-            settings.SettingsSaving -= (s, e) => Save(settings, configFilePath);
-            settings.SettingsSaving += (s, e) => Save(settings, configFilePath);
+            //    Unsubscribe any previous handler to avoid duplicates if Initialize is called multiple times.
+            if (_settingsSavingHandlers.TryGetValue(settings, out var existingHandler))
+            {
+                settings.SettingsSaving -= existingHandler;
+                _settingsSavingHandlers.Remove(settings);
+            }
+            System.Configuration.SettingsSavingEventHandler handler = (s, e) => Save(settings, configFilePath);
+            settings.SettingsSaving += handler;
+            _settingsSavingHandlers[settings] = handler;
         }
 
         /// <summary>

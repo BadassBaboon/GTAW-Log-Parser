@@ -22,8 +22,8 @@ namespace Assistant.Controllers
         private static Task? _intervalTask;
 
         private static string backupPath = string.Empty;
-        private static bool isGameRunning;
-        private static bool _hasUnsavedChanges;
+        private static volatile bool isGameRunning;
+        private static volatile bool _hasUnsavedChanges;
         private static string _lastSavedNormalizedContent = string.Empty;
 
         private static bool _quitting;
@@ -113,23 +113,32 @@ namespace Assistant.Controllers
             catch (Exception ex) { Log.Error(ex, "AbortAll failed"); }
         }
 
+        private static readonly object _saveLock = new object();
+
         private static async Task BackupWorkerAsync(CancellationToken ct)
         {
             try
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    bool running = AppController.IsFiveMRunning();
+                    try
+                    {
+                        bool running = AppController.IsFiveMRunning();
 
-                    if (!isGameRunning && running)
-                    {
-                        isGameRunning = true;
-                        _hasUnsavedChanges = true;
+                        if (!isGameRunning && running)
+                        {
+                            isGameRunning = true;
+                            _hasUnsavedChanges = true;
+                        }
+                        else if (isGameRunning && !running)
+                        {
+                            isGameRunning = false;
+                            ParseThenSaveToFile(true);
+                        }
                     }
-                    else if (isGameRunning && !running)
+                    catch (Exception ex)
                     {
-                        isGameRunning = false;
-                        ParseThenSaveToFile(true);
+                        Log.Warning(ex, "BackupWorker iteration failed, continuing");
                     }
 
                     await Task.Delay(GameClosedCheckTime * 1000, ct).ConfigureAwait(false);
@@ -138,10 +147,6 @@ namespace Assistant.Controllers
             catch (OperationCanceledException)
             {
                 // Normal cancellation path.
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "BackupWorker failed");
             }
         }
 
@@ -155,103 +160,110 @@ namespace Assistant.Controllers
 
                     await Task.Delay(intervalMinutes * 60_000, ct).ConfigureAwait(false);
 
-                    if (isGameRunning && File.Exists(FiveMChatCaptureService.SessionFilePath))
-                        ParseThenSaveToFile(false);
+                    try
+                    {
+                        if (isGameRunning && File.Exists(FiveMChatCaptureService.SessionFilePath))
+                            ParseThenSaveToFile(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "IntervalWorker iteration failed, continuing");
+                    }
                 }
             }
             catch (OperationCanceledException)
             {
                 // Normal cancellation path.
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "IntervalWorker failed");
-            }
         }
 
         /// <summary>
         /// Parses the current chat log and saves it. Called by both workers.
+        /// Thread-safe: guarded by _saveLock to prevent concurrent file writes.
         /// </summary>
         private static void ParseThenSaveToFile(bool gameClosed = false)
         {
-            try
+            lock (_saveLock)
             {
-                backupPath = Properties.Settings.Default.BackupPath;
-                if (string.IsNullOrWhiteSpace(backupPath) || !Directory.Exists(backupPath))
-                    return;
-
-                string parsed = AppController.ParseChatLog(Properties.Settings.Default.RemoveTimestampsFromBackup, showError: false);
-                if (string.IsNullOrWhiteSpace(parsed))
-                    return;
-
-                string normalized = ChatLogParser.NormalizeLineEndings(parsed);
-                if (!gameClosed && !_hasUnsavedChanges && !string.IsNullOrEmpty(_lastSavedNormalizedContent) && string.Equals(_lastSavedNormalizedContent, normalized, StringComparison.Ordinal))
+                try
                 {
-                    // Content is already saved and unchanged
-                    return;
-                }
+                    backupPath = Properties.Settings.Default.BackupPath;
+                    if (string.IsNullOrWhiteSpace(backupPath) || !Directory.Exists(backupPath))
+                        return;
 
-                DateTime sessionTime = FiveMChatCaptureService.SessionStartedAt;
-                string datePart = sessionTime.ToString("dd.MMM.yyyy", CultureInfo.InvariantCulture).ToUpperInvariant();
-                string timePart = sessionTime.ToString("HH.mm.ss", CultureInfo.InvariantCulture);
-                string year = sessionTime.ToString("yyyy", CultureInfo.InvariantCulture);
-                string month = sessionTime.ToString("MMM", CultureInfo.InvariantCulture).ToUpperInvariant();
+                    string parsed = AppController.ParseChatLog(Properties.Settings.Default.RemoveTimestampsFromBackup, showError: false);
+                    if (string.IsNullOrWhiteSpace(parsed))
+                        return;
 
-                int backupFormat = Properties.Settings.Default.BackupFormat;
-                bool removeTimestamps = Properties.Settings.Default.RemoveTimestampsFromBackup;
-                string baseFileName = $"{datePart}-{timePart}";
-                string directory = Path.Combine(backupPath, year, month);
-                Directory.CreateDirectory(directory);
-
-                string primarySavedPath = string.Empty;
-
-                // 1. Plain Text Backup (.txt)
-                if (backupFormat == 0 || backupFormat == 2)
-                {
-                    string txtPath = Path.Combine(directory, $"{baseFileName}.txt");
-                    string txtTemp = Path.Combine(directory, $".temp_{baseFileName}.txt");
-
-                    WriteBackupFileWithDeduplication(txtPath, txtTemp, normalized);
-                    primarySavedPath = txtPath;
-                }
-
-                // 2. Rich HTML Backup (.html)
-                if (backupFormat == 1 || backupFormat == 2)
-                {
-                    string htmlContent;
-                    var richLines = FiveMChatCaptureService.SessionRichLines;
-                    if (richLines != null && richLines.Count > 0)
+                    string normalized = ChatLogParser.NormalizeLineEndings(parsed);
+                    if (!gameClosed && !_hasUnsavedChanges && !string.IsNullOrEmpty(_lastSavedNormalizedContent) && string.Equals(_lastSavedNormalizedContent, normalized, StringComparison.Ordinal))
                     {
-                        htmlContent = ChatLogHtmlExporter.GenerateHtml(richLines, removeTimestamps, $"GTAW Chat Log - {datePart}");
-                    }
-                    else
-                    {
-                        htmlContent = ChatLogHtmlExporter.GenerateHtmlFromText(parsed, removeTimestamps, $"GTAW Chat Log - {datePart}");
+                        // Content is already saved and unchanged
+                        return;
                     }
 
-                    string htmlPath = Path.Combine(directory, $"{baseFileName}.html");
-                    string htmlTemp = Path.Combine(directory, $".temp_{baseFileName}.html");
+                    DateTime sessionTime = FiveMChatCaptureService.SessionStartedAt;
+                    string datePart = sessionTime.ToString("dd.MMM.yyyy", CultureInfo.InvariantCulture).ToUpperInvariant();
+                    string timePart = sessionTime.ToString("HH.mm.ss", CultureInfo.InvariantCulture);
+                    string year = sessionTime.ToString("yyyy", CultureInfo.InvariantCulture);
+                    string month = sessionTime.ToString("MMM", CultureInfo.InvariantCulture).ToUpperInvariant();
 
-                    WriteBackupFileWithDeduplication(htmlPath, htmlTemp, htmlContent);
-                    if (string.IsNullOrEmpty(primarySavedPath))
-                        primarySavedPath = htmlPath;
+                    int backupFormat = Properties.Settings.Default.BackupFormat;
+                    bool removeTimestamps = Properties.Settings.Default.RemoveTimestampsFromBackup;
+                    string baseFileName = $"{datePart}-{timePart}";
+                    string directory = Path.Combine(backupPath, year, month);
+                    Directory.CreateDirectory(directory);
+
+                    string primarySavedPath = string.Empty;
+
+                    // 1. Plain Text Backup (.txt)
+                    if (backupFormat == 0 || backupFormat == 2)
+                    {
+                        string txtPath = Path.Combine(directory, $"{baseFileName}.txt");
+                        string txtTemp = Path.Combine(directory, $".temp_{baseFileName}.txt");
+
+                        WriteBackupFileWithDeduplication(txtPath, txtTemp, normalized);
+                        primarySavedPath = txtPath;
+                    }
+
+                    // 2. Rich HTML Backup (.html)
+                    if (backupFormat == 1 || backupFormat == 2)
+                    {
+                        string htmlContent;
+                        var richLines = FiveMChatCaptureService.SessionRichLines;
+                        if (richLines != null && richLines.Count > 0)
+                        {
+                            htmlContent = ChatLogHtmlExporter.GenerateHtml(richLines, removeTimestamps, $"GTAW Chat Log - {datePart}");
+                        }
+                        else
+                        {
+                            htmlContent = ChatLogHtmlExporter.GenerateHtmlFromText(parsed, removeTimestamps, $"GTAW Chat Log - {datePart}");
+                        }
+
+                        string htmlPath = Path.Combine(directory, $"{baseFileName}.html");
+                        string htmlTemp = Path.Combine(directory, $".temp_{baseFileName}.html");
+
+                        WriteBackupFileWithDeduplication(htmlPath, htmlTemp, htmlContent);
+                        if (string.IsNullOrEmpty(primarySavedPath))
+                            primarySavedPath = htmlPath;
+                    }
+
+                    _lastSavedNormalizedContent = normalized;
+                    _hasUnsavedChanges = false;
+
+                    if (!gameClosed) return;
+                    if (!Properties.Settings.Default.SuppressNotifications)
+                        DisplayBackupResultMessage(string.Format(Strings.SuccessfulBackup, primarySavedPath), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    if (Properties.Settings.Default.WarnOnSameHash)
+                        HashGenerator.SaveParsedHash(parsed);
                 }
-
-                _lastSavedNormalizedContent = normalized;
-                _hasUnsavedChanges = false;
-
-                if (!gameClosed) return;
-                if (!Properties.Settings.Default.SuppressNotifications)
-                    DisplayBackupResultMessage(string.Format(Strings.SuccessfulBackup, primarySavedPath), Strings.Information, MessageBoxButton.OK, MessageBoxImage.Information);
-
-                if (Properties.Settings.Default.WarnOnSameHash)
-                    HashGenerator.SaveParsedHash(parsed);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "ParseThenSaveToFile failed");
-                if (gameClosed)
-                    DisplayBackupResultMessage(Strings.BackupError, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "ParseThenSaveToFile failed");
+                    if (gameClosed)
+                        DisplayBackupResultMessage(Strings.BackupError, Strings.Error, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
