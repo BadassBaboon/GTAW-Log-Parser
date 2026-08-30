@@ -754,5 +754,33 @@ namespace Shared.Tests
                     Directory.Delete(tempDir, true);
             }
         }
+
+        [Fact]
+        public void ChatLineClassifier_LiveTailFiltering_MatchesAllCategories()
+        {
+            var emoteLine = "* John Doe nods slowly in agreement.";
+            var actionLine = "> The heavy metal door swings open. (( John Doe ))";
+            var icSpeechLine = "John Doe says: Hello there!";
+            var icWhisperLine = "John Doe whispers [low]: Be quiet.";
+            var icShoutLine = "John Doe shouts: Stop right there!";
+            var oocLine = "(( (42) Jane Doe: Wait for me ))";
+            var pmLine = "(( PM from (12) Alice: Hey are you around? ))";
+            var radioLine = "**[S: TAC-1 CH: 1] John Doe: 10-4 copy that.**";
+            var adsLine = "[Advertisement] San Andreas Auto Sales - Call 555-0199";
+            var phoneLine = "[PHONE] Incoming call from 555-0123...";
+            var systemLine = "[INFO] Welcome to GTA World!";
+
+            Assert.Equal(ChatLineCategory.Emote, ChatLineClassifier.Classify(emoteLine));
+            Assert.Equal(ChatLineCategory.Action, ChatLineClassifier.Classify(actionLine));
+            Assert.Equal(ChatLineCategory.ICSpeech, ChatLineClassifier.Classify(icSpeechLine));
+            Assert.Equal(ChatLineCategory.ICWhisper, ChatLineClassifier.Classify(icWhisperLine));
+            Assert.Equal(ChatLineCategory.ICShout, ChatLineClassifier.Classify(icShoutLine));
+            Assert.Equal(ChatLineCategory.OOC, ChatLineClassifier.Classify(oocLine));
+            Assert.Equal(ChatLineCategory.PM, ChatLineClassifier.Classify(pmLine));
+            Assert.Equal(ChatLineCategory.Radio, ChatLineClassifier.Classify(radioLine));
+            Assert.Equal(ChatLineCategory.Ads, ChatLineClassifier.Classify(adsLine));
+            Assert.Equal(ChatLineCategory.Phone, ChatLineClassifier.Classify(phoneLine));
+            Assert.Equal(ChatLineCategory.SystemInfo, ChatLineClassifier.Classify(systemLine));
+        }
     }
 }

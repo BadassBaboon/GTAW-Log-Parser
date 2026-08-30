@@ -92,8 +92,7 @@ namespace Assistant.UI
             InitializeComponent();
             _document.PagePadding = new Thickness(0);
             TailRich.Document = _document;
-            WordWrapCheck.IsChecked = Properties.Settings.Default.LiveTailWordWrap;
-            ApplyWordWrap(WordWrapCheck.IsChecked == true);
+            ApplyAutomaticWordWrap();
             _isInitialized = true;
             ApplyThemeStyling();
         }
@@ -126,10 +125,30 @@ namespace Assistant.UI
         private void LiveTail_Loaded(object sender, RoutedEventArgs e)
         {
             ApplyThemeStyling();
-            ApplyWordWrap(WordWrapCheck?.IsChecked == true);
+            ApplyAutomaticWordWrap();
             if (!_isWatching)
             {
                 StartWatching();
+            }
+        }
+
+        private void LiveTail_StateChanged(object? sender, EventArgs e)
+        {
+            ApplyAutomaticWordWrap();
+        }
+
+        private void ApplyAutomaticWordWrap()
+        {
+            if (TailRich == null || _document == null) return;
+            if (WindowState == WindowState.Maximized)
+            {
+                TailRich.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+                _document.PageWidth = 5000;
+            }
+            else
+            {
+                TailRich.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                _document.PageWidth = double.NaN;
             }
         }
 
@@ -224,15 +243,16 @@ namespace Assistant.UI
                 if (_capturedLines.Count > MaxLineBuffer)
                 {
                     _capturedLines.RemoveAt(0);
-                    if (_document.Blocks.FirstBlock != null)
-                    {
-                        _document.Blocks.Remove(_document.Blocks.FirstBlock);
-                    }
                 }
 
                 string query = SearchBox?.Text ?? string.Empty;
-                Paragraph p = CreateLineParagraph(line, RemoveTimestamps?.IsChecked == true, ColoredText?.IsChecked == true, query, _searchMatchRuns);
-                _document.Blocks.Add(p);
+                string filterTag = (FilterComboBox?.SelectedItem as ComboBoxItem)?.Tag as string ?? "all";
+
+                if (MatchesFilter(line, filterTag, query))
+                {
+                    Paragraph p = CreateLineParagraph(line, RemoveTimestamps?.IsChecked == true, ColoredText?.IsChecked == true, query, _searchMatchRuns);
+                    _document.Blocks.Add(p);
+                }
 
                 UpdateCounter();
 
@@ -258,6 +278,94 @@ namespace Assistant.UI
                     TailRich?.ScrollToEnd();
                 }
             }));
+        }
+
+        private static bool MatchesFilter(CapturedChatLine line, string filterTag, string searchQuery)
+        {
+            if (line == null || string.IsNullOrWhiteSpace(line.Text))
+                return false;
+
+            if (filterTag == "all")
+            {
+                return true;
+            }
+
+            if (filterTag == "search")
+            {
+                if (string.IsNullOrWhiteSpace(searchQuery))
+                    return true;
+                return line.Text.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+
+            ChatLineCategory category = ChatLineClassifier.Classify(line.Text);
+
+            bool categoryMatch;
+            switch (filterTag)
+            {
+                case "all_rp":
+                    categoryMatch = category == ChatLineCategory.ICSpeech ||
+                                    category == ChatLineCategory.ICWhisper ||
+                                    category == ChatLineCategory.ICShout ||
+                                    category == ChatLineCategory.Emote ||
+                                    category == ChatLineCategory.Action ||
+                                    category == ChatLineCategory.Radio ||
+                                    category == ChatLineCategory.Phone;
+                    break;
+
+                case "ic_speech":
+                    categoryMatch = category == ChatLineCategory.ICSpeech ||
+                                    category == ChatLineCategory.ICWhisper ||
+                                    category == ChatLineCategory.ICShout;
+                    break;
+
+                case "emotes_actions":
+                    categoryMatch = category == ChatLineCategory.Emote ||
+                                    category == ChatLineCategory.Action;
+                    break;
+
+                case "radio":
+                    categoryMatch = category == ChatLineCategory.Radio;
+                    break;
+
+                case "pm":
+                    categoryMatch = category == ChatLineCategory.PM;
+                    break;
+
+                case "ooc":
+                    categoryMatch = category == ChatLineCategory.OOC;
+                    break;
+
+                case "phone":
+                    categoryMatch = category == ChatLineCategory.Phone;
+                    break;
+
+                case "ads":
+                    categoryMatch = category == ChatLineCategory.Ads;
+                    break;
+
+                case "system":
+                    categoryMatch = category == ChatLineCategory.SystemInfo ||
+                                    category == ChatLineCategory.Success ||
+                                    category == ChatLineCategory.Warning ||
+                                    category == ChatLineCategory.Error ||
+                                    category == ChatLineCategory.SessionHeader;
+                    break;
+
+                default:
+                    categoryMatch = true;
+                    break;
+            }
+
+            if (!categoryMatch)
+                return false;
+
+            // If a search query is typed while in a specific category filter, also match the query
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                return line.Text.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+
+            return true;
         }
 
         private readonly struct TextSegment
@@ -507,9 +615,13 @@ namespace Assistant.UI
             bool hideTimestamps = RemoveTimestamps?.IsChecked == true;
             bool useColors = ColoredText?.IsChecked == true;
             string query = SearchBox?.Text ?? string.Empty;
+            string filterTag = (FilterComboBox?.SelectedItem as ComboBoxItem)?.Tag as string ?? "all";
 
             foreach (CapturedChatLine line in _capturedLines)
             {
+                if (!MatchesFilter(line, filterTag, query))
+                    continue;
+
                 Paragraph p = CreateLineParagraph(line, hideTimestamps, useColors, query, _searchMatchRuns);
                 _document.Blocks.Add(p);
             }
@@ -554,13 +666,32 @@ namespace Assistant.UI
             if (Counter == null)
                 return;
 
-            int lineCount = _capturedLines.Count;
-            int charCount = 0;
-            for (int i = 0; i < _capturedLines.Count; i++)
+            string query = SearchBox?.Text ?? string.Empty;
+            string filterTag = (FilterComboBox?.SelectedItem as ComboBoxItem)?.Tag as string ?? "all";
+            bool isFiltered = filterTag != "all" && (filterTag != "search" || !string.IsNullOrEmpty(query));
+
+            int totalLines = _capturedLines.Count;
+            int displayedLines = _document?.Blocks.Count ?? 0;
+
+            if (isFiltered)
             {
-                charCount += _capturedLines[i].Text.Length;
+                Counter.Text = $"{displayedLines:N0} of {totalLines:N0} lines (filtered)";
             }
-            Counter.Text = $"{charCount:N0} characters and {lineCount:N0} lines";
+            else
+            {
+                int charCount = 0;
+                for (int i = 0; i < _capturedLines.Count; i++)
+                {
+                    charCount += _capturedLines[i].Text.Length;
+                }
+                Counter.Text = $"{charCount:N0} characters and {totalLines:N0} lines";
+            }
+        }
+
+        private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isInitialized) return;
+            RebuildDocument();
         }
 
         private void ColoredText_CheckedChanged(object sender, RoutedEventArgs e)
@@ -573,30 +704,6 @@ namespace Assistant.UI
         {
             if (!_isInitialized) return;
             RebuildDocument();
-        }
-
-        private void WordWrap_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            if (!_isInitialized) return;
-            bool isWrapped = WordWrapCheck?.IsChecked == true;
-            Properties.Settings.Default.LiveTailWordWrap = isWrapped;
-            Properties.Settings.Default.Save();
-            ApplyWordWrap(isWrapped);
-        }
-
-        private void ApplyWordWrap(bool isWrapped)
-        {
-            if (TailRich == null || _document == null) return;
-            if (isWrapped)
-            {
-                TailRich.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-                _document.PageWidth = double.NaN;
-            }
-            else
-            {
-                TailRich.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
-                _document.PageWidth = 5000;
-            }
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)

@@ -11,6 +11,7 @@
                       Loaded="LiveTail_Loaded"
                       Closing="LiveTail_Closing"
                       KeyDown="LiveTail_KeyDown"
+                      StateChanged="LiveTail_StateChanged"
                       BorderThickness="0"
                       GlowBrush="Black"
                       Title="Live Tail" Height="500" Width="700"
@@ -22,11 +23,12 @@
     <DockPanel Margin="10">
         <!-- Top Toolbar -->
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-            <!-- Search Bar Row -->
+            <!-- Search Bar & Filter Row -->
             <Grid Margin="0,0,0,6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="65"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -38,17 +40,33 @@
                          TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown"/>
 
                 <TextBlock x:Name="SearchMatchCount" Grid.Column="1" Text="0/0"
-                           TextAlignment="Center" VerticalAlignment="Center" Margin="4,0,4,0"
+                           TextAlignment="Center" VerticalAlignment="Center" Margin="2,0,2,0"
                            Foreground="{DynamicResource MahApps.Brushes.Gray}" FontSize="11"/>
 
-                <Button x:Name="SearchPrevBtn" Grid.Column="2" Content="▲" Width="28" Height="26" IsEnabled="False"
+                <Button x:Name="SearchPrevBtn" Grid.Column="2" Content="▲" Width="26" Height="26" IsEnabled="False"
                         Click="SearchPrevBtn_Click" ToolTip="Previous match (Shift+Enter / Shift+F3)"/>
 
-                <Button x:Name="SearchNextBtn" Grid.Column="3" Content="▼" Width="28" Height="26" Margin="4,0,4,0" IsEnabled="False"
+                <Button x:Name="SearchNextBtn" Grid.Column="3" Content="▼" Width="26" Height="26" Margin="3,0,3,0" IsEnabled="False"
                         Click="SearchNextBtn_Click" ToolTip="Next match (Enter / F3)"/>
 
-                <Button x:Name="SearchClearBtn" Grid.Column="4" Content="✕" Width="28" Height="26" IsEnabled="False"
+                <Button x:Name="SearchClearBtn" Grid.Column="4" Content="✕" Width="26" Height="26" IsEnabled="False"
                         Click="SearchClearBtn_Click" ToolTip="Clear search (Esc)"/>
+
+                <ComboBox x:Name="FilterComboBox" Grid.Column="5" Height="26" Width="175" Margin="6,0,0,0"
+                          SelectedIndex="0" SelectionChanged="FilterComboBox_SelectionChanged"
+                          ToolTip="Filter visible lines by chat category or search term">
+                    <ComboBoxItem Content="All Lines" Tag="all"/>
+                    <ComboBoxItem Content="Filter by Search Term" Tag="search"/>
+                    <ComboBoxItem Content="All RP / IC (Dialogue &amp; Emotes)" Tag="all_rp"/>
+                    <ComboBoxItem Content="IC Dialogue (/say, /w, /s)" Tag="ic_speech"/>
+                    <ComboBoxItem Content="Emotes &amp; Actions (/me, /do)" Tag="emotes_actions"/>
+                    <ComboBoxItem Content="Radio &amp; Faction (/r, /f, /dep)" Tag="radio"/>
+                    <ComboBoxItem Content="Private Messages (/pm)" Tag="pm"/>
+                    <ComboBoxItem Content="OOC Chat (( ))" Tag="ooc"/>
+                    <ComboBoxItem Content="Phone &amp; SMS (/ph)" Tag="phone"/>
+                    <ComboBoxItem Content="Advertisements &amp; News (/ad)" Tag="ads"/>
+                    <ComboBoxItem Content="Server &amp; System Messages" Tag="system"/>
+                </ComboBox>
             </Grid>
 
             <!-- Actions & Options Row -->
@@ -70,11 +88,6 @@
                               VerticalAlignment="Center" Margin="0,0,14,0"
                               Checked="RemoveTimestamps_CheckedChanged" Unchecked="RemoveTimestamps_CheckedChanged"
                               ToolTip="Hide leading timestamps from log display"/>
-
-                    <CheckBox x:Name="WordWrapCheck" Content="Word wrap" IsChecked="True"
-                              VerticalAlignment="Center" Margin="0,0,14,0"
-                              Checked="WordWrap_CheckedChanged" Unchecked="WordWrap_CheckedChanged"
-                              ToolTip="Wrap long chat lines to window width (uncheck for single-line horizontal scrolling)"/>
 
                     <CheckBox x:Name="AutoScroll" Content="Auto-scroll" IsChecked="True"
                               VerticalAlignment="Center" Margin="0,0,14,0"
